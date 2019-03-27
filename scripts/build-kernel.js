@@ -1,6 +1,5 @@
 import fs from 'fs';
 import process from 'process';
-import { rollup } from 'rollup';
 import bundleSource from '../src/build-source-bundle';
 
 async function main() {

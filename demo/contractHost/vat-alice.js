@@ -23,6 +23,7 @@ function makeAlice(E, host) {
   let initialized = false;
   let myMoneyPurseP;
   let myMoneyIssuerP;
+  /* eslint-disable-next-line no-unused-vars */
   let myStockPurseP;
   let myStockIssuerP;
 

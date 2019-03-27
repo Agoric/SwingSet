@@ -1,4 +1,3 @@
-/* global Vow Flow */
 // Copyright (C) 2013 Google Inc.
 // Copyright (C) 2018 Agoric
 //

@@ -16,7 +16,7 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
-function build(E) {
+function build(_E) {
   let debugCounter = 0;
 
   function makeMint() {

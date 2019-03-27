@@ -1,4 +1,3 @@
-/* global Vow */
 // Copyright (C) 2011 Google Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,10 +20,6 @@
 import harden from '@agoric/harden';
 
 export default function setup(syscall, helpers) {
-  function log(what) {
-    helpers.log(what);
-    console.log(what);
-  }
   const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
     syscall,
     helpers.vatID,
