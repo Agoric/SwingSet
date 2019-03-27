@@ -25,7 +25,10 @@ export default function setup(syscall, helpers) {
     helpers.log(what);
     console.log(what);
   }
-  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(syscall, helpers.vatID);
+  const { E, dispatch, registerRoot } = helpers.makeLiveSlots(
+    syscall,
+    helpers.vatID,
+  );
 
   function mintTest(mint) {
     console.log('starting mintTest');
@@ -106,28 +109,32 @@ export default function setup(syscall, helpers) {
     const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP);
 
     if (bobLies) {
-      E(bobP).tradeWell(aliceP, true).then(
-        res => {
-          console.log('++ bobP.tradeWell done:', res);
-        },
-        rej => {
-          if (rej.message.startsWith('unexpected contract')) {
-            console.log('++ DONE');
-          } else {
-            console.log('++ bobP.tradeWell error:', rej);
-          }
-        },
-      );
+      E(bobP)
+        .tradeWell(aliceP, true)
+        .then(
+          res => {
+            console.log('++ bobP.tradeWell done:', res);
+          },
+          rej => {
+            if (rej.message.startsWith('unexpected contract')) {
+              console.log('++ DONE');
+            } else {
+              console.log('++ bobP.tradeWell error:', rej);
+            }
+          },
+        );
     } else {
-      E(bobP).tradeWell(aliceP, false).then(
-        res => {
-          console.log('++ bobP.tradeWell done:', res);
-          console.log('++ DONE');
-        },
-        rej => {
-          console.log('++ bobP.tradeWell error:', rej);
-        },
-      );
+      E(bobP)
+        .tradeWell(aliceP, false)
+        .then(
+          res => {
+            console.log('++ bobP.tradeWell done:', res);
+            console.log('++ DONE');
+          },
+          rej => {
+            console.log('++ bobP.tradeWell error:', rej);
+          },
+        );
     }
     //  return E(aliceP).tradeWell(bobP);
   }
