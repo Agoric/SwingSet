@@ -131,20 +131,20 @@ function build(E) {
 
   const obj0 = {
     async bootstrap(argv, vats) {
-      if (argv[0] === 'mint') {
+      if (argv.mint) {
         return mintTest(vats.mint);
       }
       const host = await E(vats.host).makeHost();
-      if (argv[0] === 'trivial') {
+      if (argv.trivial) {
         return trivialContractTest(host);
       }
       const alice = await E(vats.alice).makeAlice(host);
       const bob = await E(vats.bob).makeBob(host);
-      if (argv[0] === 'alice-first') {
+      if (argv['alice-first']) {
         betterContractTestAliceFirst(vats.mint, alice, bob);
-      } else if (argv[0] === 'bob-first') {
+      } else if (argv['bob-first']) {
         betterContractTestBobFirst(vats.mint, alice, bob);
-      } else if (argv[0] === 'bob-first-lies') {
+      } else if (argv['bob-first-lies']) {
         betterContractTestBobFirst(vats.mint, alice, bob, true);
       }
       return undefined;

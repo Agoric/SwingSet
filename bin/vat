@@ -4,27 +4,58 @@ const fs = require('fs');
 const path = require('path');
 const process = require('process');
 const repl = require('repl');
+const parseArgs = require('minimist');
+const Joi = require('joi');
+/* eslint-disable-next-line no-global-assign */
 require = require('esm')(module);
 
 const { loadBasedir, buildVatController } = require('../src/index.js');
 
 async function main() {
-  let argv = process.argv.splice(2);
-  let withSES = true;
-  if (argv[0] === '--no-ses') {
-    withSES = false;
-    argv.shift();
+  const rawArgv = parseArgs(process.argv.splice(2));
+  const schema = Joi.object()
+    .keys({
+      _: Joi.array()
+        .ordered(
+          Joi.string().valid('run', 'shell'),
+          Joi.string().regex(/demo\/.*/),
+        )
+        .length(2)
+        .error(
+          () =>
+            "use 'vat run' or 'vat shell' with the path to the particular demo",
+        ),
+      'inspect-brk': Joi.number(),
+      ses: Joi.boolean(),
+      mint: Joi.boolean(),
+      trivial: Joi.boolean(),
+      'alice-first': Joi.boolean(),
+      'bob-first': Joi.boolean(),
+      'bob-first-lies': Joi.boolean(),
+    })
+    .without('mint', ['trivial', 'alice-first', 'bob-first', 'bob-first-lies'])
+    .without('trivial', ['alice-first', 'bob-first', 'bob-first-lies'])
+    .without('alice-first', ['bob-first', 'bob-first-lies'])
+    .without('bob-first', 'bob-first-lies');
+
+  const { error, value: argv } = Joi.validate(rawArgv, schema);
+  if (error) {
+    console.error(error.details[0].message);
+    return;
   }
-  const command = argv.shift();
+
+  let withSES = true;
+  if (!argv.ses) {
+    withSES = false;
+  }
+  const command = argv._.shift();
   if (command !== 'run' && command !== 'shell') {
     throw new Error(`use 'vat run' or 'vat shell', not 'vat ${command}'`);
   }
-  const basedir = (argv[0] === '--' || argv[0] === undefined) ? '.' : argv.shift();
-  const vatArgv = argv[0] === '--' ? argv.slice(1) : argv;
-
+  const basedir = argv._.shift();
 
   const config = await loadBasedir(basedir);
-  const controller = await buildVatController(config, withSES, vatArgv);
+  const controller = await buildVatController(config, withSES, argv);
   if (command === 'run') {
     await controller.run();
     console.log('= vat finished');
@@ -51,5 +82,4 @@ async function main() {
   }
 }
 
-main();
-
+main().catch(err => console.error(err));
