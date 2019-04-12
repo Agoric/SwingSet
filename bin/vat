@@ -25,6 +25,7 @@ async function main() {
           () =>
             "use 'vat run' or 'vat shell' with the path to the particular demo",
         ),
+      inspect: Joi.boolean(),
       'inspect-brk': Joi.number(),
       ses: Joi.boolean(),
       mint: Joi.boolean(),
