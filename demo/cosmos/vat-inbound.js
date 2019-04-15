@@ -9,9 +9,15 @@ export default function setup(syscall, state, helpers, devices) {
     state,
     E => {
       function inbound(sender, data) {
-        console.log(`inbound sender='${sender}'`);
+        console.log(`inbound sender='${sender}', data='${data}'`);
         const clist = clists.get(sender);
-        const d = JSON.parse(data);
+        let d;
+        try {
+          d = JSON.parse(data);
+        } catch (e) {
+          console.log(`unparseable data: ${data}`);
+          throw e;
+        }
         const val = clist.get(d.index);
         const { methodName, resultIndex } = d;
         const args = d.args.map(arg => {
