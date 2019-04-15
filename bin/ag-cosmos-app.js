@@ -3,9 +3,16 @@
 const fs = require('fs');
 const path = require('path');
 const process = require('process');
-require = require('esm')(module);
-const lotion = require('lotion');
+const { createHash } = require('crypto');
+const tendermint = require('tendermint-node');
+const djson = require('deterministic-json');
+const vstruct = require('varstruct');
+const getPort = require('get-port');
+const createServer = require('abci');
+const { createServer: createDiscoveryServer } = require('peer-channel');
+const jpfs = require('jpfs');
 
+require = require('esm')(module);
 const { loadBasedir, buildVatController } = require('../src/index.js');
 const { buildInbound } = require('../src/devices');
 
@@ -53,32 +60,147 @@ async function main() {
                          controllerState: controller.getState(),
                        };
 
-  const app = lotion({
-    initialState,
-    //logTendermint: true,
+
+  const TxStruct = vstruct([
+    { name: 'data', type: vstruct.VarString(vstruct.UInt32BE) },
+    { name: 'nonce', type: vstruct.UInt32BE },
+  ]);
+
+  function decodeTx(txBuffer) {
+    let decoded = TxStruct.decode(txBuffer);
+    let tx = djson.parse(decoded.data);
+    return tx;
+  };
+
+  const validators = {};
+  let height = 0;
+
+  let abciServer = createServer({
+    async info(request) {
+      console.log('info', request);
+      return {};
+    },
+    async deliverTx(request) {
+      const decodedRequest = decodeTx(request.tx);
+      console.log('deliverTx', decodedRequest);
+      // error: return { code: 1, log: 'why' }
+      deliverInbound('abc', JSON.stringify(decodedRequest));
+      await controller.run();
+      return {};
+    },
+    async checkTx(request) {
+      const decodedRequest = decodeTx(request.tx);
+      console.log('checkTx', decodedRequest);
+      // error: return { code: 1, log: 'why' }
+
+      // return 'info' property, shows up in tendermint log in "Added good
+      // transaction module=mempool tx=.. res=infomsg.."
+
+      // https://tendermint.com/docs/spec/abci/abci.html#methods-and-types
+
+      // deterministic properties: code, data, gas_wanted/gas_used (int64), tags, codespace (string)
+      // * codespace is a namespace for the code
+      // * tags: list of (key,value) associated with tx, or block
+      // * gas_wanted: to be enforced, set MaxGas in genesis file
+      //   ResponseCheckTx.GasWanted, ConsensusParams.BlockSize.MaxGas
+      //   GasWanted <= MaxGas for every tx
+      //   (sum of GasWanted in block) <= MaxGas for block proposal
+      return { };
+    },
+    async beginBlock(request) {
+      console.log('beginBlock', /*request*/);
+      return {};
+    },
+    async endBlock() {
+      console.log('endBlock');
+      let validatorUpdates = []
+
+      for (let pubKey in validators) {
+        validatorUpdates.push({
+          pubKey: { type: 'ed25519', data: Buffer.from(pubKey, 'base64') },
+          power: { low: validators[pubKey], high: 0 }
+        })
+      }
+      return { validatorUpdates };
+    },
+    async commit() {
+      console.log(`commit[${height}]`);
+      const data = createHash('sha256').update(djson.stringify(controller.getState())).digest('hex');
+      height++;
+      //console.log(`commit[${height}] = ${data}`);
+      return { data: Buffer.from(data, 'hex') }
+    },
+
+    async initChain(initChainRequest) {
+      console.log('initChain', initChainRequest);
+      initChainRequest.validators.forEach(validator => {
+        validators[
+          validator.pubKey.data.toString('base64')
+        ] = validator.power.toNumber();
+      })
+      return {};
+    },
+
+    async query(request) {
+      console.log('query', request);
+      const queryResponse = controller.getState();
+      let value = Buffer.from(djson.stringify(queryResponse)).toString('base64')
+      //console.log(`-- value ${value}`);
+      return {
+        value,
+        height
+      };
+    },
   });
 
-  app.use(async (state, tx, chainInfo) => {
-    console.log('app.use', tx, chainInfo.time, state.counters);
-    deliverInbound('abc', tx);
-    state.counters.one = state.counters.one + 1;
-    await controller.run();
-    console.log(' app.use did run()');
-    state.controllerState = controller.getState();
-    state.counters.two = state.counters.two + 1;
-    
-    // mutate state
-    // chainInfo: { time, validators }
-  });
+  const ports = {
+    rpc: await getPort(),
+    p2p: await getPort(),
+    abci: await getPort(),
+  };
+  abciServer.listen(ports.abci);
 
-  app.useBlock((state, chainInfo) => {
-    console.log('app.useBlock', chainInfo.time);
-  });
+  let opts = {
+    rpc: { laddr: 'tcp://0.0.0.0:' + ports.rpc },
+    p2p: { laddr: 'tcp://0.0.0.0:' + ports.p2p },
+    proxyApp: 'tcp://127.0.0.1:' + ports.abci,
+  }
 
-  console.log('app.start()');
-  const appInfo = await app.start();
-  // { GCI, genesisPath: ~/.lotion/XX/config/genesis.json, ports: { abci, p2p, rpc } }
-  console.log(`GCI: ${appInfo.GCI}`);
+  const home = 'tmint-home';
+  await tendermint.init(home)
+  console.log(`calling tendermint.node`, home, opts);
+  let tendermintProcess = tendermint.node(home, opts)
+  console.log(` called`);
+  const logTendermint = false;
+  if (logTendermint) {
+    tendermintProcess.stdout.pipe(process.stdout)
+    tendermintProcess.stderr.pipe(process.stderr)
+  }
+  tendermintProcess.then(e => {
+    //console.log('terndermint error', e);
+    throw new Error('Tendermint exited unexpectedly')
+  })
+  console.log(`calling tendermintProcess.synced()`);
+  await tendermintProcess.synced()
+  console.log(` synced`);
+
+  // pull genesis data from tendermint directory, compute GCI
+  const genesisPath = path.join(home, 'config', 'genesis.json');
+  const genesis = fs.readFileSync(genesisPath, 'utf8');
+  const GCI = createHash('sha256')
+      .update(genesis)
+      .digest('hex');
+  console.log(`GCI: ${GCI}`);
+  fs.writeFileSync(path.join(home, 'config', 'gci.txt'), `${GCI}\n`);
+
+  // discovery
+  const discoveryServer = createDiscoveryServer(socket => {
+    socket.send(`${ports.rpc}`);
+    socket.end();
+    socket.on('error', e => {});
+  });
+  discoveryServer.listen(`fullnode:${GCI}`);
+  const genesisServer = jpfs.serve(genesis);
 
 }
 
