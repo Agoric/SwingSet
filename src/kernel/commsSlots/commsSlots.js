@@ -115,6 +115,7 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
       // we need to get the targetMachine from the promiseID
       // we need to stringify the slot and the promiseID into data.
 
+      // TODO: map the slot
       const data = JSON.stringify({
         event: 'notifyFulfillToTarget',
         promiseID,
