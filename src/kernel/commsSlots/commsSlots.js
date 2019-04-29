@@ -49,7 +49,6 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
       }
       const { args } = JSON.parse(argsbytes);
 
-
       const slots = caps.map(facet => {
         const { key } = state.clists.getMachine('inbound', facet.id);
         return { type: 'export', index: key };
@@ -63,7 +62,6 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
         slots,
         resultIndex: resolverID,
       });
-
 
       helpers.log(
         `sendOverChannel from ${state.machineState.getMachineName()}, to: ${
@@ -139,7 +137,7 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
 
     notifyReject(promiseID, data, slots) {
       csdebug(`cs.dispatch.notifyReject(${promiseID}, ${data}, ${slots})`);
-      
+
       // eslint-disable-next-line array-callback-return
       state.subscribers.get(promiseID).map(subscriber => {
         const channel = state.channels.getChannelDevice(subscriber);
@@ -155,7 +153,6 @@ export function makeCommsSlots(syscall, _state, helpers, devices) {
         ); // fromMachineName, toMachineName, data
       });
     },
-  
 
     // for testing purposes only
     getState() {

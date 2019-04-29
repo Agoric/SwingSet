@@ -72,7 +72,7 @@ export function makeSendIn(state, syscall) {
         }
 
         function translateSlot(externalSlot) {
-          // isObjectAndTypeIsExport(externalSlot);
+          isObjectAndTypeIsExport(externalSlot);
           return state.clists.getKernelExport(
             'outbound',
             senderID,
