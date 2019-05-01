@@ -52,32 +52,6 @@ function makeAlice(E, host) {
       const paymentP = E(myMoneyIssuerP).getExclusive(10, myMoneyPurseP);
       return E(bob).buy('shoe', paymentP);
     },
-    payBobBadly1(bob) {
-      if (!initialized) {
-        console.log('++ ERR: payBobBadly1 called before init()');
-      }
-      const payment = harden({ deposit(_amount, _src) {} });
-      return E(bob).buy('shoe', payment);
-    },
-    payBobBadly2(bob) {
-      if (!initialized) {
-        console.log('++ ERR: payBobBadly2 called before init()');
-      }
-      const paymentP = E(myMoneyIssuerP).makeEmptyPurse();
-      const ackP = E(paymentP).deposit(5, myMoneyPurseP);
-      return ackP.then(_ => E(bob).buy('shoe', paymentP));
-    },
-
-    tradeWell(bob) {
-      if (!initialized) {
-        console.log('++ ERR: tradeWell called before init()');
-      }
-      const tokensP = E(host).setup(escrowSrc);
-      const aliceTokenP = tokensP.then(tokens => tokens[0]);
-      const bobTokenP = tokensP.then(tokens => tokens[1]);
-      E(bob).invite(bobTokenP, escrowSrc, 1);
-      return E(alice).invite(aliceTokenP, escrowSrc, 0);
-    },
 
     invite(tokenP, allegedSrc, allegedSide) {
       if (!initialized) {
