@@ -108,17 +108,17 @@ export function makeMint(makeAssayOps = makeNatOps,
         deposit(amount, srcPaymentP) {
           amount = ops.coerce(amount);
           return Promise.resolve(srcPaymentP).then(srcPayment => {
-            const myOldBal = lookup(balances, purse);
+            const purseOldBal = lookup(balances, purse);
             const srcOldBal = lookup(balances, srcPayment);
-            // Just check that the union is representable
-            ops.with(myOldBal, amount);
+            // Also checks that the union is representable
+            const purseNewBal = ops.with(purseOldBal, amount);
             const srcNewBal = ops.without(srcOldBal, amount);
             
             const homePurse = lookup(homePurses, srcPayment);
-            const myOldAssets = assets.get(purse);
+            const purseOldAssets = assets.get(purse);
             const homeOldAssets = assets.get(homePurse);
-            // Just check that the union is representable
-            ops.with(myOldAssets, amount);
+            // Also checks that the union is representable
+            const purseNewAssets = ops.with(purseOldAssets, amount);
             const homeNewAssets = ops.without(homeOldAssets, amount);
           
             // ///////////////// commit point //////////////////
@@ -127,15 +127,9 @@ export function makeMint(makeAssayOps = makeNatOps,
             // fatal turn aborts.
 
             balances.set(srcPayment, srcNewBal);
-            // In case purse and src are the same, add to purse's updated
-            // balance rather than myOldBal above. The current balance must be
-            // >= 0 and <= myOldBal, so no additional Nat test is needed.
-            // This is good because we're after the commit point, where no
-            // non-fatal errors are allowed.
-            balances.set(purse, ops.with(balances.get(purse), amount));
-
+            balances.set(purse, purseNewBal);
             assets.set(homePurse, homeNewAssets);
-            assets.set(purse, ops.with(assets.get(purse), amount));
+            assets.set(purse, purseNewAssets);
           });
         },
       });
