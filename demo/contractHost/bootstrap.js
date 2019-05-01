@@ -21,8 +21,9 @@ import harden from '@agoric/harden';
 import { makeNatOps } from './ertp';
 
 function build(E) {
-  function mintTest(mint) {
-    console.log('starting mintTest');
+  
+  function mintTestAssay(mint) {
+    console.log('starting mintTestAssay');
     const mP = E(mint).makeMint();
     const mIssuerP = E(mP).getIssuer();
     Promise.resolve(mIssuerP).then(mIssuerPresence => {
@@ -40,6 +41,26 @@ function build(E) {
       });
     });
   }
+
+  // Uses raw numbers rather than assays. Until we have support for
+  // pass-by-presence, the full assay style shown in mintTestAssay is
+  // awkward.
+  function mintTestNumber(mint) {
+    console.log('starting mintTestNumber');
+    const mP = E(mint).makeMint();
+    const mIssuerP = E(mP).getIssuer();
+    const alicePurseP = E(mP).mint(1000, 'alice');
+    const paymentP = E(mIssuerP).getExclusivePayment(alicePurseP, 50);
+    Promise.resolve(paymentP).then(_ => {
+      const aBal = E(alicePurseP).getBalance();
+      const dBal = E(paymentP).getBalance();
+      Promise.all([aBal, dBal]).then(bals => {
+        console.log('++ balances:', bals);
+        console.log('++ DONE');
+      });
+    });
+  }
+
 
   function trivialContractTest(host) {
     console.log('starting trivialContractTest');
@@ -136,7 +157,8 @@ function build(E) {
   const obj0 = {
     async bootstrap(argv, vats) {
       if (argv[0] === 'mint') {
-        return mintTest(vats.mint);
+        mintTestAssay(vats.mint);
+        return mintTestNumber(vats.mint);
       }
       const host = await E(vats.host).makeHost();
       if (argv[0] === 'trivial') {
