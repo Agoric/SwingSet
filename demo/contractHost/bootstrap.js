@@ -29,8 +29,7 @@ function build(E) {
     Promise.resolve(mIssuerP).then(mIssuerPresence => {
       const ops = makeNatOps(mIssuerPresence);
       const alicePurseP = E(mP).mint(ops.make(1000), 'alice');
-      const paymentP = E(mIssuerP).getExclusivePayment(alicePurseP,
-                                                       ops.make(50));
+      const paymentP = E(mIssuerP).getExclusive(ops.make(50), alicePurseP);
       Promise.resolve(paymentP).then(_ => {
         const aBal = E(alicePurseP).getBalance();
         const dBal = E(paymentP).getBalance();
@@ -50,7 +49,7 @@ function build(E) {
     const mP = E(mint).makeMint();
     const mIssuerP = E(mP).getIssuer();
     const alicePurseP = E(mP).mint(1000, 'alice');
-    const paymentP = E(mIssuerP).getExclusivePayment(alicePurseP, 50);
+    const paymentP = E(mIssuerP).getExclusive(50, alicePurseP);
     Promise.resolve(paymentP).then(_ => {
       const aBal = E(alicePurseP).getBalance();
       const dBal = E(paymentP).getBalance();
@@ -99,7 +98,6 @@ function build(E) {
     const aliceP = E(alice).init(aliceMoneyPurseP, aliceStockPurseP);
     /* eslint-disable-next-line no-unused-vars */
     const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP);
-
     const ifItFitsP = E(aliceP).payBobWell(bob);
     ifItFitsP.then(
       res => {

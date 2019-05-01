@@ -49,9 +49,8 @@ function makeAlice(E, host) {
       if (!initialized) {
         console.log('++ ERR: payBobWell called before init()');
       }
-      const paymentP = E(myMoneyIssuerP).makeEmptyPurse();
-      const ackP = E(paymentP).deposit(10, myMoneyPurseP);
-      return ackP.then(_ => E(bob).buy('shoe', paymentP));
+      const paymentP = E(myMoneyIssuerP).getExclusive(10, myMoneyPurseP);
+      return E(bob).buy('shoe', paymentP);
     },
     payBobBadly1(bob) {
       if (!initialized) {
