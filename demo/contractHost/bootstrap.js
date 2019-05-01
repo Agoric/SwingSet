@@ -18,22 +18,26 @@
  */
 
 import harden from '@agoric/harden';
+import { makeNatOps } from './ertp';
 
 function build(E) {
   function mintTest(mint) {
     console.log('starting mintTest');
     const mP = E(mint).makeMint();
-    const alicePurseP = E(mP).mint(1000, 'alice');
-    const mIssuerP = E(alicePurseP).getIssuer();
-    const depositPurseP = E(mIssuerP).makeEmptyPurse('deposit');
-    const v = E(depositPurseP).deposit(50, alicePurseP); // TODO: was .fork() hack
-    // TODO: no longer true "this ordering should be guaranteed by the fact
-    // that this is all in the same Flow"
-    const aBal = v.then(_ => E(alicePurseP).getBalance());
-    const dBal = v.then(_ => E(depositPurseP).getBalance());
-    Promise.all([aBal, dBal]).then(bals => {
-      console.log('++ balances:', bals);
-      console.log('++ DONE');
+    const mIssuerP = E(mP).getIssuer();
+    Promise.resolve(mIssuerP).then(mIssuerPresence => {
+      const ops = makeNatOps(mIssuerPresence);
+      const alicePurseP = E(mP).mint(ops.make(1000), 'alice');
+      const paymentP = E(mIssuerP).getExclusivePayment(alicePurseP,
+                                                       ops.make(50));
+      Promise.resolve(paymentP).then(_ => {
+        const aBal = E(alicePurseP).getBalance();
+        const dBal = E(paymentP).getBalance();
+        Promise.all([aBal, dBal]).then(bals => {
+          console.log('++ balances:', bals);
+          console.log('++ DONE');
+        });
+      });
     });
   }
 
