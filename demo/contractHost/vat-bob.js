@@ -112,17 +112,16 @@ function makeBob(E, host) {
       /* eslint-disable-next-line no-unused-vars */
       let cancel;
       const b = harden({
-        stockSrcP: E(myStockIssuerP).makeEmptyPurse('bobStockSrc'),
+        stockSrcP: E(myStockIssuerP).getExclusive(7,
+                                                  myStockPurseP,
+                                                  'bobStockSrc'),
+        stockRefundP: E(myStockIssuerP).makeEmptyPurse('bobStockRefund'),
         moneyDstP: E(myMoneyIssuerP).makeEmptyPurse('bobMoneyDst'),
         moneyNeeded: 10,
         cancellationP: new Promise(r => (cancel = r)),
       });
-      const ackP = E(b.stockSrcP).deposit(7, myStockPurseP);
 
-      const doneP = ackP.then(_ => {
-        console.log('++ bob.invite ackP');
-        return E(host).play(tokenP, allegedSrc, allegedSide, b);
-      });
+      const doneP = E(host).play(tokenP, allegedSrc, allegedSide, b);
       return doneP.then(
         _ => {
           console.log('++ bob.invite doneP');

@@ -89,16 +89,15 @@ function makeAlice(E, host) {
       // eslint-disable-next-line no-unused-vars
       let cancel;
       const a = harden({
-        moneySrcP: E(myMoneyIssuerP).makeEmptyPurse('aliceMoneySrc'),
+        moneySrcP: E(myMoneyIssuerP).getExclusive(10,
+                                                  myMoneyPurseP,
+                                                  'aliceMoneySrc'),
+        moneyRefundP: E(myMoneyIssuerP).makeEmptyPurse('aliceMoneyRefund'),
         stockDstP: E(myStockIssuerP).makeEmptyPurse('aliceStockDst'),
         stockNeeded: 7,
         cancellationP: new Promise(r => (cancel = r)),
       });
-      const ackP = E(a.moneySrcP).deposit(10, myMoneyPurseP);
-
-      const doneP = ackP.then(_ =>
-        E(host).play(tokenP, allegedSrc, allegedSide, a),
-      );
+      const doneP = E(host).play(tokenP, allegedSrc, allegedSide, a);
       return doneP.then(_ => E(a.stockDstP).getBalance());
     },
   });

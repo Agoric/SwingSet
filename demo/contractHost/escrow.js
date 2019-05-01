@@ -13,19 +13,22 @@ export default function escrowExchange(a, b) {
     });
   }
 
-  // a from Alice , b from Bob
-  function makeTransfer(srcPurseP, dstPurseP, amount) {
-    const issuerP = join(E(srcPurseP).getIssuer(), E(dstPurseP).getIssuer());
-    const escrowPurseP = E(issuerP).makeEmptyPurse('escrow');
+  // a from Alice, b from Bob
+  function makeTransfer(srcPaymentP, refundPurseP, dstPurseP, amount) {
+    const issuerP = join(E(srcPaymentP).getIssuer(),
+                         E(dstPurseP).getIssuer());
+    const escrowPaymentP = E(issuerP).getExclusive(amount,
+                                                   srcPaymentP,
+                                                   'escrow');
     return harden({
       phase1() {
-        return E(escrowPurseP).deposit(amount, srcPurseP);
+        return escrowPaymentP;
       },
       phase2() {
-        return E(dstPurseP).deposit(amount, escrowPurseP);
+        return E(dstPurseP).deposit(amount, escrowPaymentP);
       },
       abort() {
-        return E(srcPurseP).deposit(amount, escrowPurseP);
+        return E(refundPurseP).deposit(amount, escrowPaymentP);
       },
     });
   }
@@ -36,8 +39,14 @@ export default function escrowExchange(a, b) {
     });
   }
 
-  const aT = makeTransfer(a.moneySrcP, b.moneyDstP, b.moneyNeeded);
-  const bT = makeTransfer(b.stockSrcP, a.stockDstP, a.stockNeeded);
+  const aT = makeTransfer(a.moneySrcP,
+                          a.moneyRefundP,
+                          b.moneyDstP,
+                          b.moneyNeeded);
+  const bT = makeTransfer(b.stockSrcP,
+                          b.stockRefundP,
+                          a.stockDstP,
+                          a.stockNeeded);
   return Promise.race([
     Promise.all([aT.phase1(), bT.phase1()]),
     failOnly(a.cancellationP),
