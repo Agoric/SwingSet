@@ -15,7 +15,7 @@
 
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
-import { makeMint } from './ertp';
+import { makeMint } from './makeMint';
 
 function build(_E) {
   return harden({ makeMint });

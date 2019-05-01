@@ -18,7 +18,7 @@
  */
 
 import harden from '@agoric/harden';
-import { makeNatOps } from './ertp';
+import { makeNatOps } from './assayFactories';
 
 function build(E) {
   
