@@ -94,22 +94,13 @@ function makeHost(E) {
       const tokens = [];
       const argPs = [];
       const { p: resultP, res: resolve } = makePromise();
-      // let resolve;
-      // const f = new Flow();
-      // const resultP = f.makeVow(r => (resolve = r));
       const contract = evaluate(contractSrc, {
-        // Flow,
-        // Vow,
         console,
-        require,
         E,
       });
-      // console.log(`confined contract is ${typeof contract} ${contract}`);
 
       const addParam = (i, token) => {
         tokens[i] = token;
-        // let resolveArg;
-        // argPs[i] = f.makeVow(r => (resolveArg = r));
         const p = makePromise();
         const resolveArg = p.res;
         argPs[i] = p.p;

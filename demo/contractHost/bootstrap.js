@@ -149,7 +149,6 @@ function build(E) {
           },
         );
     }
-    //  return E(aliceP).tradeWell(bobP);
   }
 
   const obj0 = {
