@@ -20,7 +20,6 @@ import harden from '@agoric/harden';
 // are only queries. (Except for the one in the FlexMap constructor)
 const hiddenEMap = new WeakMap();
 
-
 // Abstract superclass with query-only methods.
 export const EMap = harden(class EMap {
   constructor(optIterable = undefined) {
@@ -74,7 +73,6 @@ export const EMap = harden(class EMap {
     return hiddenEMap.get(this).size;
   }
 });
-
 
 // Guarantees that the map contents is stable.
 // TODO: Somehow arrange for this to be pass-by-copy-ish.
@@ -182,4 +180,4 @@ ReadOnlyMap.prototype = InternalReadOnlyMap.prototype;
 ReadOnlyMap.prototype.constructor = ReadOnlyMap;
 
 harden(ReadOnlyMap);
-export ReadOnlyMap;
+export { ReadOnlyMap };

@@ -116,7 +116,6 @@ export function makeNatOps(label) {
   return ops;
 }
 
-
 export function makeMetaOps(label) {
   // memoize well formedness check.
   const brand = new WeakSet();
