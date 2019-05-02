@@ -12,13 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
+import harden from '@agoric/harden';
+
+
 // Maps from EMaps to encapsulated Maps. All lookups from this table
 // are only queries. (Except for the one in the FlexMap constructor)
 const hiddenEMap = new WeakMap();
 
 
 // Abstract superclass with query-only methods.
-class EMap {
+export const EMap = harden(class EMap {
   constructor(optIterable = undefined) {
     if (new.target === EMap) {
       throw new TypeError(`EMap is abstract`);
@@ -69,17 +73,18 @@ class EMap {
   get size() {
     return hiddenEMap.get(this).size;
   }
-}
+});
 
 
 // Guarantees that the map contents is stable.
 // TODO: Somehow arrange for this to be pass-by-copy-ish.
-class FixedMap extends EMap {
+export const FixedMap = harden(class FixedMap extends EMap {
   constructor(optIterable = undefined) {
     if (new.target !== FixedMap) {
       throw new TypeError(`FixedMap is final`);
     }
     super(optIterable);
+    harden(this);
   }
   // override
   snapshot() {
@@ -89,7 +94,7 @@ class FixedMap extends EMap {
   readOnlyView() {
     return this;
   }
-}
+});
 
 
 // Maps from FlexMaps to encapsulated Maps, a subset of
@@ -97,7 +102,7 @@ class FixedMap extends EMap {
 const hiddenFlexMap = new WeakMap();
 
 // Supports mutation.
-class FlexMap extends EMap {
+export const FlexMap = harden(class FlexMap extends EMap {
   constructor(optIterable = undefined) {
     if (new.target !== FlexMap) {
       throw new TypeError(`FlexMap is final`);
@@ -110,6 +115,7 @@ class FlexMap extends EMap {
     // "as-if" because it might be invoked by `Reflect.construct`, but
     // only in an equivalent manner.
     hiddenFlexMap.set(this, hiddenEMap.get(this));
+    harden(this);
   }
 
   // Like snapshot() except that this FlexMap loses ownership and
@@ -146,7 +152,7 @@ class FlexMap extends EMap {
   delete(m) {
     return hiddenFlexMap.get(this).delete(m);
   }
-}
+});
 
 
 // The constructor for internal use only. The rest of the class is
@@ -154,6 +160,7 @@ class FlexMap extends EMap {
 class InternalReadOnlyMap extends EMap {
   constructor(optIterable = undefined) {
     super();
+    harden(this);
   }
   // override
   readOnlyView() {
@@ -173,3 +180,6 @@ function ReadOnlyMap() {
 ReadOnlyMap.__proto__ = EMap;
 ReadOnlyMap.prototype = InternalReadOnlyMap.prototype;
 ReadOnlyMap.prototype.constructor = ReadOnlyMap;
+
+harden(ReadOnlyMap);
+export ReadOnlyMap;

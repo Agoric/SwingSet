@@ -12,13 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
+import harden from '@agoric/harden';
+
+
 // Maps from ESets to encapsulated Sets. All lookups from this table
 // are only queries. (Except for the one in the FlexSet constructor)
 const hiddenESet = new WeakMap();
 
 
 // Abstract superclass with query-only methods.
-class ESet {
+export const ESet = harden(class ESet {
   constructor(optIterable = undefined) {
     if (new.target === ESet) {
       throw new TypeError(`ESet is abstract`);
@@ -66,17 +70,18 @@ class ESet {
   get size() {
     return hiddenESet.get(this).size;
   }
-}
+});
 
 
 // Guarantees that the set contents is stable.
 // TODO: Somehow arrange for this to be pass-by-copy-ish.
-class FixedSet extends ESet {
+export const FixedSet = harden(class FixedSet extends ESet {
   constructor(optIterable = undefined) {
     if (new.target !== FixedSet) {
       throw new TypeError(`FixedSet is final`);
     }
     super(optIterable);
+    harden(this);
   }
   // override
   snapshot() {
@@ -86,7 +91,7 @@ class FixedSet extends ESet {
   readOnlyView() {
     return this;
   }
-}
+});
 
 
 // Maps from FlexSets to encapsulated Sets, a subset of
@@ -94,7 +99,7 @@ class FixedSet extends ESet {
 const hiddenFlexSet = new WeakMap();
 
 // Supports mutation.
-class FlexSet extends ESet {
+export const FlexSet = harden(class FlexSet extends ESet {
   constructor(optIterable = undefined) {
     if (new.target !== FlexSet) {
       throw new TypeError(`FlexSet is final`);
@@ -107,6 +112,7 @@ class FlexSet extends ESet {
     // "as-if" because it might be invoked by `Reflect.construct`, but
     // only in an equivalent manner.
     hiddenFlexSet.set(this, hiddenESet.get(this));
+    harden(this);
   }
 
   // Like snapshot() except that this FlexSet loses ownership and
@@ -143,7 +149,7 @@ class FlexSet extends ESet {
   delete(m) {
     return hiddenFlexSet.get(this).delete(m);
   }
-}
+});
 
 
 // The constructor for internal use only. The rest of the class is
@@ -151,6 +157,7 @@ class FlexSet extends ESet {
 class InternalReadOnlySet extends ESet {
   constructor(optIterable = undefined) {
     super();
+    harden(this);
   }
   // override
   readOnlyView() {
@@ -170,3 +177,6 @@ function ReadOnlySet() {
 ReadOnlySet.__proto__ = ESet;
 ReadOnlySet.prototype = InternalReadOnlySet.prototype;
 ReadOnlySet.prototype.constructor = ReadOnlySet;
+
+harden(ReadOnlySet);
+export ReadOnlySet;
