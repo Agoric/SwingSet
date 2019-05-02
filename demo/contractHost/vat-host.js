@@ -85,6 +85,17 @@ import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
 import makePromise from '../../src/kernel/makePromise';
 
+function safeRequire(name) {
+  switch (name) {
+    case '@agoric/harden': {
+      return harden;
+    }
+  }
+  throw new ReferenceError(`${name} not found in safeRequire`);
+}
+harden(safeRequire);
+
+
 function makeHost(E) {
   const m = new WeakMap();
 
@@ -94,11 +105,9 @@ function makeHost(E) {
       const tokens = [];
       const argPs = [];
       const { p: resultP, res: resolve } = makePromise();
-      // TODO SECURITY HAZARD: What "require" are we providing here?
-      // Is it safe?
       const contract = evaluate(contractSrc, {
         console,
-        require,
+        require: safeRequire,
         E,
       });
 
