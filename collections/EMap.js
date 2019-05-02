@@ -15,10 +15,13 @@
 
 import harden from '@agoric/harden';
 
+import { makePrivateName } from './PrivateName';
+
 
 // Maps from EMaps to encapsulated Maps. All lookups from this table
 // are only queries. (Except for the one in the FlexMap constructor)
-const hiddenEMap = new WeakMap();
+const hiddenEMap = makePrivateName();
+
 
 // Abstract superclass with query-only methods.
 export const EMap = harden(class EMap {
@@ -27,7 +30,7 @@ export const EMap = harden(class EMap {
       throw new TypeError(`EMap is abstract`);
     }
     const newHidden = new Map(optIterable);
-    hiddenEMap.set(this, newHidden);
+    hiddenEMap.init(this, newHidden);
   }
 
   snapshot() {
@@ -42,7 +45,7 @@ export const EMap = harden(class EMap {
     const result = new InternalReadOnlyMap();
     // Share the hidden map itself, but the readOnlyView only grants
     // the ability to query it.
-    hiddenEMap.set(result, hiddenEMap.get(this));
+    hiddenEMap.init(result, hiddenEMap.get(this));
     return result;
   }
 
@@ -74,6 +77,7 @@ export const EMap = harden(class EMap {
   }
 });
 
+
 // Guarantees that the map contents is stable.
 // TODO: Somehow arrange for this to be pass-by-copy-ish.
 export const FixedMap = harden(class FixedMap extends EMap {
@@ -97,7 +101,7 @@ export const FixedMap = harden(class FixedMap extends EMap {
 
 // Maps from FlexMaps to encapsulated Maps, a subset of
 // hiddenEMap. Lookups from this table can mutate.
-const hiddenFlexMap = new WeakMap();
+const hiddenFlexMap = makePrivateName();
 
 // Supports mutation.
 export const FlexMap = harden(class FlexMap extends EMap {
@@ -112,7 +116,7 @@ export const FlexMap = harden(class FlexMap extends EMap {
     // constructor is being called as-if directly with `new`. We say
     // "as-if" because it might be invoked by `Reflect.construct`, but
     // only in an equivalent manner.
-    hiddenFlexMap.set(this, hiddenEMap.get(this));
+    hiddenFlexMap.init(this, hiddenEMap.get(this));
     harden(this);
   }
 
@@ -120,10 +124,16 @@ export const FlexMap = harden(class FlexMap extends EMap {
   // becomes useless.
   takeSnapshot() {
     const hiddenMap = hiddenFlexMap.get(this);
-    hiddenFlexMap.delete(this);
-    hiddenEMap.delete(this);
+
+    // Ideally we'd delete, as we would from a WeakMap. However,
+    // PrivateName, to emulate class private names, has no delete.
+    // hiddenFlexMap.delete(this);
+    // hiddenEMap.delete(this);
+    hiddenFlexMap.set(this, null);
+    hiddenEMap.set(this, null);
+
     const result = new FixedMap();
-    hiddenEMap.set(result, hiddenMap);
+    hiddenEMap.init(result, hiddenMap);
     return result;
   }
 
@@ -131,11 +141,17 @@ export const FlexMap = harden(class FlexMap extends EMap {
   // becomes useless.
   takeDiverge() {
     const hiddenMap = hiddenFlexMap.get(this);
-    hiddenFlexMap.delete(this);
-    hiddenEMap.delete(this);
+
+    // Ideally we'd delete, as we would from a WeakMap. However,
+    // PrivateName, to emulate class private names, has no delete.
+    // hiddenFlexMap.delete(this);
+    // hiddenEMap.delete(this);
+    hiddenFlexMap.set(this, null);
+    hiddenEMap.set(this, null);
+
     const result = new FlexMap();
-    hiddenEMap.set(result, hiddenMap);
-    hiddenFlexMap.set(result, hiddenMap);
+    hiddenEMap.init(result, hiddenMap);
+    hiddenFlexMap.init(result, hiddenMap);
     return result;
   }
 

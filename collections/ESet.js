@@ -15,10 +15,12 @@
 
 import harden from '@agoric/harden';
 
+import { makePrivateName } from './PrivateName';
+
 
 // Maps from ESets to encapsulated Sets. All lookups from this table
 // are only queries. (Except for the one in the FlexSet constructor)
-const hiddenESet = new WeakMap();
+const hiddenESet = makePrivateName();
 
 
 // Abstract superclass with query-only methods.
@@ -28,7 +30,7 @@ export const ESet = harden(class ESet {
       throw new TypeError(`ESet is abstract`);
     }
     const newHidden = new Set(optIterable);
-    hiddenESet.set(this, newHidden);
+    hiddenESet.init(this, newHidden);
   }
 
   snapshot() {
@@ -43,7 +45,7 @@ export const ESet = harden(class ESet {
     const result = new InternalReadOnlySet();
     // Share the hidden set itself, but the readOnlyView only grants
     // the ability to query it.
-    hiddenESet.set(result, hiddenESet.get(this));
+    hiddenESet.init(result, hiddenESet.get(this));
     return result;
   }
 
@@ -96,7 +98,7 @@ export const FixedSet = harden(class FixedSet extends ESet {
 
 // Maps from FlexSets to encapsulated Sets, a subset of
 // hiddenESet. Lookups from this table can mutate.
-const hiddenFlexSet = new WeakMap();
+const hiddenFlexSet = makePrivateName();
 
 // Supports mutation.
 export const FlexSet = harden(class FlexSet extends ESet {
@@ -111,7 +113,7 @@ export const FlexSet = harden(class FlexSet extends ESet {
     // constructor is being called as-if directly with `new`. We say
     // "as-if" because it might be invoked by `Reflect.construct`, but
     // only in an equivalent manner.
-    hiddenFlexSet.set(this, hiddenESet.get(this));
+    hiddenFlexSet.init(this, hiddenESet.get(this));
     harden(this);
   }
 
@@ -119,10 +121,16 @@ export const FlexSet = harden(class FlexSet extends ESet {
   // becomes useless.
   takeSnapshot() {
     const hiddenSet = hiddenFlexSet.get(this);
-    hiddenFlexSet.delete(this);
-    hiddenESet.delete(this);
+
+    // Ideally we'd delete, as we would from a WeakMap. However,
+    // PrivateName, to emulate class private names, has no delete.
+    // hiddenFlexSet.delete(this);
+    // hiddenESet.delete(this);
+    hiddenFlexSet.set(this, null);
+    hiddenESet.set(this, null);
+    
     const result = new FixedSet();
-    hiddenESet.set(result, hiddenSet);
+    hiddenESet.init(result, hiddenSet);
     return result;
   }
 
@@ -130,11 +138,17 @@ export const FlexSet = harden(class FlexSet extends ESet {
   // becomes useless.
   takeDiverge() {
     const hiddenSet = hiddenFlexSet.get(this);
-    hiddenFlexSet.delete(this);
-    hiddenESet.delete(this);
+
+    // Ideally we'd delete, as we would from a WeakMap. However,
+    // PrivateName, to emulate class private names, has no delete.
+    // hiddenFlexSet.delete(this);
+    // hiddenESet.delete(this);
+    hiddenFlexSet.set(this, null);
+    hiddenESet.set(this, null);
+
     const result = new FlexSet();
-    hiddenESet.set(result, hiddenSet);
-    hiddenFlexSet.set(result, hiddenSet);
+    hiddenESet.init(result, hiddenSet);
+    hiddenFlexSet.init(result, hiddenSet);
     return result;
   }
 

@@ -18,33 +18,23 @@ import harden from '@agoric/harden';
 import { makePrivateName } from '../../collections/PrivateName';
 import { makeNatOps } from './assayFactories';
 
-// Like `map.get(key)` but throws an error if not present, rather than
-// returning undefined.
-// TODO: Put where it can be reused. Or just use makePrivateName
-// instead.
-export function lookup(map, key) {
-  if (map.has(key)) {
-    return map.get(key);
-  }
-  throw new TypeError(`key not found`);
-}
 
 export function makeMint(makeAssayOps = makeNatOps,
                          _issuerName = 'an issuer') {
   // Map from purse or payment to balance. The balance is how much
   // can be transfered.
-  const balances = new WeakMap();
+  const balances = makePrivateName();
 
   // Map from purse to assets, where assets include ownership rights
   // except for the right to transfer. Creating a payment moves some
   // balance into the payment, but no assets. Depositing a payment
   // into another purse also transfers the assets.
-  const assets = new WeakMap();
+  const assets = makePrivateName();
 
   // Map from payment to the home purse the payment came from. When the
   // payment is deposited elsewhere, assets are transfered from the
   // home purse to the destination purse.
-  const homePurses = new WeakMap();
+  const homePurses = makePrivateName();
 
   const issuer = harden({
     getAssayOps() { return ops; },
@@ -60,7 +50,7 @@ export function makeMint(makeAssayOps = makeNatOps,
       amount = ops.coerce(amount);
       _name = `${_name}`;
       return Promise.resolve(srcP).then(src => {
-        const srcOldBal = lookup(balances, src);
+        const srcOldBal = balances.get(src);
         const srcNewBal = ops.without(srcOldBal, amount);
 
         // ///////////////// commit point //////////////////
@@ -77,9 +67,9 @@ export function makeMint(makeAssayOps = makeNatOps,
           },
         });
         balances.set(src, srcNewBal);
-        balances.set(payment, amount);
+        balances.init(payment, amount);
         const homePurse = assets.has(src) ? src : homePurses.get(src);
-        homePurses.set(payment, homePurse);
+        homePurses.init(payment, homePurse);
         return payment;
       });
     }
@@ -109,13 +99,13 @@ export function makeMint(makeAssayOps = makeNatOps,
         deposit(amount, srcPaymentP) {
           amount = ops.coerce(amount);
           return Promise.resolve(srcPaymentP).then(srcPayment => {
-            const purseOldBal = lookup(balances, purse);
-            const srcOldBal = lookup(balances, srcPayment);
+            const purseOldBal = balances.get(purse);
+            const srcOldBal = balances.get(srcPayment);
             // Also checks that the union is representable
             const purseNewBal = ops.with(purseOldBal, amount);
             const srcNewBal = ops.without(srcOldBal, amount);
             
-            const homePurse = lookup(homePurses, srcPayment);
+            const homePurse = homePurses.get(srcPayment);
             const purseOldAssets = assets.get(purse);
             const homeOldAssets = assets.get(homePurse);
             // Also checks that the union is representable
@@ -134,8 +124,8 @@ export function makeMint(makeAssayOps = makeNatOps,
           });
         },
       });
-      balances.set(purse, initialBalance);
-      assets.set(purse, initialBalance);
+      balances.init(purse, initialBalance);
+      assets.init(purse, initialBalance);
       return purse;
     }
   });
