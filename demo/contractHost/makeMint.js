@@ -15,6 +15,7 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
+import { makePrivateName } from '../../collections/PrivateName';
 import { makeNatOps } from './assayFactories';
 
 // Like `map.get(key)` but throws an error if not present, rather than

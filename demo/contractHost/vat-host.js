@@ -94,8 +94,11 @@ function makeHost(E) {
       const tokens = [];
       const argPs = [];
       const { p: resultP, res: resolve } = makePromise();
+      // TODO SECURITY HAZARD: What "require" are we providing here?
+      // Is it safe?
       const contract = evaluate(contractSrc, {
         console,
+        require,
         E,
       });
 
