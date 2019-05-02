@@ -16,10 +16,6 @@
 // are only queries. (Except for the one in the FlexSet constructor)
 const hiddenESet = new WeakMap();
 
-// Maps from FlexSets to encapsulated Sets, a subset of
-// hiddenESet. Lookups from this table can mutate.
-const hiddenFlexSet = new WeakMap();
-
 
 // Abstract superclass with query-only methods.
 class ESet {
@@ -73,7 +69,8 @@ class ESet {
 }
 
 
-// Guarantees that the set contents is stable
+// Guarantees that the set contents is stable.
+// TODO: Somehow arrange for this to be pass-by-copy-ish.
 class FixedSet extends ESet {
   constructor(optIterable = undefined) {
     if (new.target !== FixedSet) {
@@ -92,6 +89,10 @@ class FixedSet extends ESet {
 }
 
 
+// Maps from FlexSets to encapsulated Sets, a subset of
+// hiddenESet. Lookups from this table can mutate.
+const hiddenFlexSet = new WeakMap();
+
 // Supports mutation.
 class FlexSet extends ESet {
   constructor(optIterable = undefined) {
@@ -106,6 +107,29 @@ class FlexSet extends ESet {
     // "as-if" because it might be invoked by `Reflect.construct`, but
     // only in an equivalent manner.
     hiddenFlexSet.set(this, hiddenESet.get(this));
+  }
+
+  // Like snapshot() except that this FlexSet loses ownership and
+  // becomes useless.
+  takeSnapshot() {
+    const hiddenSet = hiddenFlexSet.get(this);
+    hiddenFlexSet.delete(this);
+    hiddenESet.delete(this);
+    const result = new FixedSet();
+    hiddenESet.set(result, hiddenSet);
+    return result;
+  }
+
+  // Like diverge() except that this FlexSet loses ownership and
+  // becomes useless.
+  takeDiverge() {
+    const hiddenSet = hiddenFlexSet.get(this);
+    hiddenFlexSet.delete(this);
+    hiddenESet.delete(this);
+    const result = new FlexSet();
+    hiddenESet.set(result, hiddenSet);
+    hiddenFlexSet.set(result, hiddenSet);
+    return result;
   }
 
   // Forward update protocol from Set

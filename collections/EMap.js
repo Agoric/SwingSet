@@ -16,10 +16,6 @@
 // are only queries. (Except for the one in the FlexMap constructor)
 const hiddenEMap = new WeakMap();
 
-// Maps from FlexMaps to encapsulated Maps, a subset of
-// hiddenEMap. Lookups from this table can mutate.
-const hiddenFlexMap = new WeakMap();
-
 
 // Abstract superclass with query-only methods.
 class EMap {
@@ -76,7 +72,8 @@ class EMap {
 }
 
 
-// Guarantees that the map contents is stable
+// Guarantees that the map contents is stable.
+// TODO: Somehow arrange for this to be pass-by-copy-ish.
 class FixedMap extends EMap {
   constructor(optIterable = undefined) {
     if (new.target !== FixedMap) {
@@ -95,6 +92,10 @@ class FixedMap extends EMap {
 }
 
 
+// Maps from FlexMaps to encapsulated Maps, a subset of
+// hiddenEMap. Lookups from this table can mutate.
+const hiddenFlexMap = new WeakMap();
+
 // Supports mutation.
 class FlexMap extends EMap {
   constructor(optIterable = undefined) {
@@ -109,6 +110,29 @@ class FlexMap extends EMap {
     // "as-if" because it might be invoked by `Reflect.construct`, but
     // only in an equivalent manner.
     hiddenFlexMap.set(this, hiddenEMap.get(this));
+  }
+
+  // Like snapshot() except that this FlexMap loses ownership and
+  // becomes useless.
+  takeSnapshot() {
+    const hiddenMap = hiddenFlexMap.get(this);
+    hiddenFlexMap.delete(this);
+    hiddenEMap.delete(this);
+    const result = new FixedMap();
+    hiddenEMap.set(result, hiddenMap);
+    return result;
+  }
+
+  // Like diverge() except that this FlexMap loses ownership and
+  // becomes useless.
+  takeDiverge() {
+    const hiddenMap = hiddenFlexMap.get(this);
+    hiddenFlexMap.delete(this);
+    hiddenEMap.delete(this);
+    const result = new FlexMap();
+    hiddenEMap.set(result, hiddenMap);
+    hiddenFlexMap.set(result, hiddenMap);
+    return result;
   }
 
   // Forward update protocol from Map
