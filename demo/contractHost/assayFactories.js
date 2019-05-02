@@ -1,4 +1,4 @@
-// Copyright (C) 2018 Agoric
+// Copyright (C) 2019 Agoric
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@ import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
 // Return an assay factory, which makes assays, validates assays, and
-// provides operations over assays. An assay is a pass-by-copy
+// provides set operations over assays. An assay is a pass-by-copy
 // description of some set of erights.
 //
 // The default assay factory makes the default kind of assay.  The
