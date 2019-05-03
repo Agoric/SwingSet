@@ -15,18 +15,20 @@ function makeMint(
   check(description)`\
 Description must be truthy: ${description}`;
 
-  // Map from purse or payment to balance. The balance is how much
-  // can be transfered.
-  const balances = makePrivateName();
+  // Map from purse or payment to the transfer rights it currently
+  // holds. Transfer rights can move via payments, or they can cause a
+  // transfer of both the transfer and use rights by depositing it
+  // into a purse.
+  const xferRights = makePrivateName();
 
-  // Map from purse to assets, where assets include ownership rights
-  // except for the right to transfer. Creating a payment moves some
-  // balance into the payment, but no assets. Depositing a payment
-  // into another purse also transfers the assets.
-  const assets = makePrivateName();
+  // Map from purse to useRights, where useRights do not include the
+  // right to transfer. Creating a payment moves some xferRights into the
+  // payment, but no useRights. Depositing a payment into another
+  // purse transfers both the xferRights and the useRights.
+  const useRights = makePrivateName();
 
   // Map from payment to the home purse the payment came from. When the
-  // payment is deposited elsewhere, assets are transfered from the
+  // payment is deposited elsewhere, useRights are transfered from the
   // home purse to the destination purse.
   const homePurses = makePrivateName();
 
@@ -42,13 +44,12 @@ Description must be truthy: ${description}`;
     },
 
     // srcP designates a purse or payment. Reveal a fresh payment.
-    // TODO: Bikeshed on name. 'reserve'? 'escrow'? 'encumber'? 'exclude'?
-    getExclusive(amount, srcP, _name = 'a payment') {
+    takePayment(amount, srcP, _name = 'a payment') {
       // eslint-disable-next-line no-use-before-define
       amount = ops.coerce(amount);
       _name = `${_name}`;
       return Promise.resolve(srcP).then(src => {
-        const srcOldBal = balances.get(src);
+        const srcOldBal = xferRights.get(src);
         // eslint-disable-next-line no-use-before-define
         const srcNewBal = ops.without(srcOldBal, amount);
 
@@ -61,13 +62,13 @@ Description must be truthy: ${description}`;
           getIssuer() {
             return issuer;
           },
-          getBalance() {
-            return balances.get(payment);
+          getXferBalance() {
+            return xferRights.get(payment);
           },
         });
-        balances.set(src, srcNewBal);
-        balances.init(payment, amount);
-        const homePurse = assets.has(src) ? src : homePurses.get(src);
+        xferRights.set(src, srcNewBal);
+        xferRights.init(payment, amount);
+        const homePurse = useRights.has(src) ? src : homePurses.get(src);
         homePurses.init(payment, homePurse);
         return payment;
       });
@@ -101,42 +102,42 @@ Description must be truthy: ${description}`;
         getIssuer() {
           return issuer;
         },
-        getBalance() {
-          return balances.get(purse);
+        getXferBalance() {
+          return xferRights.get(purse);
         },
-        getAssets() {
-          return assets.get(purse);
+        getUseBalance() {
+          return useRights.get(purse);
         },
         deposit(amount, srcPaymentP) {
           amount = ops.coerce(amount);
           return Promise.resolve(srcPaymentP).then(srcPayment => {
-            const purseOldBal = balances.get(purse);
-            const srcOldBal = balances.get(srcPayment);
+            const purseOldBal = xferRights.get(purse);
+            const srcOldBal = xferRights.get(srcPayment);
             // Also checks that the union is representable
             const purseNewBal = ops.with(purseOldBal, amount);
             const srcNewBal = ops.without(srcOldBal, amount);
 
             const homePurse = homePurses.get(srcPayment);
-            const purseOldAssets = assets.get(purse);
-            const homeOldAssets = assets.get(homePurse);
+            const purseOldUseRights = useRights.get(purse);
+            const homeOldUseRights = useRights.get(homePurse);
             // Also checks that the union is representable
-            const purseNewAssets = ops.with(purseOldAssets, amount);
-            const homeNewAssets = ops.without(homeOldAssets, amount);
+            const purseNewUseRights = ops.with(purseOldUseRights, amount);
+            const homeNewUseRights = ops.without(homeOldUseRights, amount);
 
             // ///////////////// commit point //////////////////
             // All queries above passed with no side effects.
             // During side effects below, any early exits should be made into
             // fatal turn aborts.
 
-            balances.set(srcPayment, srcNewBal);
-            balances.set(purse, purseNewBal);
-            assets.set(homePurse, homeNewAssets);
-            assets.set(purse, purseNewAssets);
+            xferRights.set(srcPayment, srcNewBal);
+            xferRights.set(purse, purseNewBal);
+            useRights.set(homePurse, homeNewUseRights);
+            useRights.set(purse, purseNewUseRights);
           });
         },
       });
-      balances.init(purse, initialBalance);
-      assets.init(purse, initialBalance);
+      xferRights.init(purse, initialBalance);
+      useRights.init(purse, initialBalance);
       return purse;
     },
   });

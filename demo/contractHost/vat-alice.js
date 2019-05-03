@@ -33,7 +33,7 @@ function makeAlice(E, host) {
       if (!initialized) {
         console.log('++ ERR: payBobWell called before init()');
       }
-      const paymentP = E(myMoneyIssuerP).getExclusive(10, myMoneyPurseP);
+      const paymentP = E(myMoneyIssuerP).takePayment(10, myMoneyPurseP);
       return E(bob).buy('shoe', paymentP);
     },
 
@@ -47,7 +47,7 @@ function makeAlice(E, host) {
       // eslint-disable-next-line no-unused-vars
       let cancel;
       const a = harden({
-        moneySrcP: E(myMoneyIssuerP).getExclusive(
+        moneySrcP: E(myMoneyIssuerP).takePayment(
           10,
           myMoneyPurseP,
           'aliceMoneySrc',
@@ -58,7 +58,7 @@ function makeAlice(E, host) {
         cancellationP: new Promise(r => (cancel = r)),
       });
       const doneP = E(host).play(tokenP, allegedSrc, allegedSide, a);
-      return doneP.then(_ => E(a.stockDstP).getBalance());
+      return doneP.then(_ => E(a.stockDstP).getXferBalance());
     },
   });
   return alice;

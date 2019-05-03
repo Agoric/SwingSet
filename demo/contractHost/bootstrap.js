@@ -21,10 +21,10 @@ function build(E) {
       const bucks50 = harden({ label, data: 50 });
 
       const alicePurseP = E(mMintP).mint(bucks1000, 'alice');
-      const paymentP = E(mIssuerP).getExclusive(bucks50, alicePurseP);
+      const paymentP = E(mIssuerP).takePayment(bucks50, alicePurseP);
       Promise.resolve(paymentP).then(_ => {
-        const aBal = E(alicePurseP).getBalance();
-        const dBal = E(paymentP).getBalance();
+        const aBal = E(alicePurseP).getXferBalance();
+        const dBal = E(paymentP).getXferBalance();
         Promise.all([aBal, dBal]).then(bals => {
           console.log('++ balances:', bals);
           console.log('++ DONE');
@@ -42,10 +42,10 @@ function build(E) {
     const mIssuerP = E(mMintP).getIssuer();
 
     const alicePurseP = E(mMintP).mint(1000, 'alice');
-    const paymentP = E(mIssuerP).getExclusive(50, alicePurseP);
+    const paymentP = E(mIssuerP).takePayment(50, alicePurseP);
     Promise.resolve(paymentP).then(_ => {
-      const aBal = E(alicePurseP).getBalance();
-      const dBal = E(paymentP).getBalance();
+      const aBal = E(alicePurseP).getXferBalance();
+      const dBal = E(paymentP).getXferBalance();
       Promise.all([aBal, dBal]).then(bals => {
         console.log('++ balances:', bals);
         console.log('++ DONE');

@@ -18,7 +18,7 @@ function escrowExchange(a, b) {
   // a from Alice, b from Bob
   function makeTransfer(srcPaymentP, refundPurseP, dstPurseP, amount) {
     const issuerP = join(E(srcPaymentP).getIssuer(), E(dstPurseP).getIssuer());
-    const escrowPaymentP = E(issuerP).getExclusive(
+    const escrowPaymentP = E(issuerP).takePayment(
       amount,
       srcPaymentP,
       'escrow',

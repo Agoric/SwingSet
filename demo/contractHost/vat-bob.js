@@ -100,7 +100,7 @@ function makeBob(E, host) {
       /* eslint-disable-next-line no-unused-vars */
       let cancel;
       const b = harden({
-        stockSrcP: E(myStockIssuerP).getExclusive(
+        stockSrcP: E(myStockIssuerP).takePayment(
           7,
           myStockPurseP,
           'bobStockSrc',
@@ -115,7 +115,7 @@ function makeBob(E, host) {
       return doneP.then(
         _ => {
           console.log('++ bob.invite doneP');
-          return E(b.moneyDstP).getBalance();
+          return E(b.moneyDstP).getXferBalance();
         },
         rej => {
           console.log('++ bob.invite doneP reject', rej);
