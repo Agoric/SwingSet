@@ -6,6 +6,7 @@ import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
 
 import makePromise from '../../src/kernel/makePromise';
+import { check } from '../../collections/insist';
 
 
 function safeRequire(name) {
@@ -41,11 +42,16 @@ function makeHost(E) {
         argPs[i] = p.p;
         m.set(token, (allegedSrc, allegedI, arg) => {
           if (contractSrc !== allegedSrc) {
-            throw new Error(`unexpected contract: ${contractSrc}`);
+            const lines = allegedSrc.split('\n');
+            check(false)`\
+Unexpected contract:
+> ${lines[0]}
+> ... ${lines.length - 2} lines ...
+> ${lines[lines.length - 1]}
+`;
           }
-          if (i !== allegedI) {
-            throw new Error(`unexpected side: ${i}`);
-          }
+          check(i === allegedI)`\
+Unexpected side: ${allegedI}`;
           m.delete(token);
           resolveArg(arg);
           return resultP;
@@ -69,7 +75,7 @@ function makeHost(E) {
   });
 }
 
-export default function setup(syscall, state, helpers) {
+function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(
     syscall,
     state,
@@ -82,3 +88,5 @@ export default function setup(syscall, state, helpers) {
     helpers.vatID,
   );
 }
+export default harden(setup);
+

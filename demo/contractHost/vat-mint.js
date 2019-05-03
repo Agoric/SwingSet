@@ -10,7 +10,9 @@ import { makeMint } from './issuers';
 function build(_E) {
   return harden({ makeMint });
 }
+harden(build);
 
-export default function setup(syscall, state, helpers) {
+function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(syscall, state, build, helpers.vatID);
 }
+export default harden(setup);

@@ -126,7 +126,7 @@ function makeBob(E, host) {
   return bob;
 }
 
-export default function setup(syscall, state, helpers) {
+function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(syscall, state, E =>
     harden({
       makeBob(host) {
@@ -135,3 +135,4 @@ export default function setup(syscall, state, helpers) {
     }),
   );
 }
+export default harden(setup);

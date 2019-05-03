@@ -68,7 +68,7 @@ function makeAlice(E, host) {
   return alice;
 }
 
-export default function setup(syscall, state, helpers) {
+function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(syscall, state, E =>
     harden({
       makeAlice(host) {
@@ -77,3 +77,4 @@ export default function setup(syscall, state, helpers) {
     }),
   );
 }
+export default harden(setup);

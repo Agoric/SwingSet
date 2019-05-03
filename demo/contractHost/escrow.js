@@ -3,7 +3,10 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 
-export default function escrowExchange(a, b) {
+import harden from '@agoric/harden';
+
+
+function escrowExchange(a, b) {
   /* eslint-disable-next-line global-require */
   const harden = require('@agoric/harden');
 
@@ -59,3 +62,6 @@ export default function escrowExchange(a, b) {
     _ex => Promise.all([aT.abort(), bT.abort()]),
   );
 }
+
+
+export default harden(escrowExchange);

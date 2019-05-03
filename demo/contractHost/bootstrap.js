@@ -7,16 +7,26 @@ import { makeNatOps } from './assays';
 
 
 function build(E) {
-  
+
+  // This is written in the full assay style, where bare number
+  // objects are never used in lieu of full assay objects. This has
+  // the virtue of unit typing, where 3 dollars cannot be confused
+  // with 3 seconds.
   function mintTestAssay(mint) {
     console.log('starting mintTestAssay');
-    const mP = E(mint).makeMint('bucks');
-    const mIssuerP = E(mP).getIssuer();
-    Promise.resolve(mIssuerP).then(mIssuerPresence => {
-      const label = harden({ issuer: mIssuerPresence, description: 'bucks' });
-      const ops = makeNatOps(label);
-      const alicePurseP = E(mP).mint(ops.make(1000), 'alice');
-      const paymentP = E(mIssuerP).getExclusive(ops.make(50), alicePurseP);
+    const mMintP = E(mint).makeMint('bucks');
+    const mIssuerP = E(mMintP).getIssuer();
+    Promise.resolve(mIssuerP).then(issuer => {
+      // By using an unforgeable issuer presence and a pass-by-copy
+      // description together as a unit label, we check that both
+      // agree. The veracity of the description is, however, only as
+      // good as the issuer doing the check.
+      const label = harden({ issuer, description: 'bucks' });
+      const bucks1000 = harden({ label, data: 1000 });
+      const bucks50 = harden({ label, data: 50 });
+
+      const alicePurseP = E(mMintP).mint(bucks1000, 'alice');
+      const paymentP = E(mIssuerP).getExclusive(bucks50, alicePurseP);
       Promise.resolve(paymentP).then(_ => {
         const aBal = E(alicePurseP).getBalance();
         const dBal = E(paymentP).getBalance();
@@ -30,12 +40,13 @@ function build(E) {
 
   // Uses raw numbers rather than assays. Until we have support for
   // pass-by-presence, the full assay style shown in mintTestAssay is
-  // awkward.
+  // too awkward.
   function mintTestNumber(mint) {
     console.log('starting mintTestNumber');
-    const mP = E(mint).makeMint('quatloos');
-    const mIssuerP = E(mP).getIssuer();
-    const alicePurseP = E(mP).mint(1000, 'alice');
+    const mMintP = E(mint).makeMint('quatloos');
+    const mIssuerP = E(mMintP).getIssuer();
+    
+    const alicePurseP = E(mMintP).mint(1000, 'alice');
     const paymentP = E(mIssuerP).getExclusive(50, alicePurseP);
     Promise.resolve(paymentP).then(_ => {
       const aBal = E(alicePurseP).getBalance();
@@ -162,7 +173,10 @@ function build(E) {
   };
   return harden(obj0);
 }
+harden(build);
 
-export default function setup(syscall, state, helpers) {
+
+function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(syscall, state, build, helpers.vatID);
 }
+export default harden(setup);

@@ -6,15 +6,15 @@ import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
 import { makePrivateName } from '../../collections/PrivateName';
+import { check } from '../../collections/insist';
 import { makeNatOps } from './assays';
 
 
-export function makeMint(description,
-                         descriptionEquiv = Object.is,
-                         makeAssayOps = makeNatOps) {
-  if (!description) {
-    throw new TypeError(`description must be truthy`);
-  }
+function makeMint(description,
+                  descriptionEquiv = Object.is,
+                  makeAssayOps = makeNatOps) {
+  check(description)`\
+Description must be truthy: ${description}`;
 
   // Map from purse or payment to balance. The balance is how much
   // can be transfered.
@@ -137,3 +137,7 @@ export function makeMint(description,
   });
   return mint;
 }
+harden(makeMint);
+
+
+export { makeMint };

@@ -5,6 +5,7 @@ import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
 import { FlexMap } from '../../collections/EMap';
+import { check } from '../../collections/insist';
 
 
 // Return an assayOps, which makes assays, validates assays, and
@@ -19,7 +20,7 @@ import { FlexMap } from '../../collections/EMap';
 // labelEquiv is a comparison function defining an equivalence class
 // among labels. An allegedAssay object coerces only if its label
 // matches.
-export function makeNatOps(label, labelEquiv = Object.is) {
+function makeNatOps(label, labelEquiv = Object.is) {
   // memoize well formedness check.
   const brand = new WeakSet();
 
@@ -40,10 +41,9 @@ export function makeNatOps(label, labelEquiv = Object.is) {
     // Is this an assay object made by this assayOps? If so, return
     // it. Otherwise error.
     vouch(assay) {
-      if (brand.has(assay)) {
-        return assay;
-      }
-      throw new TypeError(`unrecognized assay`);
+      check(brand.has(assay))`\
+Unrecognized assay: ${assay}`;
+      return assay;
     },
 
     // Is this like an assay object made by this assayOps, such as one
@@ -64,9 +64,8 @@ export function makeNatOps(label, labelEquiv = Object.is) {
         return assayLike;
       }
       const { label: allegedLabel, data } = assayLike;
-      if (!labelEquiv(label, allegedLabel)) {
-        throw new TypeError(`unrecognized label`);
-      }
+      check(labelEquiv(label, allegedLabel))`\
+Unrecognized label: ${allegedLabel}`;
       // Will throw on inappropriate data
       return ops.make(data);
     },
@@ -107,8 +106,10 @@ export function makeNatOps(label, labelEquiv = Object.is) {
   });
   return ops;
 }
+harden(makeNatOps);
 
-export function makeMetaOps(label, labelEquiv = Object.is) {
+
+function makeMetaOps(label, labelEquiv = Object.is) {
   // memoize well formedness check.
   const brand = new WeakSet();
 
@@ -160,10 +161,9 @@ export function makeMetaOps(label, labelEquiv = Object.is) {
     // Is this an assay object made by this assayOps? If so, return
     // it. Otherwise error.
     vouch(assay) {
-      if (brand.has(assay)) {
-        return assay;
-      }
-      throw new TypeError(`unrecognized assay`);
+      check(brand.has(assay))`\
+Unrecognized assay: ${assay}`;
+      return assay;
     },
 
     // Is this like an assay object made by this assayOps, such as one
@@ -175,9 +175,8 @@ export function makeMetaOps(label, labelEquiv = Object.is) {
         return assayLike;
       }
       const { label: allegedLabel, data } = assayLike;
-      if (!labelEquiv(label, allegedLabel)) {
-        throw new TypeError(`unrecognized label`);
-      }
+      check(labelEquiv(label, allegedLabel))`\
+Unrecognized label: ${allegedLabel}`;
       // Will throw on inappropriate data
       return ops.make(data);
     },
@@ -224,9 +223,8 @@ export function makeMetaOps(label, labelEquiv = Object.is) {
       const accum = ops.data(leftAssay).diverge();
       const rightMap = ops.data(rightAssay);
       for (const [k, v] of rightMap) {
-        if (!accum.has(k)) {
-          throw new TypeError(`leftAssay must include rightAssay`);
-        }
+        check(accum.has(k))`\
+leftAssay missing rightAssay's ${k}`;
         accum.set(k, k.without(accum.get(k), v));
       }
       return ops.make(accum);
@@ -234,3 +232,7 @@ export function makeMetaOps(label, labelEquiv = Object.is) {
   });
   return ops;
 }
+harden(makeMetaOps);
+
+
+export { makeNatOps, makeMetaOps };
