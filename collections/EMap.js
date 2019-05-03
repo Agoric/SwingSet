@@ -22,10 +22,12 @@ EMap is abstract`;
     // copy
     return new FixedMap(hiddenEMap.get(this));
   }
+
   diverge() {
     // copy
     return new FlexMap(hiddenEMap.get(this));
   }
+
   readOnlyView() {
     const result = new InternalReadOnlyMap();
     // Share the hidden map itself, but the readOnlyView only grants
@@ -39,24 +41,31 @@ EMap is abstract`;
   keys() {
     return hiddenEMap.get(this).keys();
   }
+
   values() {
     return hiddenEMap.get(this).values();
   }
+
   entries() {
     return hiddenEMap.get(this).entries();
   }
+
   [Symbol.iterator]() {
     return hiddenEMap.get(this)[Symbol.iterator]();
   }
+
   forEach(callback) {
     return hiddenEMap.get(this).forEach(callback);
   }
+
   get(member) {
     return hiddenEMap.get(this).get(member);
   }
+
   has(member) {
     return hiddenEMap.get(this).has(member);
   }
+
   get size() {
     return hiddenEMap.get(this).size;
   }
@@ -72,10 +81,12 @@ FixedMap is final`;
     super(optIterable);
     harden(this);
   }
+
   // override
   snapshot() {
     return this;
   }
+
   // override
   readOnlyView() {
     return this;
@@ -143,9 +154,11 @@ FlexMap is final`;
   set(k, v) {
     return hiddenFlexMap.get(this).set(k, v);
   }
+
   clear() {
     return hiddenFlexMap.get(this).clear();
   }
+
   delete(m) {
     return hiddenFlexMap.get(this).delete(m);
   }
@@ -159,6 +172,7 @@ class InternalReadOnlyMap extends EMap {
     super();
     harden(this);
   }
+
   // override
   readOnlyView() {
     return this;

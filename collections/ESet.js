@@ -22,10 +22,12 @@ ESet is abstract`;
     // copy
     return new FixedSet(hiddenESet.get(this));
   }
+
   diverge() {
     // copy
     return new FlexSet(hiddenESet.get(this));
   }
+
   readOnlyView() {
     const result = new InternalReadOnlySet();
     // Share the hidden set itself, but the readOnlyView only grants
@@ -39,21 +41,27 @@ ESet is abstract`;
   keys() {
     return hiddenESet.get(this).keys();
   }
+
   values() {
     return hiddenESet.get(this).values();
   }
+
   entries() {
     return hiddenESet.get(this).entries();
   }
+
   [Symbol.iterator]() {
     return hiddenESet.get(this)[Symbol.iterator]();
   }
+
   forEach(callback) {
     return hiddenESet.get(this).forEach(callback);
   }
+
   has(member) {
     return hiddenESet.get(this).has(member);
   }
+
   get size() {
     return hiddenESet.get(this).size;
   }
@@ -69,10 +77,12 @@ FixedSet is final`;
     super(optIterable);
     harden(this);
   }
+
   // override
   snapshot() {
     return this;
   }
+
   // override
   readOnlyView() {
     return this;
@@ -140,9 +150,11 @@ FlexSet is final`;
   add(m) {
     return hiddenFlexSet.get(this).add(m);
   }
+
   clear() {
     return hiddenFlexSet.get(this).clear();
   }
+
   delete(m) {
     return hiddenFlexSet.get(this).delete(m);
   }
@@ -156,6 +168,7 @@ class InternalReadOnlySet extends ESet {
     super();
     harden(this);
   }
+
   // override
   readOnlyView() {
     return this;

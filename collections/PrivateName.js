@@ -36,15 +36,19 @@ class PrivateName {
     bootPN.init(this, makePrivateName(...args));
     harden(this);
   }
+
   has(key) {
     return bootPN.get(this).has(key);
   }
+
   init(key, value) {
     bootPN.get(this).init(key, value);
   }
+
   get(key) {
     return bootPN.get(this).get(key);
   }
+
   set(key, value) {
     return bootPN.get(this).set(key, value);
   }
