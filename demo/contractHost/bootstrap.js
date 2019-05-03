@@ -2,8 +2,6 @@
 
 import harden from '@agoric/harden';
 
-import { makeNatOps } from './assays';
-
 function build(E) {
   // This is written in the full assay style, where bare number
   // objects are never used in lieu of full assay objects. This has

@@ -38,6 +38,7 @@ function makeNatOps(label, labelEquiv = Object.is) {
     // Is this an assay object made by this assayOps? If so, return
     // it. Otherwise error.
     vouch(assay) {
+      // eslint-disable-next-line no-unused-expressions
       check(brand.has(assay))`\
 Unrecognized assay: ${assay}`;
       return assay;
@@ -61,6 +62,7 @@ Unrecognized assay: ${assay}`;
         return assayLike;
       }
       const { label: allegedLabel, data } = assayLike;
+      // eslint-disable-next-line no-unused-expressions
       check(labelEquiv(label, allegedLabel))`\
 Unrecognized label: ${allegedLabel}`;
       // Will throw on inappropriate data
@@ -138,7 +140,7 @@ function makeMetaOps(label, labelEquiv = Object.is) {
     make(allegedData) {
       const accum = new FlexMap();
       for (const [k, v] of allegedData) {
-        v = k.vouch(v);
+        k.vouch(v);
         if (!v.isEmpty()) {
           if (accum.has(k)) {
             // We assume that the union of two non-empty sets cannot
@@ -158,6 +160,7 @@ function makeMetaOps(label, labelEquiv = Object.is) {
     // Is this an assay object made by this assayOps? If so, return
     // it. Otherwise error.
     vouch(assay) {
+      // eslint-disable-next-line no-unused-expressions
       check(brand.has(assay))`\
 Unrecognized assay: ${assay}`;
       return assay;
@@ -172,6 +175,7 @@ Unrecognized assay: ${assay}`;
         return assayLike;
       }
       const { label: allegedLabel, data } = assayLike;
+      // eslint-disable-next-line no-unused-expressions
       check(labelEquiv(label, allegedLabel))`\
 Unrecognized label: ${allegedLabel}`;
       // Will throw on inappropriate data
@@ -224,6 +228,7 @@ Unrecognized label: ${allegedLabel}`;
       const accum = ops.data(leftAssay).diverge();
       const rightMap = ops.data(rightAssay);
       for (const [k, v] of rightMap) {
+        // eslint-disable-next-line no-unused-expressions
         check(accum.has(k))`\
 leftAssay missing rightAssay's ${k}`;
         accum.set(k, k.without(accum.get(k), v));

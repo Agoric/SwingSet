@@ -12,6 +12,7 @@ const hiddenEMap = makePrivateName();
 // Abstract superclass with query-only methods.
 class EMap {
   constructor(optIterable = undefined) {
+    // eslint-disable-next-line no-unused-expressions
     check(new.target !== EMap)`\
 EMap is abstract`;
     const newHidden = new Map(optIterable);
@@ -20,15 +21,18 @@ EMap is abstract`;
 
   snapshot() {
     // copy
+    // eslint-disable-next-line no-use-before-define
     return new FixedMap(hiddenEMap.get(this));
   }
 
   diverge() {
     // copy
+    // eslint-disable-next-line no-use-before-define
     return new FlexMap(hiddenEMap.get(this));
   }
 
   readOnlyView() {
+    // eslint-disable-next-line no-use-before-define
     const result = new InternalReadOnlyMap();
     // Share the hidden map itself, but the readOnlyView only grants
     // the ability to query it.
@@ -76,6 +80,7 @@ harden(EMap);
 // TODO: Somehow arrange for this to be pass-by-copy-ish.
 class FixedMap extends EMap {
   constructor(optIterable = undefined) {
+    // eslint-disable-next-line no-unused-expressions
     check(new.target === FixedMap)`\
 FixedMap is final`;
     super(optIterable);
@@ -101,6 +106,7 @@ const hiddenFlexMap = makePrivateName();
 // Supports mutation.
 class FlexMap extends EMap {
   constructor(optIterable = undefined) {
+    // eslint-disable-next-line no-unused-expressions
     check(new.target === FlexMap)`\
 FlexMap is final`;
     super(optIterable);
@@ -168,7 +174,7 @@ harden(FlexMap);
 // The constructor for internal use only. The rest of the class is
 // available from the pseudo-constructor ReadOnlyMap.
 class InternalReadOnlyMap extends EMap {
-  constructor(optIterable = undefined) {
+  constructor() {
     super();
     harden(this);
   }
@@ -183,12 +189,14 @@ class InternalReadOnlyMap extends EMap {
 // Guarantee that an instance of ReadOnlyMap does not provide the
 // ability to modify.
 function ReadOnlyMap() {
+  // eslint-disable-next-line no-unused-expressions
   check(new.target === ReadOnlyMap)`\
 ReadOnlyMap is final`;
+  // eslint-disable-next-line no-unused-expressions
   check(false)`\
 Use readOnlyView() to view an existing EMap`;
 }
-ReadOnlyMap.__proto__ = EMap;
+Object.setPrototypeOf(ReadOnlyMap, EMap);
 ReadOnlyMap.prototype = InternalReadOnlyMap.prototype;
 ReadOnlyMap.prototype.constructor = ReadOnlyMap;
 harden(ReadOnlyMap);

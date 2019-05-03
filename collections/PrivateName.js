@@ -11,16 +11,19 @@ function makePrivateName(...args) {
       return wm.has(key);
     },
     init(key, value) {
+      // eslint-disable-next-line no-unused-expressions
       check(!wm.has(key))`\
 key already registered: ${key}`;
       wm.set(key, value);
     },
     get(key) {
+      // eslint-disable-next-line no-unused-expressions
       check(wm.has(key))`\
 key not found: ${key}`;
       return wm.get(key);
     },
     set(key, value) {
+      // eslint-disable-next-line no-unused-expressions
       check(wm.has(key))`\
 key not found: ${key}`;
       wm.set(key, value);

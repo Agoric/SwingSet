@@ -12,6 +12,7 @@ const hiddenESet = makePrivateName();
 // Abstract superclass with query-only methods.
 class ESet {
   constructor(optIterable = undefined) {
+    // eslint-disable-next-line no-unused-expressions
     check(new.target !== ESet)`\
 ESet is abstract`;
     const newHidden = new Set(optIterable);
@@ -20,15 +21,18 @@ ESet is abstract`;
 
   snapshot() {
     // copy
+    // eslint-disable-next-line no-use-before-define
     return new FixedSet(hiddenESet.get(this));
   }
 
   diverge() {
     // copy
+    // eslint-disable-next-line no-use-before-define
     return new FlexSet(hiddenESet.get(this));
   }
 
   readOnlyView() {
+    // eslint-disable-next-line no-use-before-define
     const result = new InternalReadOnlySet();
     // Share the hidden set itself, but the readOnlyView only grants
     // the ability to query it.
@@ -72,6 +76,7 @@ harden(ESet);
 // TODO: Somehow arrange for this to be pass-by-copy-ish.
 class FixedSet extends ESet {
   constructor(optIterable = undefined) {
+    // eslint-disable-next-line no-unused-expressions
     check(new.target === FixedSet)`\
 FixedSet is final`;
     super(optIterable);
@@ -97,6 +102,7 @@ const hiddenFlexSet = makePrivateName();
 // Supports mutation.
 class FlexSet extends ESet {
   constructor(optIterable = undefined) {
+    // eslint-disable-next-line no-unused-expressions
     check(new.target === FlexSet)`\
 FlexSet is final`;
     super(optIterable);
@@ -164,7 +170,7 @@ harden(FlexSet);
 // The constructor for internal use only. The rest of the class is
 // available from the pseudo-constructor ReadOnlySet.
 class InternalReadOnlySet extends ESet {
-  constructor(optIterable = undefined) {
+  constructor() {
     super();
     harden(this);
   }
@@ -179,12 +185,14 @@ class InternalReadOnlySet extends ESet {
 // Guarantee that an instance of ReadOnlySet does not provide the
 // ability to modify.
 function ReadOnlySet() {
+  // eslint-disable-next-line no-unused-expressions
   check(new.target === ReadOnlySet)`\
 ReadOnlySet is final`;
+  // eslint-disable-next-line no-unused-expressions
   check(false)`\
 Use readOnlyView() to view an existing ESet`;
 }
-ReadOnlySet.__proto__ = ESet;
+Object.setPrototypeOf(ReadOnlySet, ESet);
 ReadOnlySet.prototype = InternalReadOnlySet.prototype;
 ReadOnlySet.prototype.constructor = ReadOnlySet;
 harden(ReadOnlySet);

@@ -1,7 +1,6 @@
 // Copyright (C) 2013 Google Inc, under Apache License 2.0
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
 import { makePrivateName } from '../../collections/PrivateName';
@@ -13,6 +12,7 @@ function makeMint(
   descriptionEquiv = Object.is,
   makeAssayOps = makeNatOps,
 ) {
+  // eslint-disable-next-line no-unused-expressions
   check(description)`\
 Description must be truthy: ${description}`;
 
@@ -33,6 +33,7 @@ Description must be truthy: ${description}`;
 
   const issuer = harden({
     getAssayOps() {
+      // eslint-disable-next-line no-use-before-define
       return ops;
     },
 
@@ -44,10 +45,12 @@ Description must be truthy: ${description}`;
     // srcP designates a purse or payment. Reveal a fresh payment.
     // TODO: Bikeshed on name. 'reserve'? 'escrow'? 'encumber'? 'exclude'?
     getExclusive(amount, srcP, _name = 'a payment') {
+      // eslint-disable-next-line no-use-before-define
       amount = ops.coerce(amount);
       _name = `${_name}`;
       return Promise.resolve(srcP).then(src => {
         const srcOldBal = balances.get(src);
+        // eslint-disable-next-line no-use-before-define
         const srcNewBal = ops.without(srcOldBal, amount);
 
         // ///////////////// commit point //////////////////

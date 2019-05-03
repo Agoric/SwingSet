@@ -5,7 +5,7 @@
 import harden from '@agoric/harden';
 
 function escrowExchange(a, b) {
-  /* eslint-disable-next-line global-require */
+  // eslint-disable-next-line no-shadow, global-require
   const harden = require('@agoric/harden');
 
   function join(xP, yP) {

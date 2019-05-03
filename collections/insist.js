@@ -34,7 +34,7 @@ function check(flag) {
     }
     const interleaved = [template[0]];
     const parts = [template[0]];
-    for (let i = 0; i < args.length; i++) {
+    for (let i = 0; i < args.length; i += 1) {
       interleaved.push(args[i], template[i + 1]);
       parts.push('(a ', typeof args[i], ')', template[i + 1]);
     }

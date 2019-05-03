@@ -12,8 +12,10 @@ function safeRequire(name) {
     case '@agoric/harden': {
       return harden;
     }
+    default: {
+      throw new ReferenceError(`${name} not found in safeRequire`);
+    }
   }
-  throw new ReferenceError(`${name} not found in safeRequire`);
 }
 harden(safeRequire);
 
@@ -40,12 +42,14 @@ function makeHost(E) {
         m.set(token, (allegedSrc, allegedI, arg) => {
           if (contractSrc !== allegedSrc) {
             const lines = allegedSrc.split('\n');
+            // eslint-disable-next-line no-unused-expressions
             check(false)`\
 Unexpected contract:
 > ${lines[0]}
 > ... ${lines.length - 2} lines ...
 > ${lines[lines.length - 1]}`;
           }
+          // eslint-disable-next-line no-unused-expressions
           check(i === allegedI)`\
 Unexpected side: ${allegedI}`;
           m.delete(token);

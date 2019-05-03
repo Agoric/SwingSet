@@ -3,11 +3,7 @@
 
 import harden from '@agoric/harden';
 
-import escrowExchange from './escrow';
-
 function makeAlice(E, host) {
-  const escrowSrc = `(${escrowExchange})`;
-
   let initialized = false;
   let myMoneyPurseP;
   let myMoneyIssuerP;
