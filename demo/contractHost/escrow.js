@@ -1,13 +1,11 @@
-/* global require E */
+/* global E */
 // Copyright (C) 2013 Google Inc, under Apache License 2.0
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
 
 function escrowExchange(a, b) {
-  // eslint-disable-next-line no-shadow, global-require
-  const harden = require('@agoric/harden');
-
+  // eventual equality
   function join(xP, yP) {
     return Promise.all([xP, yP]).then(([x, y]) => {
       if (Object.is(x, y)) {

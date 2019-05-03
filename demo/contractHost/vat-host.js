@@ -1,23 +1,12 @@
 // Copyright (C) 2012 Google Inc, under Apache License 2.0
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
+import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
 
 import makePromise from '../../src/kernel/makePromise';
 import { check } from '../../collections/insist';
-
-function safeRequire(name) {
-  switch (name) {
-    case '@agoric/harden': {
-      return harden;
-    }
-    default: {
-      throw new ReferenceError(`${name} not found in safeRequire`);
-    }
-  }
-}
-harden(safeRequire);
 
 function makeHost(E) {
   const m = new WeakMap();
@@ -29,8 +18,9 @@ function makeHost(E) {
       const argPs = [];
       const { p: resultP, res: resolve } = makePromise();
       const contract = evaluate(contractSrc, {
+        Nat,
+        harden,
         console,
-        require: safeRequire,
         E,
       });
 
