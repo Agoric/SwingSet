@@ -4,7 +4,7 @@
 import harden from '@agoric/harden';
 
 
-export const makePrivateName = harden(function makePrivateName(...args) {
+function makePrivateName(...args) {
   const wm = new WeakMap(...args);
   return harden({
     has(key) {
@@ -23,11 +23,13 @@ export const makePrivateName = harden(function makePrivateName(...args) {
       wm.set(key, value);
     }
   });
-});
+}
+harden(makePrivateName);
+
 
 const bootPN = makePrivateName();
 
-export const PrivateName = harden(class PrivateName {
+class PrivateName {
   constructor(...args) {
     bootPN.init(this, makePrivateName(...args));
     harden(this);
@@ -44,4 +46,8 @@ export const PrivateName = harden(class PrivateName {
   set(key, value) {
     return bootPN.get(this).set(key, value);
   }
-});
+}
+harden(PrivateName);
+
+
+export { makePrivateName, PrivateName };

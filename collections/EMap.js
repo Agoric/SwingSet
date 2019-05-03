@@ -12,7 +12,7 @@ const hiddenEMap = makePrivateName();
 
 
 // Abstract superclass with query-only methods.
-export const EMap = harden(class EMap {
+class EMap {
   constructor(optIterable = undefined) {
     if (new.target === EMap) {
       throw new TypeError(`EMap is abstract`);
@@ -63,12 +63,13 @@ export const EMap = harden(class EMap {
   get size() {
     return hiddenEMap.get(this).size;
   }
-});
+}
+harden(EMap);
 
 
 // Guarantees that the map contents is stable.
 // TODO: Somehow arrange for this to be pass-by-copy-ish.
-export const FixedMap = harden(class FixedMap extends EMap {
+class FixedMap extends EMap {
   constructor(optIterable = undefined) {
     if (new.target !== FixedMap) {
       throw new TypeError(`FixedMap is final`);
@@ -84,7 +85,8 @@ export const FixedMap = harden(class FixedMap extends EMap {
   readOnlyView() {
     return this;
   }
-});
+}
+harden(FixedMap);
 
 
 // Maps from FlexMaps to encapsulated Maps, a subset of
@@ -92,7 +94,7 @@ export const FixedMap = harden(class FixedMap extends EMap {
 const hiddenFlexMap = makePrivateName();
 
 // Supports mutation.
-export const FlexMap = harden(class FlexMap extends EMap {
+class FlexMap extends EMap {
   constructor(optIterable = undefined) {
     if (new.target !== FlexMap) {
       throw new TypeError(`FlexMap is final`);
@@ -154,7 +156,8 @@ export const FlexMap = harden(class FlexMap extends EMap {
   delete(m) {
     return hiddenFlexMap.get(this).delete(m);
   }
-});
+}
+harden(FlexMap);
 
 
 // The constructor for internal use only. The rest of the class is
@@ -182,6 +185,7 @@ function ReadOnlyMap() {
 ReadOnlyMap.__proto__ = EMap;
 ReadOnlyMap.prototype = InternalReadOnlyMap.prototype;
 ReadOnlyMap.prototype.constructor = ReadOnlyMap;
-
 harden(ReadOnlyMap);
-export { ReadOnlyMap };
+
+
+export { EMap, FixedMap, FlexMap, ReadOnlyMap };

@@ -1,0 +1,19 @@
+// Copyright (C) 2019 Agoric, under Apache License 2.0
+
+
+import harden from '@agoric/harden';
+
+
+export const check = harden(function check(flag) {
+  return harden(function tag(template, ...args) {
+    if (flag) {
+      return;
+    }
+    const interleaved = [template[0]];
+    for (const i = 0; i < args.length; i++) {
+      interleaved.push(args[i], template[i+1]);
+    }
+    console.error(...interleaved);
+    throw new TypeError(interleaved.join(''));
+  });
+});
