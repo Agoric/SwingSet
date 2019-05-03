@@ -47,8 +47,7 @@ function makeHost(E) {
 Unexpected contract:
 > ${lines[0]}
 > ... ${lines.length - 2} lines ...
-> ${lines[lines.length - 1]}
-`;
+> ${lines[lines.length - 1]}`;
           }
           check(i === allegedI)`\
 Unexpected side: ${allegedI}`;
