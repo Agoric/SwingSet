@@ -10,10 +10,11 @@ function build(E) {
   
   function mintTestAssay(mint) {
     console.log('starting mintTestAssay');
-    const mP = E(mint).makeMint();
+    const mP = E(mint).makeMint('bucks');
     const mIssuerP = E(mP).getIssuer();
     Promise.resolve(mIssuerP).then(mIssuerPresence => {
-      const ops = makeNatOps(mIssuerPresence);
+      const label = harden({ issuer: mIssuerPresence, description: 'bucks' });
+      const ops = makeNatOps(label);
       const alicePurseP = E(mP).mint(ops.make(1000), 'alice');
       const paymentP = E(mIssuerP).getExclusive(ops.make(50), alicePurseP);
       Promise.resolve(paymentP).then(_ => {
@@ -32,7 +33,7 @@ function build(E) {
   // awkward.
   function mintTestNumber(mint) {
     console.log('starting mintTestNumber');
-    const mP = E(mint).makeMint();
+    const mP = E(mint).makeMint('quatloos');
     const mIssuerP = E(mP).getIssuer();
     const alicePurseP = E(mP).mint(1000, 'alice');
     const paymentP = E(mIssuerP).getExclusive(50, alicePurseP);
@@ -73,11 +74,11 @@ function build(E) {
   }
 
   function betterContractTestAliceFirst(mint, alice, bob) {
-    const moneyMintP = E(mint).makeMint();
+    const moneyMintP = E(mint).makeMint('moola');
     const aliceMoneyPurseP = E(moneyMintP).mint(1000);
     const bobMoneyPurseP = E(moneyMintP).mint(1001);
 
-    const stockMintP = E(mint).makeMint();
+    const stockMintP = E(mint).makeMint('Tyrell');
     const aliceStockPurseP = E(stockMintP).mint(2002);
     const bobStockPurseP = E(stockMintP).mint(2003);
 
@@ -96,11 +97,11 @@ function build(E) {
   }
 
   function betterContractTestBobFirst(mint, alice, bob, bobLies = false) {
-    const moneyMintP = E(mint).makeMint();
+    const moneyMintP = E(mint).makeMint('clams');
     const aliceMoneyPurseP = E(moneyMintP).mint(1000, 'aliceMainMoney');
     const bobMoneyPurseP = E(moneyMintP).mint(1001, 'bobMainMoney');
 
-    const stockMintP = E(mint).makeMint();
+    const stockMintP = E(mint).makeMint('fudco');
     const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
     const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
 

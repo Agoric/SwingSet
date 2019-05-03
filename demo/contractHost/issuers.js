@@ -9,8 +9,13 @@ import { makePrivateName } from '../../collections/PrivateName';
 import { makeNatOps } from './assays';
 
 
-export function makeMint(makeAssayOps = makeNatOps,
-                         _issuerName = 'an issuer') {
+export function makeMint(description,
+                         descriptionEquiv = Object.is,
+                         makeAssayOps = makeNatOps) {
+  if (!description) {
+    throw new TypeError(`description must be truthy`);
+  }
+
   // Map from purse or payment to balance. The balance is how much
   // can be transfered.
   const balances = makePrivateName();
@@ -28,7 +33,7 @@ export function makeMint(makeAssayOps = makeNatOps,
 
   const issuer = harden({
     getAssayOps() { return ops; },
-    
+
     makeEmptyPurse(name = 'a purse') {
       // eslint-disable-next-line no-use-before-define
       return mint.mint(ops.empty(), name); // mint and issuer call each other
@@ -65,8 +70,19 @@ export function makeMint(makeAssayOps = makeNatOps,
     }
   });
 
-  // Label with this issuer
-  const ops = makeAssayOps(issuer);
+  const label = harden({ issuer, description });
+
+  function labelEquiv(left, right) {
+    if (Object.is(left, right)) {
+      return true;
+    }
+    const { issuer: leftIssuer, description: leftDescription } = left;
+    const { issuer: rightIssuer, description: rightDescription } = right;
+    return leftIssuer === rightIssuer &&
+      descriptionEquiv(leftDescription, rightDescription);
+  }
+  const ops = makeAssayOps(label, labelEquiv);
+
 
   const mint = harden({
     getIssuer() {
@@ -75,7 +91,7 @@ export function makeMint(makeAssayOps = makeNatOps,
     mint(initialBalance, _name = 'a purse') {
       initialBalance = ops.coerce(initialBalance);
       _name = `${_name}`;
-    
+
       const purse = harden({
         getIssuer() {
           return issuer;
@@ -94,14 +110,14 @@ export function makeMint(makeAssayOps = makeNatOps,
             // Also checks that the union is representable
             const purseNewBal = ops.with(purseOldBal, amount);
             const srcNewBal = ops.without(srcOldBal, amount);
-            
+
             const homePurse = homePurses.get(srcPayment);
             const purseOldAssets = assets.get(purse);
             const homeOldAssets = assets.get(homePurse);
             // Also checks that the union is representable
             const purseNewAssets = ops.with(purseOldAssets, amount);
             const homeNewAssets = ops.without(homeOldAssets, amount);
-          
+
             // ///////////////// commit point //////////////////
             // All queries above passed with no side effects.
             // During side effects below, any early exits should be made into

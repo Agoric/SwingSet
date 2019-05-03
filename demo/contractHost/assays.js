@@ -11,13 +11,15 @@ import { FlexMap } from '../../collections/EMap';
 // provides set operations over assays. An assay is a pass-by-copy
 // description of some set of erights.
 //
-// The default assayOps makes the default kind of assay.  The
-// default kind of assay is a labeled natural number describing a
-// quantity of fungible erights. The label is used only for an
-// identity check. The label is normally a presence of the issuer
-// describing what kinds of rights these are. This is a form of
-// labeled unit, as in unit typing.
-export function makeNatOps(label) {
+// The default assayOps makes the default kind of assay.  The default
+// kind of assay is a labeled natural number describing a quantity of
+// fungible erights. The label describes what kinds of rights these
+// are. This is a form of labeled unit, as in unit typing.
+//
+// labelEquiv is a comparison function defining an equivalence class
+// among labels. An allegedAssay object coerces only if its label
+// matches.
+export function makeNatOps(label, labelEquiv = Object.is) {
   // memoize well formedness check.
   const brand = new WeakSet();
 
@@ -26,7 +28,7 @@ export function makeNatOps(label) {
     getLabel() {
       return label;
     },
-    
+
     // Given the raw data that this kind of assay would label, return
     // an assay so labeling that data.
     make(allegedData) {
@@ -34,7 +36,7 @@ export function makeNatOps(label) {
       brand.add(assay);
       return assay;
     },
-    
+
     // Is this an assay object made by this assayOps? If so, return
     // it. Otherwise error.
     vouch(assay) {
@@ -62,7 +64,7 @@ export function makeNatOps(label) {
         return assayLike;
       }
       const { label: allegedLabel, data } = assayLike;
-      if (!Object.is(allegedLabel, label)) {
+      if (!labelEquiv(label, allegedLabel)) {
         throw new TypeError(`unrecognized label`);
       }
       // Will throw on inappropriate data
@@ -106,7 +108,7 @@ export function makeNatOps(label) {
   return ops;
 }
 
-export function makeMetaOps(label) {
+export function makeMetaOps(label, labelEquiv = Object.is) {
   // memoize well formedness check.
   const brand = new WeakSet();
 
@@ -149,12 +151,12 @@ export function makeMetaOps(label) {
           }
         }
       }
-      
+
       const assay = harden({ label, data: accum.takeSnapshot() });
       brand.add(assay);
       return assay;
     },
-    
+
     // Is this an assay object made by this assayOps? If so, return
     // it. Otherwise error.
     vouch(assay) {
@@ -173,7 +175,7 @@ export function makeMetaOps(label) {
         return assayLike;
       }
       const { label: allegedLabel, data } = assayLike;
-      if (!Object.is(allegedLabel, label)) {
+      if (!labelEquiv(label, allegedLabel)) {
         throw new TypeError(`unrecognized label`);
       }
       // Will throw on inappropriate data
