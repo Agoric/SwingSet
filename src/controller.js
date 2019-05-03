@@ -27,6 +27,9 @@ export function loadBasedir(basedir, stateArg) {
       } else if (dirent.isDirectory()) {
         name = dirent.name.slice('vat-'.length);
         indexJS = path.resolve(basedir, dirent.name, 'index.js');
+      } else {
+        console.log('ignoring ', dirent.name);
+        return;
       }
       vatSources.set(name, indexJS);
     }
