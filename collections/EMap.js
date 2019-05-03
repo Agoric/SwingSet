@@ -12,7 +12,6 @@ const hiddenEMap = makePrivateName();
 // Abstract superclass with query-only methods.
 class EMap {
   constructor(optIterable = undefined) {
-    // eslint-disable-next-line no-unused-expressions
     check(new.target !== EMap)`\
 EMap is abstract`;
     const newHidden = new Map(optIterable);
@@ -80,7 +79,6 @@ harden(EMap);
 // TODO: Somehow arrange for this to be pass-by-copy-ish.
 class FixedMap extends EMap {
   constructor(optIterable = undefined) {
-    // eslint-disable-next-line no-unused-expressions
     check(new.target === FixedMap)`\
 FixedMap is final`;
     super(optIterable);
@@ -106,7 +104,6 @@ const hiddenFlexMap = makePrivateName();
 // Supports mutation.
 class FlexMap extends EMap {
   constructor(optIterable = undefined) {
-    // eslint-disable-next-line no-unused-expressions
     check(new.target === FlexMap)`\
 FlexMap is final`;
     super(optIterable);
@@ -189,10 +186,8 @@ class InternalReadOnlyMap extends EMap {
 // Guarantee that an instance of ReadOnlyMap does not provide the
 // ability to modify.
 function ReadOnlyMap() {
-  // eslint-disable-next-line no-unused-expressions
   check(new.target === ReadOnlyMap)`\
 ReadOnlyMap is final`;
-  // eslint-disable-next-line no-unused-expressions
   check(false)`\
 Use readOnlyView() to view an existing EMap`;
 }

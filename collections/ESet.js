@@ -12,7 +12,6 @@ const hiddenESet = makePrivateName();
 // Abstract superclass with query-only methods.
 class ESet {
   constructor(optIterable = undefined) {
-    // eslint-disable-next-line no-unused-expressions
     check(new.target !== ESet)`\
 ESet is abstract`;
     const newHidden = new Set(optIterable);
@@ -76,7 +75,6 @@ harden(ESet);
 // TODO: Somehow arrange for this to be pass-by-copy-ish.
 class FixedSet extends ESet {
   constructor(optIterable = undefined) {
-    // eslint-disable-next-line no-unused-expressions
     check(new.target === FixedSet)`\
 FixedSet is final`;
     super(optIterable);
@@ -102,7 +100,6 @@ const hiddenFlexSet = makePrivateName();
 // Supports mutation.
 class FlexSet extends ESet {
   constructor(optIterable = undefined) {
-    // eslint-disable-next-line no-unused-expressions
     check(new.target === FlexSet)`\
 FlexSet is final`;
     super(optIterable);
@@ -185,10 +182,8 @@ class InternalReadOnlySet extends ESet {
 // Guarantee that an instance of ReadOnlySet does not provide the
 // ability to modify.
 function ReadOnlySet() {
-  // eslint-disable-next-line no-unused-expressions
   check(new.target === ReadOnlySet)`\
 ReadOnlySet is final`;
-  // eslint-disable-next-line no-unused-expressions
   check(false)`\
 Use readOnlyView() to view an existing ESet`;
 }

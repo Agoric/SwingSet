@@ -12,7 +12,6 @@ function makeMint(
   descriptionEquiv = Object.is,
   makeAssayOps = makeNatOps,
 ) {
-  // eslint-disable-next-line no-unused-expressions
   check(description)`\
 Description must be truthy: ${description}`;
 
