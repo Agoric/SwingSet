@@ -1,16 +1,13 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-
 import harden from '@agoric/harden';
 
 import { makePrivateName } from './PrivateName';
 import { check } from './insist';
 
-
 // Maps from EMaps to encapsulated Maps. All lookups from this table
 // are only queries. (Except for the one in the FlexMap constructor)
 const hiddenEMap = makePrivateName();
-
 
 // Abstract superclass with query-only methods.
 class EMap {
@@ -38,7 +35,7 @@ EMap is abstract`;
   }
 
   // Forward query protocol from Map
-  
+
   keys() {
     return hiddenEMap.get(this).keys();
   }
@@ -66,7 +63,6 @@ EMap is abstract`;
 }
 harden(EMap);
 
-
 // Guarantees that the map contents is stable.
 // TODO: Somehow arrange for this to be pass-by-copy-ish.
 class FixedMap extends EMap {
@@ -86,7 +82,6 @@ FixedMap is final`;
   }
 }
 harden(FixedMap);
-
 
 // Maps from FlexMaps to encapsulated Maps, a subset of
 // hiddenEMap. Lookups from this table can mutate.
@@ -157,7 +152,6 @@ FlexMap is final`;
 }
 harden(FlexMap);
 
-
 // The constructor for internal use only. The rest of the class is
 // available from the pseudo-constructor ReadOnlyMap.
 class InternalReadOnlyMap extends EMap {
@@ -184,6 +178,5 @@ ReadOnlyMap.__proto__ = EMap;
 ReadOnlyMap.prototype = InternalReadOnlyMap.prototype;
 ReadOnlyMap.prototype.constructor = ReadOnlyMap;
 harden(ReadOnlyMap);
-
 
 export { EMap, FixedMap, FlexMap, ReadOnlyMap };

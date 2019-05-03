@@ -1,8 +1,6 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-
 import harden from '@agoric/harden';
-
 
 // TODO: Should we just use a TypeError, like everyone else?
 class CheckError extends Error {
@@ -13,10 +11,9 @@ class CheckError extends Error {
 }
 Object.defineProperties(CheckError.prototype, {
   name: { value: 'CheckError' },
-  message: { value: '' }
+  message: { value: '' },
 });
 harden(CheckError);
-
 
 // Insist that expr is truthy with a tagged template literal like
 // check(expr)`....`
@@ -38,8 +35,8 @@ function check(flag) {
     const interleaved = [template[0]];
     const parts = [template[0]];
     for (let i = 0; i < args.length; i++) {
-      interleaved.push(args[i], template[i+1]);
-      parts.push('(a ', typeof args[i], ')', template[i+1]);
+      interleaved.push(args[i], template[i + 1]);
+      parts.push('(a ', typeof args[i], ')', template[i + 1]);
     }
     if (args.length >= 1) {
       parts.push('\nSee console for error data.');
@@ -50,6 +47,5 @@ function check(flag) {
   return harden(tag);
 }
 harden(check);
-
 
 export { CheckError, check };

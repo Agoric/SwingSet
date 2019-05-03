@@ -1,11 +1,9 @@
 // Copyright (C) 2013 Google Inc, under Apache License 2.0
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
-
 import harden from '@agoric/harden';
 
 import escrowExchange from './escrow';
-
 
 function makeAlice(E, host) {
   const escrowSrc = `(${escrowExchange})`;
@@ -53,9 +51,11 @@ function makeAlice(E, host) {
       // eslint-disable-next-line no-unused-vars
       let cancel;
       const a = harden({
-        moneySrcP: E(myMoneyIssuerP).getExclusive(10,
-                                                  myMoneyPurseP,
-                                                  'aliceMoneySrc'),
+        moneySrcP: E(myMoneyIssuerP).getExclusive(
+          10,
+          myMoneyPurseP,
+          'aliceMoneySrc',
+        ),
         moneyRefundP: E(myMoneyIssuerP).makeEmptyPurse('aliceMoneyRefund'),
         stockDstP: E(myStockIssuerP).makeEmptyPurse('aliceStockDst'),
         stockNeeded: 7,

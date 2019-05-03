@@ -1,10 +1,8 @@
 // Copyright (C) 2019 Agoric, uner Apache license 2.0
 
-
 import harden from '@agoric/harden';
 
 import { check } from './insist';
-
 
 function makePrivateName(...args) {
   const wm = new WeakMap(...args);
@@ -26,11 +24,10 @@ key not found: ${key}`;
       check(wm.has(key))`\
 key not found: ${key}`;
       wm.set(key, value);
-    }
+    },
   });
 }
 harden(makePrivateName);
-
 
 const bootPN = makePrivateName();
 
@@ -53,6 +50,5 @@ class PrivateName {
   }
 }
 harden(PrivateName);
-
 
 export { makePrivateName, PrivateName };

@@ -1,7 +1,6 @@
 // Copyright (C) 2013 Google Inc, under Apache License 2.0
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
@@ -9,10 +8,11 @@ import { makePrivateName } from '../../collections/PrivateName';
 import { check } from '../../collections/insist';
 import { makeNatOps } from './assays';
 
-
-function makeMint(description,
-                  descriptionEquiv = Object.is,
-                  makeAssayOps = makeNatOps) {
+function makeMint(
+  description,
+  descriptionEquiv = Object.is,
+  makeAssayOps = makeNatOps,
+) {
   check(description)`\
 Description must be truthy: ${description}`;
 
@@ -32,7 +32,9 @@ Description must be truthy: ${description}`;
   const homePurses = makePrivateName();
 
   const issuer = harden({
-    getAssayOps() { return ops; },
+    getAssayOps() {
+      return ops;
+    },
 
     makeEmptyPurse(name = 'a purse') {
       // eslint-disable-next-line no-use-before-define
@@ -67,7 +69,7 @@ Description must be truthy: ${description}`;
         homePurses.init(payment, homePurse);
         return payment;
       });
-    }
+    },
   });
 
   const label = harden({ issuer, description });
@@ -78,11 +80,12 @@ Description must be truthy: ${description}`;
     }
     const { issuer: leftIssuer, description: leftDescription } = left;
     const { issuer: rightIssuer, description: rightDescription } = right;
-    return leftIssuer === rightIssuer &&
-      descriptionEquiv(leftDescription, rightDescription);
+    return (
+      leftIssuer === rightIssuer &&
+      descriptionEquiv(leftDescription, rightDescription)
+    );
   }
   const ops = makeAssayOps(label, labelEquiv);
-
 
   const mint = harden({
     getIssuer() {
@@ -133,11 +136,10 @@ Description must be truthy: ${description}`;
       balances.init(purse, initialBalance);
       assets.init(purse, initialBalance);
       return purse;
-    }
+    },
   });
   return mint;
 }
 harden(makeMint);
-
 
 export { makeMint };

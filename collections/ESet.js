@@ -1,16 +1,13 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-
 import harden from '@agoric/harden';
 
 import { makePrivateName } from './PrivateName';
 import { check } from './insist';
 
-
 // Maps from ESets to encapsulated Sets. All lookups from this table
 // are only queries. (Except for the one in the FlexSet constructor)
 const hiddenESet = makePrivateName();
-
 
 // Abstract superclass with query-only methods.
 class ESet {
@@ -38,7 +35,7 @@ ESet is abstract`;
   }
 
   // Forward query protocol from Set
-  
+
   keys() {
     return hiddenESet.get(this).keys();
   }
@@ -63,7 +60,6 @@ ESet is abstract`;
 }
 harden(ESet);
 
-
 // Guarantees that the set contents is stable.
 // TODO: Somehow arrange for this to be pass-by-copy-ish.
 class FixedSet extends ESet {
@@ -83,7 +79,6 @@ FixedSet is final`;
   }
 }
 harden(FixedSet);
-
 
 // Maps from FlexSets to encapsulated Sets, a subset of
 // hiddenESet. Lookups from this table can mutate.
@@ -116,7 +111,7 @@ FlexSet is final`;
     // hiddenESet.delete(this);
     hiddenFlexSet.set(this, null);
     hiddenESet.set(this, null);
-    
+
     const result = new FixedSet();
     hiddenESet.init(result, hiddenSet);
     return result;
@@ -154,7 +149,6 @@ FlexSet is final`;
 }
 harden(FlexSet);
 
-
 // The constructor for internal use only. The rest of the class is
 // available from the pseudo-constructor ReadOnlySet.
 class InternalReadOnlySet extends ESet {
@@ -181,6 +175,5 @@ ReadOnlySet.__proto__ = ESet;
 ReadOnlySet.prototype = InternalReadOnlySet.prototype;
 ReadOnlySet.prototype.constructor = ReadOnlySet;
 harden(ReadOnlySet);
-
 
 export { ESet, FixedSet, FlexSet, ReadOnlySet };

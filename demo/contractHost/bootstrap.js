@@ -1,13 +1,10 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-
 import harden from '@agoric/harden';
 
 import { makeNatOps } from './assays';
 
-
 function build(E) {
-
   // This is written in the full assay style, where bare number
   // objects are never used in lieu of full assay objects. This has
   // the virtue of unit typing, where 3 dollars cannot be confused
@@ -45,7 +42,7 @@ function build(E) {
     console.log('starting mintTestNumber');
     const mMintP = E(mint).makeMint('quatloos');
     const mIssuerP = E(mMintP).getIssuer();
-    
+
     const alicePurseP = E(mMintP).mint(1000, 'alice');
     const paymentP = E(mIssuerP).getExclusive(50, alicePurseP);
     Promise.resolve(paymentP).then(_ => {
@@ -57,7 +54,6 @@ function build(E) {
       });
     });
   }
-
 
   function trivialContractTest(host) {
     console.log('starting trivialContractTest');
@@ -174,7 +170,6 @@ function build(E) {
   return harden(obj0);
 }
 harden(build);
-
 
 function setup(syscall, state, helpers) {
   return helpers.makeLiveSlots(syscall, state, build, helpers.vatID);

@@ -1,12 +1,10 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
 import { FlexMap } from '../../collections/EMap';
 import { check } from '../../collections/insist';
-
 
 // Return an assayOps, which makes assays, validates assays, and
 // provides set operations over assays. An assay is a pass-by-copy
@@ -25,7 +23,6 @@ function makeNatOps(label, labelEquiv = Object.is) {
   const brand = new WeakSet();
 
   const ops = harden({
-
     getLabel() {
       return label;
     },
@@ -76,7 +73,9 @@ Unrecognized label: ${allegedLabel}`;
     },
 
     // Represents the empty set of erights, i.e., no erights
-    empty() { return ops.make(0); },
+    empty() {
+      return ops.make(0);
+    },
 
     isEmpty(assay) {
       return ops.data(assay) === 0;
@@ -108,13 +107,11 @@ Unrecognized label: ${allegedLabel}`;
 }
 harden(makeNatOps);
 
-
 function makeMetaOps(label, labelEquiv = Object.is) {
   // memoize well formedness check.
   const brand = new WeakSet();
 
   const ops = harden({
-
     getLabel() {
       return label;
     },
@@ -187,9 +184,13 @@ Unrecognized label: ${allegedLabel}`;
     },
 
     // Represents the empty set of erights, i.e., no erights
-    empty() { return ops.make([]); },
+    empty() {
+      return ops.make([]);
+    },
 
-    isEmpty(assay) { return ops.data(assay).size === 0; },
+    isEmpty(assay) {
+      return ops.data(assay).size === 0;
+    },
 
     // Set inclusion of erights.
     // Does the set of erights described by `leftAssay` include all
@@ -233,6 +234,5 @@ leftAssay missing rightAssay's ${k}`;
   return ops;
 }
 harden(makeMetaOps);
-
 
 export { makeNatOps, makeMetaOps };

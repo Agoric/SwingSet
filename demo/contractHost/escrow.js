@@ -2,9 +2,7 @@
 // Copyright (C) 2013 Google Inc, under Apache License 2.0
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-
 import harden from '@agoric/harden';
-
 
 function escrowExchange(a, b) {
   /* eslint-disable-next-line global-require */
@@ -21,11 +19,12 @@ function escrowExchange(a, b) {
 
   // a from Alice, b from Bob
   function makeTransfer(srcPaymentP, refundPurseP, dstPurseP, amount) {
-    const issuerP = join(E(srcPaymentP).getIssuer(),
-                         E(dstPurseP).getIssuer());
-    const escrowPaymentP = E(issuerP).getExclusive(amount,
-                                                   srcPaymentP,
-                                                   'escrow');
+    const issuerP = join(E(srcPaymentP).getIssuer(), E(dstPurseP).getIssuer());
+    const escrowPaymentP = E(issuerP).getExclusive(
+      amount,
+      srcPaymentP,
+      'escrow',
+    );
     return harden({
       phase1() {
         return escrowPaymentP;
@@ -45,14 +44,18 @@ function escrowExchange(a, b) {
     });
   }
 
-  const aT = makeTransfer(a.moneySrcP,
-                          a.moneyRefundP,
-                          b.moneyDstP,
-                          b.moneyNeeded);
-  const bT = makeTransfer(b.stockSrcP,
-                          b.stockRefundP,
-                          a.stockDstP,
-                          a.stockNeeded);
+  const aT = makeTransfer(
+    a.moneySrcP,
+    a.moneyRefundP,
+    b.moneyDstP,
+    b.moneyNeeded,
+  );
+  const bT = makeTransfer(
+    b.stockSrcP,
+    b.stockRefundP,
+    a.stockDstP,
+    a.stockNeeded,
+  );
   return Promise.race([
     Promise.all([aT.phase1(), bT.phase1()]),
     failOnly(a.cancellationP),
@@ -62,6 +65,5 @@ function escrowExchange(a, b) {
     _ex => Promise.all([aT.abort(), bT.abort()]),
   );
 }
-
 
 export default harden(escrowExchange);

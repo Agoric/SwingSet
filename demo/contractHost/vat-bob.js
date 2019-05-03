@@ -1,11 +1,9 @@
 // Copyright (C) 2013 Google Inc, under Apache License 2.0
 // Copyright (C) 2018 Agoric, under Apache License 2.0
 
-
 import harden from '@agoric/harden';
 
 import escrowExchange from './escrow';
-
 
 function makeBob(E, host) {
   const escrowSrc = `(${escrowExchange})`;
@@ -102,9 +100,11 @@ function makeBob(E, host) {
       /* eslint-disable-next-line no-unused-vars */
       let cancel;
       const b = harden({
-        stockSrcP: E(myStockIssuerP).getExclusive(7,
-                                                  myStockPurseP,
-                                                  'bobStockSrc'),
+        stockSrcP: E(myStockIssuerP).getExclusive(
+          7,
+          myStockPurseP,
+          'bobStockSrc',
+        ),
         stockRefundP: E(myStockIssuerP).makeEmptyPurse('bobStockRefund'),
         moneyDstP: E(myMoneyIssuerP).makeEmptyPurse('bobMoneyDst'),
         moneyNeeded: 10,
