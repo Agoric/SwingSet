@@ -4,6 +4,7 @@
 import harden from '@agoric/harden';
 
 import { makePrivateName } from './PrivateName';
+import { check } from './insist';
 
 
 // Maps from ESets to encapsulated Sets. All lookups from this table
@@ -14,9 +15,8 @@ const hiddenESet = makePrivateName();
 // Abstract superclass with query-only methods.
 class ESet {
   constructor(optIterable = undefined) {
-    if (new.target === ESet) {
-      throw new TypeError(`ESet is abstract`);
-    }
+    check(new.target !== ESet)`\
+ESet is abstract`;
     const newHidden = new Set(optIterable);
     hiddenESet.init(this, newHidden);
   }
@@ -68,9 +68,8 @@ harden(ESet);
 // TODO: Somehow arrange for this to be pass-by-copy-ish.
 class FixedSet extends ESet {
   constructor(optIterable = undefined) {
-    if (new.target !== FixedSet) {
-      throw new TypeError(`FixedSet is final`);
-    }
+    check(new.target === FixedSet)`\
+FixedSet is final`;
     super(optIterable);
     harden(this);
   }
@@ -93,9 +92,8 @@ const hiddenFlexSet = makePrivateName();
 // Supports mutation.
 class FlexSet extends ESet {
   constructor(optIterable = undefined) {
-    if (new.target !== FlexSet) {
-      throw new TypeError(`FlexSet is final`);
-    }
+    check(new.target === FlexSet)`\
+FlexSet is final`;
     super(optIterable);
     // Be very scared of the following line, since it looks up on
     // hiddenESet for purposes of enabling mutation. We assume it is
@@ -174,10 +172,10 @@ class InternalReadOnlySet extends ESet {
 // Guarantee that an instance of ReadOnlySet does not provide the
 // ability to modify.
 function ReadOnlySet() {
-  if (new.target !== ReadOnlySet) {
-    throw new TypeError(`ReadOnlySet is final`);
-  }
-  throw new TypeError(`Use readOnlyView() to view an existing ESet`);
+  check(new.target === ReadOnlySet)`\
+ReadOnlySet is final`;
+  check(false)`\
+Use readOnlyView() to view an existing ESet`;
 }
 ReadOnlySet.__proto__ = ESet;
 ReadOnlySet.prototype = InternalReadOnlySet.prototype;

@@ -3,6 +3,8 @@
 
 import harden from '@agoric/harden';
 
+import { check } from './insist';
+
 
 function makePrivateName(...args) {
   const wm = new WeakMap(...args);
@@ -11,15 +13,18 @@ function makePrivateName(...args) {
       return wm.has(key);
     },
     init(key, value) {
-      if (wm.has(key)) { throw new TypeError('key already registered'); }
+      check(!wm.has(key))`\
+key already registered: ${key}`;
       wm.set(key, value);
     },
     get(key) {
-      if (!(wm.has(key))) { throw new TypeError('key not found'); }
+      check(wm.has(key))`\
+key not found: ${key}`;
       return wm.get(key);
     },
     set(key, value) {
-      if (!(wm.has(key))) { throw new TypeError('key not found'); }
+      check(wm.has(key))`\
+key not found: ${key}`;
       wm.set(key, value);
     }
   });

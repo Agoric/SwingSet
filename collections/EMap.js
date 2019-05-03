@@ -4,6 +4,7 @@
 import harden from '@agoric/harden';
 
 import { makePrivateName } from './PrivateName';
+import { check } from './insist';
 
 
 // Maps from EMaps to encapsulated Maps. All lookups from this table
@@ -14,9 +15,8 @@ const hiddenEMap = makePrivateName();
 // Abstract superclass with query-only methods.
 class EMap {
   constructor(optIterable = undefined) {
-    if (new.target === EMap) {
-      throw new TypeError(`EMap is abstract`);
-    }
+    check(new.target !== EMap)`\
+EMap is abstract`;
     const newHidden = new Map(optIterable);
     hiddenEMap.init(this, newHidden);
   }
@@ -71,9 +71,8 @@ harden(EMap);
 // TODO: Somehow arrange for this to be pass-by-copy-ish.
 class FixedMap extends EMap {
   constructor(optIterable = undefined) {
-    if (new.target !== FixedMap) {
-      throw new TypeError(`FixedMap is final`);
-    }
+    check(new.target === FixedMap)`\
+FixedMap is final`;
     super(optIterable);
     harden(this);
   }
@@ -96,9 +95,8 @@ const hiddenFlexMap = makePrivateName();
 // Supports mutation.
 class FlexMap extends EMap {
   constructor(optIterable = undefined) {
-    if (new.target !== FlexMap) {
-      throw new TypeError(`FlexMap is final`);
-    }
+    check(new.target === FlexMap)`\
+FlexMap is final`;
     super(optIterable);
     // Be very scared of the following line, since it looks up on
     // hiddenEMap for purposes of enabling mutation. We assume it is
@@ -177,10 +175,10 @@ class InternalReadOnlyMap extends EMap {
 // Guarantee that an instance of ReadOnlyMap does not provide the
 // ability to modify.
 function ReadOnlyMap() {
-  if (new.target !== ReadOnlyMap) {
-    throw new TypeError(`ReadOnlyMap is final`);
-  }
-  throw new TypeError(`Use readOnlyView() to view an existing EMap`);
+  check(new.target === ReadOnlyMap)`\
+ReadOnlyMap is final`;
+  check(false)`\
+Use readOnlyView() to view an existing EMap`;
 }
 ReadOnlyMap.__proto__ = EMap;
 ReadOnlyMap.prototype = InternalReadOnlyMap.prototype;
