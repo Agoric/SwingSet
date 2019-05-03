@@ -121,7 +121,7 @@ function build(E) {
             console.log('++ bobP.tradeWell done:', res);
           },
           rej => {
-            if (rej.message.startsWith('unexpected contract')) {
+            if (rej.message.startsWith('Unexpected contract')) {
               console.log('++ DONE');
             } else {
               console.log('++ bobP.tradeWell error:', rej);
