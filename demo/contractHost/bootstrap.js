@@ -56,12 +56,12 @@ function build(E) {
     console.log('starting trivialContractTest');
 
     function trivContract(terms, ticketMaker) {
-      return ticketMaker.make('foo', 'bar');
+      return ticketMaker.make('foo', 8);
     }
     const contractSrc = `${trivContract}`;
 
-    const fooTicket = E(host).setup(contractSrc, {});
-    const eightP = E(host).redeem(fooTicket);
+    const fooTicketP = E(host).start(contractSrc, {});
+    const eightP = E(host).redeem(fooTicketP);
 
     eightP.then(res => {
       console.log('++ eightP resolved to', res, '(should be 8)');

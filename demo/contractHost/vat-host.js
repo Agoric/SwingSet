@@ -25,7 +25,7 @@ function makeHost(E) {
   const seats = new WeakMap();
 
   return harden({
-    setup(contractSrc, terms) {
+    start(contractSrc, terms) {
       contractSrc = `${contractSrc}`;
       const contract = evaluate(contractSrc, {
         Nat,
@@ -55,21 +55,21 @@ function makeHost(E) {
       return contract(terms, ticketMaker);
     },
 
-    redeem(allegedTicket) {
-      const allegedIssuer = allegedTicket.label.issuer;
-      check(seats.has(allegedIssuer))`\
+    redeem(allegedTicketP) {
+      return E(allegedTicketP).getIssuer().then(allegedIssuer => {
+        check(seats.has(allegedIssuer))`\
 Not one of my ticket issuers: ${allegedIssuer}`;
 
-      // Make an empty purse and deposit ticket into it, rather than
-      // just doing a getExclusive on the ticket, so that the
-      // useRights are used up as well as the xferRights.
-      const sinkPurse = allegedIssuer.makeEmptyPurse();
-      // Commit point within deposit
-      sinkPurse.deposit(1, allegedTicket);
-      // After commit point. Must not fail.
-      const seat = seats.get(allegedIssuer);
-      seats.delete(allegedIssuer);
-      return seat;
+        // Make an empty purse and deposit ticket into it, rather than
+        // just doing a getExclusive on the ticket, so that the
+        // useRights are used up as well as the xferRights.
+        const sinkPurse = allegedIssuer.makeEmptyPurse();
+        return sinkPurse.deposit(1, allegedTicketP).then(_ => {
+          const seat = seats.get(allegedIssuer);
+          seats.delete(allegedIssuer);
+          return seat;
+        });
+      });
     },
   });
 }

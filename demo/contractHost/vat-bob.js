@@ -67,7 +67,7 @@ function makeBob(E, host) {
       if (!initialized) {
         console.log('++ ERR: tradeWell called before init()');
       }
-      const tokensP = E(host).setup(escrowSrc);
+      const tokensP = E(host).start(escrowSrc, terms);
       const aliceTokenP = tokensP.then(tokens => tokens[0]);
       const bobTokenP = tokensP.then(tokens => tokens[1]);
       let escrowSrcWeTellAlice = escrowSrc;
