@@ -5,18 +5,29 @@ import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
 
-import makePromise from '../../src/kernel/makePromise';
 import { check } from '../../collections/insist';
+import { makeNatOps, makeMetaOps } from './assays';
+import { makeMint } from './issuers';
+
+function ticketDescriptionEquiv(x, y) {
+  return x === y;  // TODO fix
+}
 
 function makeHost(E) {
-  const m = new WeakMap();
+
+/*
+  const contractMetaMint = makeMint('contractHost',
+                                    undefined,
+                                    makeMetaOps);
+  const contractMetaIssuer = contractMetaMint.getIssuer();
+*/
+
+  // Maps from ticket issuers to seats
+  const seats = new WeakMap();
 
   return harden({
-    setup(contractSrc) {
+    setup(contractSrc, terms) {
       contractSrc = `${contractSrc}`;
-      const tokens = [];
-      const argPs = [];
-      const { p: resultP, res: resolve } = makePromise();
       const contract = evaluate(contractSrc, {
         Nat,
         harden,
@@ -24,41 +35,41 @@ function makeHost(E) {
         E,
       });
 
-      const addParam = (i, token) => {
-        tokens[i] = token;
-        const p = makePromise();
-        const resolveArg = p.res;
-        argPs[i] = p.p;
-        m.set(token, (allegedSrc, allegedI, arg) => {
-          if (contractSrc !== allegedSrc) {
-            const lines = allegedSrc.split('\n');
-            check(false)`\
-Unexpected contract:
-> ${lines[0]}
-> ... ${lines.length - 2} lines ...
-> ${lines[lines.length - 1]}`;
-          }
-          check(i === allegedI)`\
-Unexpected side: ${allegedI}`;
-          m.delete(token);
-          resolveArg(arg);
-          return resultP;
-        });
-      };
-      for (let i = 0; i < contract.length; i += 1) {
-        addParam(i, harden({}));
-      }
-      resolve(
-        Promise.all(argPs).then(args => {
-          return contract(...args);
-        }),
-      );
-      return harden(tokens);
-    },
-    play(tokenP, allegedSrc, allegedI, arg) {
-      return Promise.resolve(tokenP).then(token => {
-        return m.get(token)(allegedSrc, allegedI, arg);
+      const ticketMaker = harden({
+        makeTicket(role, seat) {
+          const ticketDescription = harden({
+            contractSrc,
+            terms,
+            role,
+          });
+          const ticketMint = makeMint(ticketDescription,
+                                      ticketDescriptionEquiv,
+                                      makeNatOps);
+          const ticketIssuer = ticketMint.getIssuer();
+          seats.set(ticketIssuer, harden(seat));
+          const ticketPurse = ticketMint.mint(1);
+          return ticketPurse.withdraw(1);
+        }
       });
+
+      return contract(terms, ticketMaker);
+    },
+
+    redeem(allegedTicket) {
+      const allegedIssuer = allegedTicket.label.issuer;
+      check(seats.has(allegedIssuer))`\
+Not one of my ticket issuers: ${allegedIssuer}`;
+
+      // Make an empty purse and deposit ticket into it, rather than
+      // just doing a getExclusive on the ticket, so that the
+      // useRights are used up as well as the xferRights.
+      const sinkPurse = allegedIssuer.makeEmptyPurse();
+      // Commit point within deposit
+      sinkPurse.deposit(1, allegedTicket);
+      // After commit point. Must not fail.
+      const seat = seats.get(allegedIssuer);
+      seats.delete(allegedIssuer);
+      return seat;
     },
   });
 }

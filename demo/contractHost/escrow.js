@@ -2,66 +2,131 @@
 // Copyright (C) 2013 Google Inc, under Apache License 2.0
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
+import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
-function escrowExchange(a, b) {
-  // eventual equality
-  function join(xP, yP) {
-    return Promise.all([xP, yP]).then(([x, y]) => {
-      if (Object.is(x, y)) {
-        return x;
-      }
-      throw new Error('not the same');
-    });
-  }
+function escrowExchange(terms, ticketMaker) {
+  let { moneyIssuer, stockIssuer, moneyAmount, stockAmount } = terms;
 
-  // a from Alice, b from Bob
-  function makeTransfer(srcPaymentP, refundPurseP, dstPurseP, amount) {
-    const issuerP = join(E(srcPaymentP).getIssuer(), E(dstPurseP).getIssuer());
-    const escrowPaymentP = E(issuerP).getExclusive(
-      amount,
-      srcPaymentP,
-      'escrow',
-    );
+  function makeTransfer(issuer, srcPaymentP, amount, payR, refundR) {
+    const escrowPaymentP = E(issuer).getExclusive(srcPaymentP,
+                                                  amount,
+                                                  'escrow');
     return harden({
       phase1() {
         return escrowPaymentP;
       },
       phase2() {
-        return E(dstPurseP).deposit(amount, escrowPaymentP);
+        payR(escrowPaymentP);
+        refundR(null);
       },
-      abort() {
-        return E(refundPurseP).deposit(amount, escrowPaymentP);
+      abort(reason) {
+        payR(Promise.reject(reason));
+        refundR(escrowPaymentP);
       },
     });
   }
 
-  function failOnly(cancellationP) {
-    return Promise.resolve(cancellationP).then(cancellation => {
-      throw cancellation;
-    });
+  // Alice section
+  
+  let moneyPaymentR;
+  const moneyPaymentP = new Promise(r => moneyPaymentR = r);
+
+  let moneyRefundR;
+  const moneyRefundP = new Promise(r => moneyRefundR = r);
+
+  let stockPaidR;
+  const stockPaidP = new Promise(r => stockPaidR = r);
+
+  let aliceCancelR;
+  const aliceCancelP = new Promise(r => aliceCancelR = r);
+
+  const aliceWinnings = harden({
+    moneyRefundP,
+    stockPaidP,
+  });
+
+  // Bob section
+  
+  let stockPaymentR;
+  const stockPaymentP = new Promise(r => stockPaymentR = r);
+
+  let stockRefundR;
+  const stockRefundP = new Promise(r => stockRefundR = r);
+
+  let moneyPaidR;
+  const moneyPaidP = new Promise(r => moneyPaidR = r);
+
+  let bobCancelR;
+  const bobCancelP = new Promise(r => bobCancelR = r);
+
+  const bobWinnings = harden({
+    stockRefundP,
+    moneyPaidP,
+  });
+  
+  // Money section
+
+  const moneyTransfer = makeTransfer(
+    moneyIssuer,
+    moneyPaymentP,
+    moneyAmount,
+    moneyPaidR,
+    moneyRefundR
+  );
+
+  // Stock section
+  
+  const stockTransfer = makeTransfer(
+    stockIssuer,
+    stockPaymentP,
+    stockAmount,
+    stockPaidR,
+    stockRefundR
+  );
+
+  // Set it all in motion optimistically.
+  
+  function failOnly(reasonP) {
+    return Promise.resolve(reasonP).then(reason => Promise.reject(reason));
   }
 
-  const aT = makeTransfer(
-    a.moneySrcP,
-    a.moneyRefundP,
-    b.moneyDstP,
-    b.moneyNeeded,
-  );
-  const bT = makeTransfer(
-    b.stockSrcP,
-    b.stockRefundP,
-    a.stockDstP,
-    a.stockNeeded,
-  );
-  return Promise.race([
-    Promise.all([aT.phase1(), bT.phase1()]),
-    failOnly(a.cancellationP),
-    failOnly(b.cancellationP),
+  Promise.race([
+    Promise.all([moneyTransfer.phase1(), stockTransfer.phase1()]),
+    failOnly(aliceCancelP),
+    failOnly(bobCancelP),
   ]).then(
-    _x => Promise.all([aT.phase2(), bT.phase2()]),
-    _ex => Promise.all([aT.abort(), bT.abort()]),
+    _ => Promise.all([moneyTransfer.phase2(),
+                      stockTransfer.phase2()]),
+    reason => Promise.all([moneyTransfer.abort(reason),
+                           stockTransfer.abort(reason)])
   );
+
+  // Seats
+
+  const aliceSeat = harden({
+    offer(aliceMoneyPaymentP) {
+      moneyPaymentR(aliceMoneyPaymentP);
+      return ticketMaker.makeTicket('alice leave', aliceWinnings);
+    },
+    cancel(reason) {
+      aliceCancelR(reason);
+    },
+  });
+  const aliceJoinTicket = ticketMaker.makeTicket('alice join', aliceSeat);
+
+  const bobSeat = harden({
+    offer(bobStockPaymentP) {
+      stockPaymentP(bobStockPaymentP);
+      return ticketMaker.makeTicket('bob leave', bobWinnings);
+    },
+    cancel(reason) {
+      bobCancelR(reason);
+    },
+  });
+  const bobJoinTicket = ticketMaker.makeTicket('bob join', bobSeat);
+
+  return harden({ aliceJoinTicket, bobJoinTicket });
 }
 
 export default harden(escrowExchange);

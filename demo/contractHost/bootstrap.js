@@ -55,18 +55,14 @@ function build(E) {
   function trivialContractTest(host) {
     console.log('starting trivialContractTest');
 
-    function trivContract(_whiteP, _blackP) {
-      return 8;
+    function trivContract(terms, ticketMaker) {
+      return ticketMaker.makeTicket('foo', 'bar');
     }
     const contractSrc = `${trivContract}`;
 
-    const tokensP = E(host).setup(contractSrc);
+    const fooTicket = E(host).setup(contractSrc, {});
+    const eightP = E(host).redeem(fooTicket);
 
-    const whiteTokenP = tokensP.then(tokens => tokens[0]);
-    E(host).play(whiteTokenP, contractSrc, 0, {});
-
-    const blackTokenP = tokensP.then(tokens => tokens[1]);
-    const eightP = E(host).play(blackTokenP, contractSrc, 1, {});
     eightP.then(res => {
       console.log('++ eightP resolved to', res, '(should be 8)');
       if (res !== 8) {
