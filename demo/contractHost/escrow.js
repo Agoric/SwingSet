@@ -92,14 +92,21 @@ function escrowExchange(terms, ticketMaker) {
     return Promise.resolve(reasonP).then(reason => Promise.reject(reason));
   }
 
+  // TODO: Use Promise.allSettled on the later phases to detect
+  // quiescence for better testing.
   Promise.race([
     Promise.all([moneyTransfer.phase1(), stockTransfer.phase1()]),
     failOnly(aliceCancelP),
     failOnly(bobCancelP),
   ]).then(
-    _ => Promise.all([moneyTransfer.phase2(), stockTransfer.phase2()]),
-    reason =>
-      Promise.all([moneyTransfer.abort(reason), stockTransfer.abort(reason)]),
+    _ => {
+      moneyTransfer.phase2();
+      stockTransfer.phase2();
+    },
+    reason => {
+      moneyTransfer.abort(reason);
+      stockTransfer.abort(reason);
+    },
   );
 
   // Seats
