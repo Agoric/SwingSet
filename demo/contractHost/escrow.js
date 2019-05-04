@@ -2,16 +2,17 @@
 // Copyright (C) 2013 Google Inc, under Apache License 2.0
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
-import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
 function escrowExchange(terms, ticketMaker) {
-  let { moneyIssuer, stockIssuer, moneyAmount, stockAmount } = terms;
+  const { moneyIssuer, stockIssuer, moneyAmount, stockAmount } = terms;
 
   function makeTransfer(issuer, srcPaymentP, amount, payR, refundR) {
-    const escrowPaymentP = E(issuer).getExclusive(srcPaymentP,
-                                                  amount,
-                                                  'escrow');
+    const escrowPaymentP = E(issuer).getExclusive(
+      srcPaymentP,
+      amount,
+      'escrow',
+    );
     return harden({
       phase1() {
         return escrowPaymentP;
@@ -28,18 +29,18 @@ function escrowExchange(terms, ticketMaker) {
   }
 
   // Alice section
-  
+
   let moneyPaymentR;
-  const moneyPaymentP = new Promise(r => moneyPaymentR = r);
+  const moneyPaymentP = new Promise(r => (moneyPaymentR = r));
 
   let moneyRefundR;
-  const moneyRefundP = new Promise(r => moneyRefundR = r);
+  const moneyRefundP = new Promise(r => (moneyRefundR = r));
 
   let stockPaidR;
-  const stockPaidP = new Promise(r => stockPaidR = r);
+  const stockPaidP = new Promise(r => (stockPaidR = r));
 
   let aliceCancelR;
-  const aliceCancelP = new Promise(r => aliceCancelR = r);
+  const aliceCancelP = new Promise(r => (aliceCancelR = r));
 
   const aliceWinnings = harden({
     moneyRefundP,
@@ -47,24 +48,24 @@ function escrowExchange(terms, ticketMaker) {
   });
 
   // Bob section
-  
+
   let stockPaymentR;
-  const stockPaymentP = new Promise(r => stockPaymentR = r);
+  const stockPaymentP = new Promise(r => (stockPaymentR = r));
 
   let stockRefundR;
-  const stockRefundP = new Promise(r => stockRefundR = r);
+  const stockRefundP = new Promise(r => (stockRefundR = r));
 
   let moneyPaidR;
-  const moneyPaidP = new Promise(r => moneyPaidR = r);
+  const moneyPaidP = new Promise(r => (moneyPaidR = r));
 
   let bobCancelR;
-  const bobCancelP = new Promise(r => bobCancelR = r);
+  const bobCancelP = new Promise(r => (bobCancelR = r));
 
   const bobWinnings = harden({
     stockRefundP,
     moneyPaidP,
   });
-  
+
   // Money section
 
   const moneyTransfer = makeTransfer(
@@ -72,21 +73,21 @@ function escrowExchange(terms, ticketMaker) {
     moneyPaymentP,
     moneyAmount,
     moneyPaidR,
-    moneyRefundR
+    moneyRefundR,
   );
 
   // Stock section
-  
+
   const stockTransfer = makeTransfer(
     stockIssuer,
     stockPaymentP,
     stockAmount,
     stockPaidR,
-    stockRefundR
+    stockRefundR,
   );
 
   // Set it all in motion optimistically.
-  
+
   function failOnly(reasonP) {
     return Promise.resolve(reasonP).then(reason => Promise.reject(reason));
   }
@@ -96,10 +97,9 @@ function escrowExchange(terms, ticketMaker) {
     failOnly(aliceCancelP),
     failOnly(bobCancelP),
   ]).then(
-    _ => Promise.all([moneyTransfer.phase2(),
-                      stockTransfer.phase2()]),
-    reason => Promise.all([moneyTransfer.abort(reason),
-                           stockTransfer.abort(reason)])
+    _ => Promise.all([moneyTransfer.phase2(), stockTransfer.phase2()]),
+    reason =>
+      Promise.all([moneyTransfer.abort(reason), stockTransfer.abort(reason)]),
   );
 
   // Seats
@@ -117,7 +117,7 @@ function escrowExchange(terms, ticketMaker) {
 
   const bobSeat = harden({
     offer(bobStockPaymentP) {
-      stockPaymentP(bobStockPaymentP);
+      stockPaymentR(bobStockPaymentP);
       return ticketMaker.make('bob leave', bobWinnings);
     },
     cancel(reason) {

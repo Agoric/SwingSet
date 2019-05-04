@@ -6,16 +6,15 @@ import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
 
 import { check } from '../../collections/insist';
-import { makeNatOps, makeMetaOps } from './assays';
+// import { makeMetaOps } from './assays';
 import { makeMint } from './issuers';
 
 function ticketDescriptionEquiv(x, y) {
-  return x === y;  // TODO fix
+  return x === y; // TODO fix
 }
 
 function makeHost(E) {
-
-/*
+  /*
   const contractMetaMint = makeMint('contractHost',
                                     undefined,
                                     makeMetaOps);
@@ -42,14 +41,15 @@ function makeHost(E) {
             terms,
             role,
           });
-          const ticketMint = makeMint(ticketDescription,
-                                      ticketDescriptionEquiv,
-                                      makeNatOps);
+          const ticketMint = makeMint(
+            ticketDescription,
+            ticketDescriptionEquiv,
+          );
           const ticketIssuer = ticketMint.getIssuer();
           seats.set(ticketIssuer, harden(seat));
           const ticketPurse = ticketMint.mint(1);
           return ticketPurse.withdraw(1);
-        }
+        },
       });
 
       return contract(terms, ticketMaker);
