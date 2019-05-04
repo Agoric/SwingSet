@@ -107,24 +107,24 @@ function escrowExchange(terms, ticketMaker) {
   const aliceSeat = harden({
     offer(aliceMoneyPaymentP) {
       moneyPaymentR(aliceMoneyPaymentP);
-      return ticketMaker.makeTicket('alice leave', aliceWinnings);
+      return ticketMaker.make('alice leave', aliceWinnings);
     },
     cancel(reason) {
       aliceCancelR(reason);
     },
   });
-  const aliceJoinTicket = ticketMaker.makeTicket('alice join', aliceSeat);
+  const aliceJoinTicket = ticketMaker.make('alice join', aliceSeat);
 
   const bobSeat = harden({
     offer(bobStockPaymentP) {
       stockPaymentP(bobStockPaymentP);
-      return ticketMaker.makeTicket('bob leave', bobWinnings);
+      return ticketMaker.make('bob leave', bobWinnings);
     },
     cancel(reason) {
       bobCancelR(reason);
     },
   });
-  const bobJoinTicket = ticketMaker.makeTicket('bob join', bobSeat);
+  const bobJoinTicket = ticketMaker.make('bob join', bobSeat);
 
   return harden({ aliceJoinTicket, bobJoinTicket });
 }

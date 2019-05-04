@@ -56,7 +56,7 @@ function build(E) {
     console.log('starting trivialContractTest');
 
     function trivContract(terms, ticketMaker) {
-      return ticketMaker.makeTicket('foo', 'bar');
+      return ticketMaker.make('foo', 'bar');
     }
     const contractSrc = `${trivContract}`;
 

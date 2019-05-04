@@ -36,7 +36,7 @@ function makeHost(E) {
       });
 
       const ticketMaker = harden({
-        makeTicket(role, seat) {
+        make(role, seat) {
           const ticketDescription = harden({
             contractSrc,
             terms,
