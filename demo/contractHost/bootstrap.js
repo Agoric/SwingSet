@@ -21,7 +21,7 @@ function build(E) {
       const bucks50 = harden({ label, data: 50 });
 
       const alicePurseP = E(mMintP).mint(bucks1000, 'alice');
-      const paymentP = E(mIssuerP).takePayment(bucks50, alicePurseP);
+      const paymentP = E(alicePurseP).withdraw(bucks50);
       Promise.resolve(paymentP).then(_ => {
         const aBal = E(alicePurseP).getXferBalance();
         const dBal = E(paymentP).getXferBalance();
@@ -39,10 +39,9 @@ function build(E) {
   function mintTestNumber(mint) {
     console.log('starting mintTestNumber');
     const mMintP = E(mint).makeMint('quatloos');
-    const mIssuerP = E(mMintP).getIssuer();
 
     const alicePurseP = E(mMintP).mint(1000, 'alice');
-    const paymentP = E(mIssuerP).takePayment(50, alicePurseP);
+    const paymentP = E(alicePurseP).withdraw(50);
     Promise.resolve(paymentP).then(_ => {
       const aBal = E(alicePurseP).getXferBalance();
       const dBal = E(paymentP).getXferBalance();

@@ -100,11 +100,7 @@ function makeBob(E, host) {
       /* eslint-disable-next-line no-unused-vars */
       let cancel;
       const b = harden({
-        stockSrcP: E(myStockIssuerP).takePayment(
-          7,
-          myStockPurseP,
-          'bobStockSrc',
-        ),
+        stockSrcP: E(myStockPurseP).withdraw(7, 'bobStockSrc'),
         stockRefundP: E(myStockIssuerP).makeEmptyPurse('bobStockRefund'),
         moneyDstP: E(myMoneyIssuerP).makeEmptyPurse('bobMoneyDst'),
         moneyNeeded: 10,

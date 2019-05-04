@@ -32,6 +32,46 @@ Description must be truthy: ${description}`;
   // home purse to the destination purse.
   const homePurses = makePrivateName();
 
+  // srcP designates a purse or payment. Reveal a fresh payment.  One
+  // internal function used for both cases, since they are so similar.
+  function takePayment(amount, isPurse, srcP, _name) {
+    // eslint-disable-next-line no-use-before-define
+    amount = ops.coerce(amount);
+    _name = `${_name}`;
+    return Promise.resolve(srcP).then(src => {
+      if (isPurse) {
+        check(useRights.has(src))`\
+Purse expected: ${src}`;
+      } else {
+        check(homePurses.has(src))`\
+Payment expected: ${src}`;
+      }
+      const srcOldXferAmount = xferRights.get(src);
+      // eslint-disable-next-line no-use-before-define
+      const srcNewXferAmount = ops.without(srcOldXferAmount, amount);
+
+      // ///////////////// commit point //////////////////
+      // All queries above passed with no side effects.
+      // During side effects below, any early exits should be made into
+      // fatal turn aborts.
+
+      const payment = harden({
+        getIssuer() {
+          // eslint-disable-next-line no-use-before-define
+          return issuer;
+        },
+        getXferBalance() {
+          return xferRights.get(payment);
+        },
+      });
+      xferRights.set(src, srcNewXferAmount);
+      xferRights.init(payment, amount);
+      const homePurse = isPurse ? src : homePurses.get(src);
+      homePurses.init(payment, homePurse);
+      return payment;
+    });
+  }
+
   const issuer = harden({
     getAssayOps() {
       // eslint-disable-next-line no-use-before-define
@@ -43,35 +83,8 @@ Description must be truthy: ${description}`;
       return mint.mint(ops.empty(), name); // mint and issuer call each other
     },
 
-    // srcP designates a purse or payment. Reveal a fresh payment.
-    takePayment(amount, srcP, _name = 'a payment') {
-      // eslint-disable-next-line no-use-before-define
-      amount = ops.coerce(amount);
-      _name = `${_name}`;
-      return Promise.resolve(srcP).then(src => {
-        const srcOldXferAmount = xferRights.get(src);
-        // eslint-disable-next-line no-use-before-define
-        const srcNewXferAmount = ops.without(srcOldXferAmount, amount);
-
-        // ///////////////// commit point //////////////////
-        // All queries above passed with no side effects.
-        // During side effects below, any early exits should be made into
-        // fatal turn aborts.
-
-        const payment = harden({
-          getIssuer() {
-            return issuer;
-          },
-          getXferBalance() {
-            return xferRights.get(payment);
-          },
-        });
-        xferRights.set(src, srcNewXferAmount);
-        xferRights.init(payment, amount);
-        const homePurse = useRights.has(src) ? src : homePurses.get(src);
-        homePurses.init(payment, homePurse);
-        return payment;
-      });
+    getExclusive(amount, srcPaymentP, name = 'a payment') {
+      return takePayment(amount, false, srcPaymentP, name);
     },
   });
 
@@ -134,6 +147,9 @@ Description must be truthy: ${description}`;
             useRights.set(homePurse, homeNewUseAmount);
             useRights.set(purse, purseNewUseAmount);
           });
+        },
+        withdraw(amount, name = 'a withdrawal payment') {
+          return takePayment(amount, true, purse, name);
         },
       });
       xferRights.init(purse, initialBalance);

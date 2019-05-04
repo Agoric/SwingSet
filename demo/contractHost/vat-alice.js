@@ -33,7 +33,7 @@ function makeAlice(E, host) {
       if (!initialized) {
         console.log('++ ERR: payBobWell called before init()');
       }
-      const paymentP = E(myMoneyIssuerP).takePayment(10, myMoneyPurseP);
+      const paymentP = E(myMoneyPurseP).withdraw(10);
       return E(bob).buy('shoe', paymentP);
     },
 
@@ -47,11 +47,7 @@ function makeAlice(E, host) {
       // eslint-disable-next-line no-unused-vars
       let cancel;
       const a = harden({
-        moneySrcP: E(myMoneyIssuerP).takePayment(
-          10,
-          myMoneyPurseP,
-          'aliceMoneySrc',
-        ),
+        moneySrcP: E(myMoneyPurseP).withdraw(10, 'aliceMoneySrc'),
         moneyRefundP: E(myMoneyIssuerP).makeEmptyPurse('aliceMoneyRefund'),
         stockDstP: E(myStockIssuerP).makeEmptyPurse('aliceStockDst'),
         stockNeeded: 7,
