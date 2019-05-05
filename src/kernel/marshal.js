@@ -247,6 +247,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
         default: {
           // if we've seen this object before, serialize a backref
           if (ibidMap.has(val)) {
+            throw new Error(`ibids not yet implemented: ${val}`);
             // Backreference to prior occurrence
             return harden({
               [QCLASS]: 'ibid',
@@ -341,6 +342,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
           }
 
           case 'ibid': {
+            throw new Error(`ibids not yet implemented: ${data}`);
             const index = Nat(data.index);
             if (index >= ibids.length) {
               throw new RangeError(`ibid out of range: ${index}`);
