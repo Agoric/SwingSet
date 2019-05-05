@@ -25,28 +25,66 @@ export { QCLASS };
 // there's nothing else to copy), and pass-by-copy objects have no other
 // behavior (so there's nothing else to invoke)
 
-function canPassByCopy(val) {
-  if (!Object.isFrozen(val)) {
-    return false;
-  }
-  if (typeof val !== 'object') {
-    return false;
-  }
-  const names = Object.getOwnPropertyNames(val);
-  const hasFunction = names.some(name => typeof val[name] === 'function');
-  if (hasFunction) return false;
-  const p = Object.getPrototypeOf(val);
+function isPassByCopyError(val) {
   if (val instanceof Error) {
-    return typeof val.name === 'string' && typeof val.message === 'string';
-  } else if (Array.isArray(val)) {
-    return p === Array.prototype;
-  } else {
-    if (names.length === 0) {
-      // empty non-array objects are pass-by-presence, not pass-by-copy
+    // TODO: Need a better test than instanceof
+    // TODO: Check no accessor and no extraneous properties.
+    // TODO: Check that .name is own and .message inherited from a
+    // known named error class.
+    if (typeof val.name !== 'string' && typeof val.message !== 'string') {
+      throw new TypeError(`malformed error object: ${val}`);
+    }
+    return true;
+  }
+  return false;
+}
+
+function isPassByCopyArray(val) {
+  if (Array.isArray(val)) {
+    if (Object.getPrototypeOf(val) !== Array.prototype) {
+      throw new TypeError(`malformed array: ${val}`);
+    }
+    const len = val.length;
+    const descs = Object.getOwnPropertyDescriptors(val);
+    for (let i = 0; i < len; i += 1) {
+      const desc = descs[i];
+      if (!desc) {
+        throw new TypeError(`arrays must not contain holes`);
+      }
+      if (!('value' in desc)) {
+        throw new TypeError(`arrays must not contain accessors`);
+      }
+      if (typeof desc.value === 'function') {
+        throw new TypeError(`arrays must not contain methods`);
+      }
+    }
+    if (Object.keys(descs).length !== len + 1) {
+      throw new TypeError(`array must not have non-indexes ${val}`);
+    }
+    return true;
+  }
+  return false;
+}
+
+function isPassByCopyRecord(val) {
+  if (Object.getPrototypeOf(val) !== Object.prototype) {
+    return false;
+  }
+  const entries = Object.entries(Object.getOwnPropertyDescriptors(val));
+  if (entries.length === 0) {
+    // empty non-array objects are pass-by-presence, not pass-by-copy
+    return false;
+  }
+  for (const [name, desc] of entries) {
+    if (!('value' in desc)) {
+      // Should we error if we see an accessor here?
       return false;
     }
-    return p === Object.prototype;
+    if (typeof desc.value === 'function') {
+      return false;
+    }
   }
+  return true;
 }
 
 export function mustPassByPresence(val) {
@@ -115,16 +153,13 @@ export function passStyleOf(val) {
       if (typeof val.then === 'function') {
         throw new Error(`Cannot pass non-promise thenables`);
       }
-      if (canPassByCopy(val)) {
-        if (val instanceof Error) {
-          // TODO: Need a better test than instanceof
-          // TODO: Insist on only 'name' and 'message' properties.
-          return 'copyError';
-        }
-        if (Array.isArray(val)) {
-          // TODO: Insist on only array index properties without holes.
-          return 'copyArray';
-        }
+      if (isPassByCopyError(val)) {
+        return 'copyError';
+      }
+      if (isPassByCopyArray(val)) {
+        return 'copyArray';
+      }
+      if (isPassByCopyRecord(val)) {
         return 'copyRecord';
       }
       mustPassByPresence(val);
