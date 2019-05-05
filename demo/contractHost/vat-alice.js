@@ -47,13 +47,14 @@ ERR: invite called before init()`;
       const doneP = allSettled([
         E(seatP)
           .getWinnings()
-          .then(winnings => E(myStockPurseP).deposit(7, winnings)),
+          .then(winnings => E(myStockPurseP).deposit(7, winnings))
+          .then(_ => 7),
         E(seatP)
           .getRefund()
-          .then(refund => refund && E(myMoneyPurseP).deposit(10, refund)),
+          .then(refund => refund && E(myMoneyPurseP).deposit(10, refund))
+          .then(_ => 10),
       ]);
-      // TODO BUG: Just returning doneP somehow produces an array with holes.
-      return doneP.then(_ => []);
+      return doneP;
     },
   });
   return alice;
