@@ -7,11 +7,8 @@ import { makePrivateName } from '../../collections/PrivateName';
 import { check } from '../../collections/insist';
 import { makeNatOps } from './assays';
 
-function makeMint(
-  description,
-  descriptionEquiv = Object.is,
-  makeAssayOps = makeNatOps,
-) {
+function makeMint(description, makeAssayOps = makeNatOps) {
+  
   check(description)`\
 Description must be truthy: ${description}`;
 
@@ -90,18 +87,7 @@ Payment expected: ${src}`;
 
   const label = harden({ issuer, description });
 
-  function labelEquiv(left, right) {
-    if (Object.is(left, right)) {
-      return true;
-    }
-    const { issuer: leftIssuer, description: leftDescription } = left;
-    const { issuer: rightIssuer, description: rightDescription } = right;
-    return (
-      leftIssuer === rightIssuer &&
-      descriptionEquiv(leftDescription, rightDescription)
-    );
-  }
-  const ops = makeAssayOps(label, labelEquiv);
+  const ops = makeAssayOps(label);
 
   const mint = harden({
     getIssuer() {

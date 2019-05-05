@@ -5,6 +5,7 @@ import harden from '@agoric/harden';
 
 import { FlexMap } from '../../collections/EMap';
 import { check } from '../../collections/insist';
+import { sameStructure } from '../../collections/sameStructure';
 
 // Return an assayOps, which makes assays, validates assays, and
 // provides set operations over assays. An assay is a pass-by-copy
@@ -14,11 +15,7 @@ import { check } from '../../collections/insist';
 // kind of assay is a labeled natural number describing a quantity of
 // fungible erights. The label describes what kinds of rights these
 // are. This is a form of labeled unit, as in unit typing.
-//
-// labelEquiv is a comparison function defining an equivalence class
-// among labels. An allegedAssay object coerces only if its label
-// matches.
-function makeNatOps(label, labelEquiv = Object.is) {
+function makeNatOps(label) {
   // memoize well formedness check.
   const brand = new WeakSet();
 
@@ -61,7 +58,7 @@ Unrecognized assay: ${assay}`;
         return assayLike;
       }
       const { label: allegedLabel, data } = assayLike;
-      check(labelEquiv(label, allegedLabel))`\
+      check(sameStructure(label, allegedLabel))`\
 Unrecognized label: ${allegedLabel}`;
       // Will throw on inappropriate data
       return ops.make(data);
@@ -107,7 +104,7 @@ Unrecognized label: ${allegedLabel}`;
 }
 harden(makeNatOps);
 
-function makeMetaOps(label, labelEquiv = Object.is) {
+function makeMetaOps(label) {
   // memoize well formedness check.
   const brand = new WeakSet();
 
@@ -172,7 +169,7 @@ Unrecognized assay: ${assay}`;
         return assayLike;
       }
       const { label: allegedLabel, data } = assayLike;
-      check(labelEquiv(label, allegedLabel))`\
+      check(sameStructure(label, allegedLabel))`\
 Unrecognized label: ${allegedLabel}`;
       // Will throw on inappropriate data
       return ops.make(data);

@@ -9,10 +9,6 @@ import { check } from '../../collections/insist';
 // import { makeMetaOps } from './assays';
 import { makeMint } from './issuers';
 
-function ticketDescriptionEquiv(x, y) {
-  return x === y; // TODO fix
-}
-
 function makeHost(E) {
   /*
   const contractMetaMint = makeMint('contractHost',
@@ -56,10 +52,7 @@ function makeHost(E) {
             terms,
             role,
           });
-          const ticketMint = makeMint(
-            ticketDescription,
-            ticketDescriptionEquiv,
-          );
+          const ticketMint = makeMint(ticketDescription);
           const ticketIssuer = ticketMint.getIssuer();
           seats.set(ticketIssuer, harden(seat));
           const ticketPurse = ticketMint.mint(1);
