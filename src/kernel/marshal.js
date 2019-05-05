@@ -77,6 +77,70 @@ export function mustPassByPresence(val) {
   // ok!
 }
 
+// How would val be passed?  For primitive values, the answer is
+//   * 'null' for null
+//   * throwing an error for an unregistered symbol
+//   * that value's typeof string for all other primitive values
+// For frozen objects, the possible answers
+//   * 'copy' for non-empty records or arrays with only data properties
+//   * 'error' for instances of Error
+//   * 'presence' for objects with only method properties
+//   * 'promise' for genuine promises only
+//   * throwing an error on anything else.
+// We export passStyleOf so other algorithms can use this module's
+// classification.
+export function passStyleOf(val) {
+  const typestr = typeof val;
+  switch (typestr) {
+    case 'object': {
+      if (val === null) {
+        return 'null';
+      }
+      if (QCLASS in val) {
+        // TODO Hilbert hotel
+        throw new Error(`property "${QCLASS}" reserved`);
+      }
+      if (!Object.isFrozen(val)) {
+        throw new Error(`cannot pass non-frozen objects like ${val}`);
+      }
+      if (Promise.resolve(val) === val) {
+        return 'promise';
+      }
+      if (typeof val.then === 'function') {
+        throw new Error(`Cannot pass non-promise thenables`);
+      }
+      if (val instanceof Error) {
+        // Need a better test than instanceof
+        return 'error';
+      }
+      if (canPassByCopy(val)) {
+        return 'copy';
+      }
+      mustPassByPresence(val);
+      return 'presence';
+    }
+    case 'function': {
+      throw new Error(`bare functions like ${val} are disabled for now`);
+    }
+    case 'undefined':
+    case 'string':
+    case 'boolean':
+    case 'number':
+    case 'bigint': {
+      return typestr;
+    }
+    case 'symbol': {
+      if (Symbol.keyFor(val) === undefined) {
+        throw new TypeError('Cannot pass unregistered symbols');
+      }
+      return typestr;
+    }
+    default: {
+      throw new TypeError(`unrecognized typeof ${typestr}`);
+    }
+  }
+}
+
 const errorConstructors = new Map([
   ['EvalError', EvalError],
   ['RangeError', RangeError],
@@ -94,26 +158,10 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
     return function replacer(_, val) {
       // First we handle all primitives. Some can be represented directly as
       // JSON, and some must be encoded as [QCLASS] composites.
-      switch (typeof val) {
-        case 'object': {
-          if (val === null) {
-            return null;
-          }
-          if (!Object.isFrozen(val)) {
-            console.log(
-              'asked to serialize',
-              typeof val,
-              val,
-              Object.isFrozen(val),
-            );
-            throw new Error(
-              `non-frozen objects like ${val} are disabled for now`,
-            );
-          }
-          break;
-        }
-        case 'function': {
-          throw new Error(`bare functions like ${val} are disabled for now`);
+      const passStyle = passStyleOf(val);
+      switch (passStyle) {
+        case 'null': {
+          return null;
         }
         case 'undefined': {
           return harden({ [QCLASS]: 'undefined' });
@@ -138,14 +186,10 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
           return val;
         }
         case 'symbol': {
-          const optKey = Symbol.keyFor(val);
-          if (optKey === undefined) {
-            // TODO: Symmetric unguessable identity
-            throw new TypeError('Cannot serialize unregistered symbol');
-          }
+          const key = Symbol.keyFor(val);
           return harden({
             [QCLASS]: 'symbol',
-            key: optKey,
+            key,
           });
         }
         case 'bigint': {
@@ -155,61 +199,49 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
           });
         }
         default: {
-          // TODO non-std exotic objects are allowed other typeofs.
-          // Perhaps a warning and break would be better.
-          throw new TypeError(`unrecognized typeof ${typeof val}`);
+          // if we've seen this object before, serialize a backref
+          if (ibidMap.has(val)) {
+            // Backreference to prior occurrence
+            return harden({
+              [QCLASS]: 'ibid',
+              index: ibidMap.get(val),
+            });
+          }
+          ibidMap.set(val, ibidCount);
+          ibidCount += 1;
+
+          switch (passStyle) {
+            case 'copy': {
+              // console.log(`canPassByCopy: ${val}`);
+              // Purposely in-band for readability, but creates need for
+              // Hilbert hotel.
+              return val;
+            }
+            case 'error': {
+              // We deliberately do not share the stack, but it would
+              // be useful to log the stack locally so someone who has
+              // privileged access to the throwing Vat can correlate
+              // the problem with the remote Vat that gets this
+              // summary. If we do that, we could allocate some random
+              // identifier and include it in the message, to help
+              // with the correlation.
+              return harden({
+                [QCLASS]: 'error',
+                name: `${val.name}`,
+                message: `${val.message}`,
+              });
+            }
+            case 'presence':
+            case 'promise': {
+              // console.log(`serializeSlot: ${val}`);
+              return serializeSlot(val, slots, slotMap);
+            }
+            default: {
+              throw new TypeError(`unrecognized passStyle ${passStyle}`);
+            }
+          }
         }
       }
-
-      // Now that we've handled all the primitives, it is time to deal with
-      // objects. The only things which can pass this point are frozen and
-      // non-null.
-
-      if (QCLASS in val) {
-        // TODO Hilbert hotel
-        throw new Error(`property "${QCLASS}" reserved`);
-      }
-
-      // if we've seen this object before, serialize a backref
-
-      if (ibidMap.has(val)) {
-        // Backreference to prior occurrence
-        return harden({
-          [QCLASS]: 'ibid',
-          index: ibidMap.get(val),
-        });
-      }
-      ibidMap.set(val, ibidCount);
-      ibidCount += 1;
-
-      // We can serialize some things as plain pass-by-copy: arrays, and
-      // objects with one or more data properties but no method properties.
-
-      if (val instanceof Error) {
-        // We deliberately do not share the stack, but it would be useful to
-        // log the stack locally so someone who has privileged access to the
-        // throwing Vat can correlate the problem with the remote Vat that
-        // gets this summary. If we do that, we could allocate some random
-        // identifier and include it in the message, to help with the
-        // correlation.
-        return harden({
-          [QCLASS]: 'error',
-          name: `${val.name}`,
-          message: `${val.message}`,
-        });
-      }
-
-      if (canPassByCopy(val)) {
-        // console.log(`canPassByCopy: ${val}`);
-        // Purposely in-band for readability, but creates need for
-        // Hilbert hotel.
-        return val;
-      }
-
-      // beyond this point it must either be a proxy (created by an inbound
-      // call) or a pass-by-presence object
-      // console.log(`serializeSlot: ${val}`);
-      return serializeSlot(val, slots, slotMap);
     };
   }
 
@@ -218,7 +250,8 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
   // to be exported as a local webkey.
   function serialize(val) {
     const slots = [];
-    const slotMap = new Map(); // maps val (proxy or presence) to index of slots[]
+    const slotMap = new Map(); // maps val (proxy or presence) to
+    // index of slots[]
     return {
       argsString: JSON.stringify(val, makeReplacer(slots, slotMap)),
       slots,

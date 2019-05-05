@@ -11,7 +11,7 @@ test('serialize static data', t => {
   const ser = val => m.serialize(val);
   t.throws(
     () => ser([1, 2]),
-    /non-frozen objects like .* are disabled for now/,
+    /cannot pass non-frozen objects like .*/
   );
   t.deepEqual(ser(harden([1, 2])), { argsString: '[1,2]', slots: [] });
   t.deepEqual(ser(harden({ foo: 1 })), { argsString: '{"foo":1}', slots: [] });
