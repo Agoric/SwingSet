@@ -25,7 +25,7 @@ function escrowExchange(terms, ticketMaker) {
       },
       phase2() {
         winnings.res(escrowP);
-        refund.res(undefined);
+        refund.res(null);
       },
       abort(reason) {
         winnings.reject(reason);

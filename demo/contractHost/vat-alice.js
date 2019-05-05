@@ -44,6 +44,12 @@ ERR: invite called before init()`;
       const seatP = E(host).redeem(ticketP);
       const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
       E(seatP).offer(moneyPaymentP);
+      // TODO Bug if we change the "_ => 7" below to "_ => undefined",
+      // or equivalently if we just omit these unnecessary last .then
+      // clauses, then somehow we end up trying to marshal an array
+      // with holes, rather than an array with undefined
+      // elements. This remains true whether we use Promise.all or
+      // allSettled
       const doneP = allSettled([
         E(seatP)
           .getWinnings()
