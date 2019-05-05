@@ -12,15 +12,11 @@ function makeBob(E, host) {
 
   let initialized = false;
   let myMoneyPurseP;
-  let myMoneyIssuerP;
   let myStockPurseP;
-  let myStockIssuerP;
 
   function init(myMoneyPurse, myStockPurse) {
     myMoneyPurseP = Promise.resolve(myMoneyPurse);
-    myMoneyIssuerP = E(myMoneyPurse).getIssuer();
     myStockPurseP = Promise.resolve(myStockPurse);
-    myStockIssuerP = E(myStockPurse).getIssuer();
     initialized = true;
     /* eslint-disable-next-line no-use-before-define */
     return bob; // bob and init use each other
@@ -64,19 +60,25 @@ ERR: buy called before init()`;
       check(initialized)`\
 ERR: tradeWell called before init()`;
 
-      const terms = harden([10, 7]);
-      const ticketsP = E(host).start(escrowSrc, terms);
-      const aliceTicketP = ticketsP.then(tickets => tickets[0]);
-      const bobTicketP = ticketsP.then(tickets => tickets[1]);
-      const doneP = Promise.all([
-        E(alice).invite(aliceTicketP),
-        E(bob).invite(bobTicketP),
-      ]);
-      doneP.then(
-        _res => console.log('++ bob.tradeWell done'),
-        rej => console.log('++ bob.tradeWell reject: ', rej)
-      );
-      return doneP;
+      const moneyIssuerP = E(myMoneyPurseP).getIssuer();
+      const moneyNeededP = E(E(moneyIssuerP).getAssayOps()).make(10);
+      const stockIssuerP = E(myStockPurseP).getIssuer();
+      const stockNeededP = E(E(stockIssuerP).getAssayOps()).make(7);
+
+      return Promise.all([moneyNeededP, stockNeededP]).then(terms => {
+        const ticketsP = E(host).start(escrowSrc, terms);
+        const aliceTicketP = ticketsP.then(tickets => tickets[0]);
+        const bobTicketP = ticketsP.then(tickets => tickets[1]);
+        const doneP = Promise.all([
+          E(alice).invite(aliceTicketP),
+          E(bob).invite(bobTicketP),
+        ]);
+        doneP.then(
+          _res => console.log('++ bob.tradeWell done'),
+          rej => console.log('++ bob.tradeWell reject: ', rej),
+        );
+        return doneP;
+      });
     },
 
     /**
@@ -92,10 +94,15 @@ ERR: invite called before init()`;
       const stockPaymentP = E(myStockPurseP).withdraw(7);
       E(seatP).offer(stockPaymentP);
       const doneP = allSettled([
-        E(myMoneyPurseP).deposit(10, E(seatP).getWinnings()),
-        E(myStockPurseP).deposit(7, E(seatP).getRefund())
+        E(seatP)
+          .getWinnings()
+          .then(winnings => E(myMoneyPurseP).deposit(10, winnings)),
+        E(seatP)
+          .getRefund()
+          .then(refund => refund && E(myStockPurseP).deposit(7, refund)),
       ]);
-      return doneP;
+      // TODO BUG: Just returning doneP somehow produces an array with holes.
+      return doneP.then(_ => []);
     },
   });
   return bob;

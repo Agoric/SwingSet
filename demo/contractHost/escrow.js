@@ -1,10 +1,8 @@
-/* global E */
+/* global E makePromise */
 // Copyright (C) 2013 Google Inc, under Apache License 2.0
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
 import harden from '@agoric/harden';
-
-import { makePromise } from '../../src/kernel/makePromise';
 
 // For clarity, the code below internally speaks of a scenario is
 // which Alice is trading some of her money for some of Bob's
@@ -27,7 +25,7 @@ function escrowExchange(terms, ticketMaker) {
       },
       phase2() {
         winnings.res(escrowP);
-        refund.res(null);
+        refund.res(undefined);
       },
       abort(reason) {
         winnings.reject(reason);
@@ -59,12 +57,17 @@ function escrowExchange(terms, ticketMaker) {
   const decisionP = Promise.race([
     Promise.all([moneyTransfer.phase1(), stockTransfer.phase1()]),
     aliceCancel.p,
-    bobCancel.p]);
-  // TODO: Use Promise.allSettled on these later phases to detect
-  // quiescence, for better testing.
+    bobCancel.p,
+  ]);
   decisionP.then(
-    _ => { moneyTransfer.phase2(); stockTransfer.phase2(); },
-    reason => { moneyTransfer.abort(reason); stockTransfer.abort(reason); }
+    _ => {
+      moneyTransfer.phase2();
+      stockTransfer.phase2();
+    },
+    reason => {
+      moneyTransfer.abort(reason);
+      stockTransfer.abort(reason);
+    },
   );
 
   // Seats
@@ -73,19 +76,19 @@ function escrowExchange(terms, ticketMaker) {
     offer: moneyPayment.res,
     cancel: aliceCancel.reject,
     getWinnings: stockTransfer.getWinnings,
-    getRefund: moneyTransfer.getRefund,      
+    getRefund: moneyTransfer.getRefund,
   });
 
   const bobSeat = harden({
     offer: stockPayment.res,
     cancel: bobCancel.reject,
     getWinnings: moneyTransfer.getWinnings,
-    getRefund: stockTransfer.getRefund,      
+    getRefund: stockTransfer.getRefund,
   });
 
   return harden([
     ticketMaker.make([moneyNeeded, stockNeeded], aliceSeat),
-    ticketMaker.make([stockNeeded, moneyNeeded], bobSeat)
+    ticketMaker.make([stockNeeded, moneyNeeded], bobSeat),
   ]);
 }
 

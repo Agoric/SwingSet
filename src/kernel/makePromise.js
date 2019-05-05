@@ -28,3 +28,4 @@ export default function makePromise() {
   // TODO: Retire name 'rej' as it looks too much like 'res'.
   return harden({ p, res, rej, reject: rej });
 }
+harden(makePromise);

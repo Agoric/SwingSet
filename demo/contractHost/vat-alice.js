@@ -45,10 +45,14 @@ ERR: invite called before init()`;
       const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
       E(seatP).offer(moneyPaymentP);
       const doneP = allSettled([
-        E(myStockPurseP).deposit(7, E(seatP).getWinnings()),
-        E(myMoneyPurseP).deposit(10, E(seatP).getRefund())
+        E(seatP)
+          .getWinnings()
+          .then(winnings => E(myStockPurseP).deposit(7, winnings)),
+        E(seatP)
+          .getRefund()
+          .then(refund => refund && E(myMoneyPurseP).deposit(10, refund)),
       ]);
-      return doneP;
+      return doneP.then(_ => []);
     },
   });
   return alice;

@@ -57,7 +57,7 @@ export default function handleBootstrap(
   function addExport([sender, index, valslot]) {
     helpers.log(`addExport called with sender ${sender}, index ${index}`);
     if (
-      typeof valslot !== 'object' ||
+      Object(valslot) !== valslot ||
       !('@qclass' in valslot) ||
       valslot['@qclass'] !== 'slot'
     ) {

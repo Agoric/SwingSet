@@ -8,6 +8,7 @@ import evaluate from '@agoric/evaluate';
 import { check } from '../../collections/insist';
 // import { makeMetaOps } from './assays';
 import { makeMint } from './issuers';
+import makePromise from '../../src/kernel/makePromise';
 
 function makeHost(E) {
   /*
@@ -34,6 +35,7 @@ function makeHost(E) {
         harden,
         console,
         E,
+        makePromise,
       });
 
       const ticketMaker = harden({
