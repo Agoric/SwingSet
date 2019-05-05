@@ -248,13 +248,20 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
         default: {
           // if we've seen this object before, serialize a backref
           if (ibidMap.has(val)) {
-            console.log('ibids not implemented correctly', val);
+            console.log('ibids not yet implemented correctly', val);
             // throw new Error(`ibids not yet implemented: ${val}`);
+
+            // Throwing doesn't work because we do serialize
+            // non-trees. But we don't yet serialize cycles, and we
+            // don't care that much about the identity of pass-by-copy
+            // objects, so just let it unroll into a tree by
+            // commenting out the following case.
+
             // Backreference to prior occurrence
-            return harden({
-              [QCLASS]: 'ibid',
-              index: ibidMap.get(val),
-            });
+//            return harden({
+//              [QCLASS]: 'ibid',
+//              index: ibidMap.get(val),
+//            });
           }
           ibidMap.set(val, ibidCount);
           ibidCount += 1;
@@ -344,8 +351,11 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
           }
 
           case 'ibid': {
+            // Now that we've commented out encoding these, we should
+            // never need to decode.
             console.log('ibids not yet implemented correctly', data);
-            // throw new Error(`ibids not yet implemented: ${data}`);
+            throw new Error(`ibids not yet implemented: ${data}`);
+
             const index = Nat(data.index);
             if (index >= ibids.length) {
               throw new RangeError(`ibid out of range: ${index}`);
