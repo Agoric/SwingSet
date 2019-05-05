@@ -5,7 +5,10 @@ import harden from '@agoric/harden';
 
 import { FlexMap } from '../../collections/EMap';
 import { check } from '../../collections/insist';
-import { sameStructure } from '../../collections/sameStructure';
+import {
+  sameStructure,
+  mustBeComparable,
+} from '../../collections/sameStructure';
 
 // Return an assayOps, which makes assays, validates assays, and
 // provides set operations over assays. An assay is a pass-by-copy
@@ -16,6 +19,8 @@ import { sameStructure } from '../../collections/sameStructure';
 // fungible erights. The label describes what kinds of rights these
 // are. This is a form of labeled unit, as in unit typing.
 function makeNatOps(label) {
+  mustBeComparable(label);
+
   // memoize well formedness check.
   const brand = new WeakSet();
 
@@ -105,6 +110,8 @@ Unrecognized label: ${allegedLabel}`;
 harden(makeNatOps);
 
 function makeMetaOps(label) {
+  mustBeComparable(label);
+
   // memoize well formedness check.
   const brand = new WeakSet();
 

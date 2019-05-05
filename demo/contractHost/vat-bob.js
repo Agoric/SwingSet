@@ -4,6 +4,7 @@
 import harden from '@agoric/harden';
 
 import { check } from '../../collections/insist';
+import { allSettled } from '../../collections/allSettled';
 import { escrowExchange } from './escrow';
 
 function makeBob(E, host) {
@@ -35,9 +36,9 @@ function makeBob(E, host) {
      * is a bit confusing here.
      */
     buy(desc, paymentP) {
-      if (!initialized) {
-        console.log('++ ERR: buy called before init()');
-      }
+      check(initialized)`\
+ERR: buy called before init()`;
+
       /* eslint-disable-next-line no-unused-vars */
       let amount;
       let good;
@@ -63,16 +64,17 @@ function makeBob(E, host) {
       check(initialized)`\
 ERR: tradeWell called before init()`;
 
-      const tokensP = E(host).start(escrowSrc, {});
-      const aliceTokenP = tokensP.then(tokens => tokens[0]);
-      const bobTokenP = tokensP.then(tokens => tokens[1]);
+      const terms = harden([10, 7]);
+      const ticketsP = E(host).start(escrowSrc, terms);
+      const aliceTicketP = ticketsP.then(tickets => tickets[0]);
+      const bobTicketP = ticketsP.then(tickets => tickets[1]);
       const doneP = Promise.all([
-        E(alice).invite(aliceTokenP),
-        E(bob).invite(bobTokenP, escrowSrc, 1),
+        E(alice).invite(aliceTicketP),
+        E(bob).invite(bobTicketP),
       ]);
       doneP.then(
         _res => console.log('++ bob.tradeWell done'),
-        rej => console.log('++ bob.tradeWell reject', rej),
+        rej => console.log('++ bob.tradeWell reject: ', rej)
       );
       return doneP;
     },
@@ -82,32 +84,18 @@ ERR: tradeWell called before init()`;
      * this object, asking it to join in a contract instance. It is not
      * requesting that this object invite anything.
      */
-    invite(tokenP, allegedSrc, allegedSide) {
-      if (!initialized) {
-        console.log('++ ERR: invite called before init()');
-      }
-      console.log('++ bob.invite start');
-      console.log('++ bob.invite passed check');
-      /* eslint-disable-next-line no-unused-vars */
-      let cancel;
-      const b = harden({
-        stockSrcP: E(myStockPurseP).withdraw(7, 'bobStockSrc'),
-        stockRefundP: E(myStockIssuerP).makeEmptyPurse('bobStockRefund'),
-        moneyDstP: E(myMoneyIssuerP).makeEmptyPurse('bobMoneyDst'),
-        moneyNeeded: 10,
-        cancellationP: new Promise(r => (cancel = r)),
-      });
+    invite(ticketP) {
+      check(initialized)`\
+ERR: invite called before init()`;
 
-      const doneP = E(host).play(tokenP, allegedSrc, allegedSide, b);
-      return doneP.then(
-        _ => {
-          console.log('++ bob.invite doneP');
-          return E(b.moneyDstP).getXferBalance();
-        },
-        rej => {
-          console.log('++ bob.invite doneP reject', rej);
-        },
-      );
+      const seatP = E(host).redeem(ticketP);
+      const stockPaymentP = E(myStockPurseP).withdraw(7);
+      E(seatP).offer(stockPaymentP);
+      const doneP = allSettled([
+        E(myMoneyPurseP).deposit(10, E(seatP).getWinnings()),
+        E(myStockPurseP).deposit(7, E(seatP).getRefund())
+      ]);
+      return doneP;
     },
   });
   return bob;

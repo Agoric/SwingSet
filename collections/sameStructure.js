@@ -62,4 +62,14 @@ Cannot structurally compare promises: ${right}`;
 }
 harden(sameStructure);
 
-export { sameStructure };
+// If `val` would be a valid input to `sameStructure`, return
+// normally. Otherwise error.
+function mustBeComparable(val) {
+  // Currently, we can test this by just comparing it to itself using
+  // `sameStructure`. But if `sameStructure` changes to use an
+  // identity test to exit early, we'll need to be more clever.
+  check(sameStructure(val, val))`\
+Internal error: ${val} not reflexive`;
+}
+
+export { sameStructure, mustBeComparable };

@@ -40,17 +40,15 @@ function makeHost(E) {
         // Used by the contract to make tickets for credibly
         // participating in the contract. The returned ticket can be
         // redemmed for this seat. The ticketMaker contributes the
-        // description `{ contractSrc, terms, role }`. If this
+        // description `{ contractSrc, terms, seatDesc }`. If this
         // contract host redeems a ticket, then the contractSrc and
-        // terms are accurate. Contract code should be written with
-        // calls to ticketMaker.make with distinct literal role
-        // arguments, so that the role can be understood according to
-        // that code.
-        make(role, seat) {
+        // terms are accurate. The seatDesc is according to that
+        // contractSrc code.
+        make(seatDesc, seat) {
           const ticketDescription = harden({
             contractSrc,
             terms,
-            role,
+            seatDesc,
           });
           const ticketMint = makeMint(ticketDescription);
           const ticketIssuer = ticketMint.getIssuer();

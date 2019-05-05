@@ -4,6 +4,7 @@
 import harden from '@agoric/harden';
 
 import { check } from '../../collections/insist';
+import { allSettled } from '../../collections/allSettled';
 
 function makeAlice(E, host) {
   let initialized = false;
@@ -37,17 +38,17 @@ ERR: payBobWell called before init()`;
       check(initialized)`\
 ERR: invite called before init()`;
 
+      // TODO: get an exclusive on the ticket using the full assay
+      // style, so Alice knows that the ticket means what she expects.
+
       const seatP = E(host).redeem(ticketP);
       const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
-      const leaveTicketP = E(seatP).offer(moneyPaymentP);
-      const winningsP = E(host).redeem(leaveTicketP);
-      return Promise.resolve(winningsP).then(winnings => {
-        const { moneyRefundP, stockPaidP } = winnings;
-        return Promise.all([
-          E(moneyRefundP).getXferBalance(),
-          E(stockPaidP).getXferBalance(),
-        ]);
-      });
+      E(seatP).offer(moneyPaymentP);
+      const doneP = allSettled([
+        E(myStockPurseP).deposit(7, E(seatP).getWinnings()),
+        E(myMoneyPurseP).deposit(10, E(seatP).getRefund())
+      ]);
+      return doneP;
     },
   });
   return alice;

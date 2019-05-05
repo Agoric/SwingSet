@@ -4,128 +4,89 @@
 
 import harden from '@agoric/harden';
 
-function escrowExchange(terms, ticketMaker) {
-  const { moneyNeeded, stockNeeded } = terms;
+import { makePromise } from '../../src/kernel/makePromise';
 
-  function makeTransfer(srcPaymentP, amount, wonR, refundR) {
+// For clarity, the code below internally speaks of a scenario is
+// which Alice is trading some of her money for some of Bob's
+// stock. However, for generality, the API does not expose names like
+// "alice", "bob", "money", or "stock". Rather, Alice and Bob are
+// players 0 and 1. Money are the rights transfered from player 0 to
+// 1, and Stock are the rights transfered from 1 to 0.
+
+function escrowExchange(terms, ticketMaker) {
+  const [moneyNeeded, stockNeeded] = terms;
+
+  function makeTransfer(amount, srcPaymentP) {
     const { issuer } = amount.label;
-    const escrowPaymentP = E(issuer).getExclusive(
-      srcPaymentP,
-      amount,
-      'escrow',
-    );
+    const escrowP = E(issuer).getExclusive(amount, srcPaymentP, 'escrow');
+    const winnings = makePromise();
+    const refund = makePromise();
     return harden({
       phase1() {
-        return escrowPaymentP;
+        return escrowP;
       },
       phase2() {
-        wonR(escrowPaymentP);
-        refundR(null);
+        winnings.res(escrowP);
+        refund.res(null);
       },
       abort(reason) {
-        wonR(Promise.reject(reason));
-        refundR(escrowPaymentP);
+        winnings.reject(reason);
+        refund.res(escrowP);
+      },
+      getWinnings() {
+        return winnings.p;
+      },
+      getRefund() {
+        return refund.p;
       },
     });
   }
 
-  let aR;
-  const aP = new Promise(r => (aR = r));
-  let bR;
-  const bP = new Promise(r => (bR = r));
+  // Promise wiring
 
-  Promise.all([aP, bP]).then((a, b) => {
-    // Money section
+  const moneyPayment = makePromise();
+  const moneyTransfer = makeTransfer(moneyNeeded, moneyPayment.p);
 
-    const moneyTransfer = makeTransfer(
-      a.moneyPaymentP,
-      moneyNeeded,
-      b.moneyWonR,
-      a.moneyRefundR,
-    );
+  const stockPayment = makePromise();
+  const stockTransfer = makeTransfer(stockNeeded, stockPayment.p);
 
-    // Stock section
+  // TODO Use cancellation tokens instead.
+  const aliceCancel = makePromise();
+  const bobCancel = makePromise();
 
-    const stockTransfer = makeTransfer(
-      b.stockPaymentP,
-      stockNeeded,
-      a.stockWonR,
-      b.stockRefundR,
-    );
+  // Set it all in motion optimistically.
 
-    // Set it all in motion optimistically.
-
-    function failOnly(reasonP) {
-      return Promise.resolve(reasonP).then(reason => Promise.reject(reason));
-    }
-
-    // TODO: Use Promise.allSettled on the later phases to detect
-    // quiescence for better testing.
-    Promise.race([
-      Promise.all([moneyTransfer.phase1(), stockTransfer.phase1()]),
-      failOnly(a.cancelP),
-      failOnly(b.cancelP),
-    ]).then(
-      _ => {
-        moneyTransfer.phase2();
-        stockTransfer.phase2();
-      },
-      reason => {
-        moneyTransfer.abort(reason);
-        stockTransfer.abort(reason);
-      },
-    );
-  });
+  const decisionP = Promise.race([
+    Promise.all([moneyTransfer.phase1(), stockTransfer.phase1()]),
+    aliceCancel.p,
+    bobCancel.p]);
+  // TODO: Use Promise.allSettled on these later phases to detect
+  // quiescence, for better testing.
+  decisionP.then(
+    _ => { moneyTransfer.phase2(); stockTransfer.phase2(); },
+    reason => { moneyTransfer.abort(reason); stockTransfer.abort(reason); }
+  );
 
   // Seats
 
   const aliceSeat = harden({
-    offer(moneyPaymentP, cancelP) {
-      let stockWonR;
-      let moneyRefundR;
-      const result = harden({
-        stockWonP: new Promise(r => (stockWonR = r)),
-        moneyRefundP: new Promise(r => (moneyRefundR = r)),
-      });
-
-      aR(
-        harden({
-          moneyPaymentP,
-          cancelP,
-          stockWonR,
-          moneyRefundR,
-        }),
-      );
-
-      return result;
-    },
+    offer: moneyPayment.res,
+    cancel: aliceCancel.reject,
+    getWinnings: stockTransfer.getWinnings,
+    getRefund: moneyTransfer.getRefund,      
   });
-  const aliceJoinTicket = ticketMaker.make('alice join', aliceSeat);
 
   const bobSeat = harden({
-    offer(stockPaymentP, cancelP) {
-      let moneyWonR;
-      let stockRefundR;
-      const result = harden({
-        moneyWonP: new Promise(r => (moneyWonR = r)),
-        stockRefundP: new Promise(r => (stockRefundR = r)),
-      });
-
-      bR(
-        harden({
-          stockPaymentP,
-          cancelP,
-          moneyWonR,
-          stockRefundR,
-        }),
-      );
-
-      return result;
-    },
+    offer: stockPayment.res,
+    cancel: bobCancel.reject,
+    getWinnings: moneyTransfer.getWinnings,
+    getRefund: stockTransfer.getRefund,      
   });
-  const bobJoinTicket = ticketMaker.make('bob join', bobSeat);
 
-  return harden({ aliceJoinTicket, bobJoinTicket });
+  return harden([
+    ticketMaker.make([moneyNeeded, stockNeeded], aliceSeat),
+    ticketMaker.make([stockNeeded, moneyNeeded], bobSeat)
+  ]);
 }
 
 export { escrowExchange };
