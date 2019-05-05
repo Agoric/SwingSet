@@ -5,6 +5,18 @@ import harden from '@agoric/harden';
 import { check } from '../../collections/insist';
 
 function build(E) {
+
+  function showPaymentBalance(name, paymentP) {
+    E(paymentP).getXferBalance().then(
+      amount => console.log(name, ' xfer balance ', amount));
+  }
+  function showPurseBalances(name, purseP) {
+    E(purseP).getXferBalance().then(
+      amount => console.log(name, ' xfer balance ', amount));
+    E(purseP).getUseBalance().then(
+      amount => console.log(name, ' use balance ', amount));
+  }
+
   // This is written in the full assay style, where bare number
   // objects are never used in lieu of full assay objects. This has
   // the virtue of unit typing, where 3 dollars cannot be confused
@@ -25,12 +37,8 @@ function build(E) {
       const alicePurseP = E(mMintP).mint(bucks1000, 'alice');
       const paymentP = E(alicePurseP).withdraw(bucks50);
       Promise.resolve(paymentP).then(_ => {
-        const aBal = E(alicePurseP).getXferBalance();
-        const dBal = E(paymentP).getXferBalance();
-        Promise.all([aBal, dBal]).then(bals => {
-          console.log('++ balances:', bals);
-          console.log('++ DONE');
-        });
+        showPurseBalances('alice', alicePurseP);
+        showPaymentBalance('payment', paymentP);
       });
     });
   }
@@ -45,12 +53,8 @@ function build(E) {
     const alicePurseP = E(mMintP).mint(1000, 'alice');
     const paymentP = E(alicePurseP).withdraw(50);
     Promise.resolve(paymentP).then(_ => {
-      const aBal = E(alicePurseP).getXferBalance();
-      const dBal = E(paymentP).getXferBalance();
-      Promise.all([aBal, dBal]).then(bals => {
-        console.log('++ balances:', bals);
-        console.log('++ DONE');
-      });
+      showPurseBalances('alice', alicePurseP);
+      showPaymentBalance('payment', paymentP);
     });
   }
 
@@ -62,17 +66,14 @@ function build(E) {
     }
     const contractSrc = `${trivContract}`;
 
-    const fooTicketP = E(host).start(contractSrc, [88]);
+    const fooTicketP = E(host).start(contractSrc, 'foo terms');
 
-    E(fooTicketP)
-      .getXferBalance()
-      .then(bal => {
-        console.log('Foo label ', bal.label);
-      });
+    showPaymentBalance('foo', fooTicketP);
 
     const eightP = E(host).redeem(fooTicketP);
 
     eightP.then(res => {
+      showPaymentBalance('foo', fooTicketP);
       console.log('++ eightP resolved to', res, '(should be 8)');
       if (res !== 8) {
         throw new Error(`eightP resolved to ${res}, not 8`);
@@ -121,6 +122,10 @@ function build(E) {
       .tradeWell(aliceP, false)
       .then(
         res => {
+          showPurseBalances('alice money', aliceMoneyPurseP);
+          showPurseBalances('alice stock', aliceStockPurseP);
+          showPurseBalances('bob money', bobMoneyPurseP);
+          showPurseBalances('bob stock', bobStockPurseP);
           console.log('++ bobP.tradeWell done:', res);
           console.log('++ DONE');
         },
