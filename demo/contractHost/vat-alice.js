@@ -52,6 +52,7 @@ ERR: invite called before init()`;
           .getRefund()
           .then(refund => refund && E(myMoneyPurseP).deposit(10, refund)),
       ]);
+      // TODO BUG: Just returning doneP somehow produces an array with holes.
       return doneP.then(_ => []);
     },
   });
