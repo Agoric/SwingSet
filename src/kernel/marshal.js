@@ -28,7 +28,8 @@ export { QCLASS };
 function isPassByCopyError(val) {
   if (val instanceof Error) {
     // TODO: Need a better test than instanceof
-    // TODO: Check no accessor and no extraneous properties.
+    // TODO: Check no accessors
+    // TODO: Check no extraneous properties other than "stack"
     // TODO: Check that .name is own and .message inherited from a
     // known named error class.
     if (typeof val.name !== 'string' && typeof val.message !== 'string') {
@@ -70,12 +71,12 @@ function isPassByCopyRecord(val) {
   if (Object.getPrototypeOf(val) !== Object.prototype) {
     return false;
   }
-  const entries = Object.entries(Object.getOwnPropertyDescriptors(val));
-  if (entries.length === 0) {
+  const descList = Object.values(Object.getOwnPropertyDescriptors(val));
+  if (descList.length === 0) {
     // empty non-array objects are pass-by-presence, not pass-by-copy
     return false;
   }
-  for (const [name, desc] of entries) {
+  for (const desc of descList) {
     if (!('value' in desc)) {
       // Should we error if we see an accessor here?
       return false;
