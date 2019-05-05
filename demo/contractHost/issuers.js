@@ -8,7 +8,6 @@ import { check } from '../../collections/insist';
 import { makeNatOps } from './assays';
 
 function makeMint(description, makeAssayOps = makeNatOps) {
-  
   check(description)`\
 Description must be truthy: ${description}`;
 

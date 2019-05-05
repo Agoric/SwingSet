@@ -4,7 +4,7 @@
 import harden from '@agoric/harden';
 
 import { check } from '../../collections/insist';
-import escrowExchange from './escrow';
+import { escrowExchange } from './escrow';
 
 function makeBob(E, host) {
   const escrowSrc = `(${escrowExchange})`;
