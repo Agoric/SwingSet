@@ -36,13 +36,18 @@ function canPassByCopy(val) {
   const hasFunction = names.some(name => typeof val[name] === 'function');
   if (hasFunction) return false;
   const p = Object.getPrototypeOf(val);
-  if (p !== null && p !== Object.prototype && p !== Array.prototype) {
-    // todo: arrays should also be Array.isArray(val)
-    return false;
-  }
-  if (names.length === 0) {
-    // empty objects are pass-by-presence, not pass-by-copy
-    return false;
+  if (Array.isArray(val)) {
+    if (p !== Array.prototype) {
+      return false;
+    }
+  } else {
+    if (p !== Object.prototype) {
+      return false;
+    }
+    if (names.length === 0) {
+      // empty non-array objects are pass-by-presence, not pass-by-copy
+      return false;
+    }
   }
   return true;
 }
@@ -55,6 +60,9 @@ export function mustPassByPresence(val) {
   if (typeof val !== 'object') {
     throw new Error(`cannot serialize non-objects like ${val}`);
   }
+  if (Array.isArray(val)) {
+    throw new Error(`Arrays cannot be pass-by-presence`);
+  }
 
   const names = Object.getOwnPropertyNames(val);
   names.forEach(name => {
@@ -62,6 +70,7 @@ export function mustPassByPresence(val) {
       // hack to allow Vows to pass-by-presence
       return;
     }
+    // TODO: Test for only data properties, therefore stable
     if (typeof val[name] !== 'function') {
       throw new Error(
         `cannot serialize objects with non-methods like the .${name} in ${val}`,
@@ -82,11 +91,12 @@ export function mustPassByPresence(val) {
 //   * throwing an error for an unregistered symbol
 //   * that value's typeof string for all other primitive values
 // For frozen objects, the possible answers
-//   * 'copy' for non-empty records or arrays with only data properties
-//   * 'error' for instances of Error
-//   * 'presence' for objects with only method properties
+//   * 'copyRecord' for non-empty records with only data properties
+//   * 'copyArray' for arrays with only data properties
+//   * 'copyError' for instances of Error with only data properties
+//   * 'presence' for non-array objects with only method properties
 //   * 'promise' for genuine promises only
-//   * throwing an error on anything else.
+//   * throwing an error on anything else, including thenables.
 // We export passStyleOf so other algorithms can use this module's
 // classification.
 export function passStyleOf(val) {
@@ -109,12 +119,17 @@ export function passStyleOf(val) {
       if (typeof val.then === 'function') {
         throw new Error(`Cannot pass non-promise thenables`);
       }
-      if (val instanceof Error) {
-        // Need a better test than instanceof
-        return 'error';
-      }
       if (canPassByCopy(val)) {
-        return 'copy';
+        if (val instanceof Error) {
+          // TODO: Need a better test than instanceof
+          // TODO: Insist on only 'name' and 'message' properties.
+          return 'copyError';
+        } else if (Array.isArray(val)) {
+          // TODO: Insist on only array index properties without holes.
+          return 'copyArray';
+        } else {
+          return 'copyRecord';
+        }
       }
       mustPassByPresence(val);
       return 'presence';
@@ -211,13 +226,14 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
           ibidCount += 1;
 
           switch (passStyle) {
-            case 'copy': {
+            case 'copyRecord':
+            case 'copyArray': {
               // console.log(`canPassByCopy: ${val}`);
               // Purposely in-band for readability, but creates need for
               // Hilbert hotel.
               return val;
             }
-            case 'error': {
+            case 'copyError': {
               // We deliberately do not share the stack, but it would
               // be useful to log the stack locally so someone who has
               // privileged access to the throwing Vat can correlate
@@ -226,7 +242,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
               // identifier and include it in the message, to help
               // with the correlation.
               return harden({
-                [QCLASS]: 'error',
+                [QCLASS]: 'copyError',
                 name: `${val.name}`,
                 message: `${val.message}`,
               });
@@ -301,7 +317,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
             return ibids[index];
           }
 
-          case 'error': {
+          case 'copyError': {
             const EC = errorConstructors.get(`${data.name}`) || Error;
             const e = new EC(`${data.message}`);
             return harden(e);
