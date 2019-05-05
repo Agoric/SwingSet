@@ -3,7 +3,6 @@ import harden from '@agoric/harden';
 import { check } from './insist';
 import { passStyleOf } from '../src/kernel/marshal';
 
-
 // Are left and right structurally equivalent? This compares
 // pass-by-copy data deeply until non-pass-by-copy values are
 // reached. The non-pass-by-copy values at the leaves of the
@@ -42,11 +41,16 @@ Cannot structurally compare promises: ${right}`;
         return false;
       }
       for (const name of leftNames) {
+        // TODO: Better hasOwnProperty check
+        if (!Object.getOwnPropertyDescriptor(right, name)) {
+          return false;
+        }
         // TODO: Make cycle tolerant
         if (!sameStructure(left[name], right[name])) {
           return false;
         }
       }
+      return true;
     }
     case 'copyError': {
       return left.name === right.name && left.message === right.message;

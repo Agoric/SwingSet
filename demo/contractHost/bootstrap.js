@@ -2,6 +2,8 @@
 
 import harden from '@agoric/harden';
 
+import { check } from '../../collections/insist';
+
 function build(E) {
   // This is written in the full assay style, where bare number
   // objects are never used in lieu of full assay objects. This has
@@ -60,7 +62,14 @@ function build(E) {
     }
     const contractSrc = `${trivContract}`;
 
-    const fooTicketP = E(host).start(contractSrc, {});
+    const fooTicketP = E(host).start(contractSrc, [88]);
+
+    E(fooTicketP)
+      .getXferBalance()
+      .then(bal => {
+        console.log('Foo label ', bal.label);
+      });
+
     const eightP = E(host).redeem(fooTicketP);
 
     eightP.then(res => {
@@ -96,7 +105,7 @@ function build(E) {
     return ifItFitsP;
   }
 
-  function betterContractTestBobFirst(mint, alice, bob, bobLies = false) {
+  function betterContractTestBobFirst(mint, alice, bob) {
     const moneyMintP = E(mint).makeMint('clams');
     const aliceMoneyPurseP = E(moneyMintP).mint(1000, 'aliceMainMoney');
     const bobMoneyPurseP = E(moneyMintP).mint(1001, 'bobMainMoney');
@@ -108,34 +117,17 @@ function build(E) {
     const aliceP = E(alice).init(aliceMoneyPurseP, aliceStockPurseP);
     const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP);
 
-    if (bobLies) {
-      E(bobP)
-        .tradeWell(aliceP, true)
-        .then(
-          res => {
-            console.log('++ bobP.tradeWell done:', res);
-          },
-          rej => {
-            if (rej.message.startsWith('Unexpected contract')) {
-              console.log('++ DONE');
-            } else {
-              console.log('++ bobP.tradeWell error:', rej);
-            }
-          },
-        );
-    } else {
-      E(bobP)
-        .tradeWell(aliceP, false)
-        .then(
-          res => {
-            console.log('++ bobP.tradeWell done:', res);
-            console.log('++ DONE');
-          },
-          rej => {
-            console.log('++ bobP.tradeWell error:', rej);
-          },
-        );
-    }
+    E(bobP)
+      .tradeWell(aliceP, false)
+      .then(
+        res => {
+          console.log('++ bobP.tradeWell done:', res);
+          console.log('++ DONE');
+        },
+        rej => {
+          console.log('++ bobP.tradeWell error:', rej);
+        },
+      );
   }
 
   const obj0 = {
@@ -154,8 +146,9 @@ function build(E) {
         betterContractTestAliceFirst(vats.mint, alice, bob);
       } else if (argv[0] === 'bob-first') {
         betterContractTestBobFirst(vats.mint, alice, bob);
-      } else if (argv[0] === 'bob-first-lies') {
-        betterContractTestBobFirst(vats.mint, alice, bob, true);
+      } else {
+        check(argv.length === 0)`\
+Unrecognized arg0: ${argv[0]}`;
       }
       return undefined;
     },

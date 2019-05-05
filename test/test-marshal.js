@@ -9,10 +9,7 @@ import makePromise from '../src/kernel/makePromise';
 test('serialize static data', t => {
   const m = makeMarshal();
   const ser = val => m.serialize(val);
-  t.throws(
-    () => ser([1, 2]),
-    /cannot pass non-frozen objects like .*/
-  );
+  t.throws(() => ser([1, 2]), /cannot pass non-frozen objects like .*/);
   t.deepEqual(ser(harden([1, 2])), { argsString: '[1,2]', slots: [] });
   t.deepEqual(ser(harden({ foo: 1 })), { argsString: '{"foo":1}', slots: [] });
   t.deepEqual(ser(true), { argsString: 'true', slots: [] });

@@ -3,6 +3,7 @@
 
 import harden from '@agoric/harden';
 
+import { check } from '../../collections/insist';
 import escrowExchange from './escrow';
 
 function makeBob(E, host) {
@@ -15,23 +16,18 @@ function makeBob(E, host) {
   let myStockIssuerP;
 
   function init(myMoneyPurse, myStockPurse) {
-    initialized = true;
     myMoneyPurseP = Promise.resolve(myMoneyPurse);
     myMoneyIssuerP = E(myMoneyPurse).getIssuer();
     myStockPurseP = Promise.resolve(myStockPurse);
     myStockIssuerP = E(myStockPurse).getIssuer();
+    initialized = true;
     /* eslint-disable-next-line no-use-before-define */
     return bob; // bob and init use each other
   }
 
-  const check = (_allegedSrc, _allegedSide) => {
-    // for testing purposes, alice and bob are willing to play
-    // any side of any contract, so that the failure we're testing
-    // is in the contractHost's checking
-  };
-
   const bob = harden({
     init,
+
     /**
      * This is not an imperative to Bob to buy something but rather
      * the opposite. It is a request by a client to buy something from
@@ -62,20 +58,16 @@ function makeBob(E, host) {
         .then(_ => good);
     },
 
-    tradeWell(alice, bobLies = false) {
+    tradeWell(alice) {
       console.log('++ bob.tradeWell starting');
-      if (!initialized) {
-        console.log('++ ERR: tradeWell called before init()');
-      }
-      const tokensP = E(host).start(escrowSrc, terms);
+      check(initialized)`\
+ERR: tradeWell called before init()`;
+
+      const tokensP = E(host).start(escrowSrc, {});
       const aliceTokenP = tokensP.then(tokens => tokens[0]);
       const bobTokenP = tokensP.then(tokens => tokens[1]);
-      let escrowSrcWeTellAlice = escrowSrc;
-      if (bobLies) {
-        escrowSrcWeTellAlice += 'NOT';
-      }
       const doneP = Promise.all([
-        E(alice).invite(aliceTokenP, escrowSrcWeTellAlice, 0),
+        E(alice).invite(aliceTokenP),
         E(bob).invite(bobTokenP, escrowSrc, 1),
       ]);
       doneP.then(
@@ -95,7 +87,6 @@ function makeBob(E, host) {
         console.log('++ ERR: invite called before init()');
       }
       console.log('++ bob.invite start');
-      check(allegedSrc, allegedSide);
       console.log('++ bob.invite passed check');
       /* eslint-disable-next-line no-unused-vars */
       let cancel;

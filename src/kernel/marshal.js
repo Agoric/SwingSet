@@ -36,20 +36,17 @@ function canPassByCopy(val) {
   const hasFunction = names.some(name => typeof val[name] === 'function');
   if (hasFunction) return false;
   const p = Object.getPrototypeOf(val);
-  if (Array.isArray(val)) {
-    if (p !== Array.prototype) {
-      return false;
-    }
+  if (val instanceof Error) {
+    return typeof val.name === 'string' && typeof val.message === 'string';
+  } else if (Array.isArray(val)) {
+    return p === Array.prototype;
   } else {
-    if (p !== Object.prototype) {
-      return false;
-    }
     if (names.length === 0) {
       // empty non-array objects are pass-by-presence, not pass-by-copy
       return false;
     }
+    return p === Object.prototype;
   }
-  return true;
 }
 
 export function mustPassByPresence(val) {
@@ -70,7 +67,6 @@ export function mustPassByPresence(val) {
       // hack to allow Vows to pass-by-presence
       return;
     }
-    // TODO: Test for only data properties, therefore stable
     if (typeof val[name] !== 'function') {
       throw new Error(
         `cannot serialize objects with non-methods like the .${name} in ${val}`,
@@ -124,12 +120,12 @@ export function passStyleOf(val) {
           // TODO: Need a better test than instanceof
           // TODO: Insist on only 'name' and 'message' properties.
           return 'copyError';
-        } else if (Array.isArray(val)) {
+        }
+        if (Array.isArray(val)) {
           // TODO: Insist on only array index properties without holes.
           return 'copyArray';
-        } else {
-          return 'copyRecord';
         }
+        return 'copyRecord';
       }
       mustPassByPresence(val);
       return 'presence';
@@ -242,7 +238,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
               // identifier and include it in the message, to help
               // with the correlation.
               return harden({
-                [QCLASS]: 'copyError',
+                [QCLASS]: 'error',
                 name: `${val.name}`,
                 message: `${val.message}`,
               });
@@ -317,7 +313,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
             return ibids[index];
           }
 
-          case 'copyError': {
+          case 'error': {
             const EC = errorConstructors.get(`${data.name}`) || Error;
             const e = new EC(`${data.message}`);
             return harden(e);

@@ -3,58 +3,51 @@
 
 import harden from '@agoric/harden';
 
+import { check } from '../../collections/insist';
+
 function makeAlice(E, host) {
   let initialized = false;
   let myMoneyPurseP;
-  let myMoneyIssuerP;
+  //  let myMoneyIssuerP;
   /* eslint-disable-next-line no-unused-vars */
   let myStockPurseP;
-  let myStockIssuerP;
+  //  let myStockIssuerP;
 
   function init(myMoneyPurse, myStockPurse) {
-    initialized = true;
     myMoneyPurseP = Promise.resolve(myMoneyPurse);
-    myMoneyIssuerP = E(myMoneyPurse).getIssuer();
+    //    myMoneyIssuerP = E(myMoneyPurse).getIssuer();
     myStockPurseP = Promise.resolve(myStockPurse);
-    myStockIssuerP = E(myStockPurse).getIssuer();
+    //    myStockIssuerP = E(myStockPurse).getIssuer();
+    initialized = true;
     // eslint-disable-next-line no-use-before-define
     return alice; // alice and init use each other
   }
 
-  const check = (_allegedSrc, _allegedSide) => {
-    // for testing purposes, alice and bob are willing to play
-    // any side of any contract, so that the failure we're testing
-    // is in the contractHost's checking
-  };
-
   const alice = harden({
     init,
     payBobWell(bob) {
-      if (!initialized) {
-        console.log('++ ERR: payBobWell called before init()');
-      }
+      check(initialized)`\
+ERR: payBobWell called before init()`;
+
       const paymentP = E(myMoneyPurseP).withdraw(10);
       return E(bob).buy('shoe', paymentP);
     },
 
-    invite(tokenP, allegedSrc, allegedSide) {
-      if (!initialized) {
-        console.log('++ ERR: invite called before init()');
-      }
+    invite(ticketP) {
+      check(initialized)`\
+ERR: invite called before init()`;
 
-      check(allegedSrc, allegedSide);
-
-      // eslint-disable-next-line no-unused-vars
-      let cancel;
-      const a = harden({
-        moneySrcP: E(myMoneyPurseP).withdraw(10, 'aliceMoneySrc'),
-        moneyRefundP: E(myMoneyIssuerP).makeEmptyPurse('aliceMoneyRefund'),
-        stockDstP: E(myStockIssuerP).makeEmptyPurse('aliceStockDst'),
-        stockNeeded: 7,
-        cancellationP: new Promise(r => (cancel = r)),
+      const seatP = E(host).redeem(ticketP);
+      const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
+      const leaveTicketP = E(seatP).offer(moneyPaymentP);
+      const winningsP = E(host).redeem(leaveTicketP);
+      return Promise.resolve(winningsP).then(winnings => {
+        const { moneyRefundP, stockPaidP } = winnings;
+        return Promise.all([
+          E(moneyRefundP).getXferBalance(),
+          E(stockPaidP).getXferBalance(),
+        ]);
       });
-      const doneP = E(host).play(tokenP, allegedSrc, allegedSide, a);
-      return doneP.then(_ => E(a.stockDstP).getXferBalance());
     },
   });
   return alice;
