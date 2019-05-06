@@ -6,23 +6,29 @@ import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
 
 import { check } from '../../collections/insist';
-// import { makeMetaOps } from './assays';
+import { makeMetaTicketOpsMaker } from './assays';
 import { makeMint } from './issuers';
 import makePromise from '../../src/kernel/makePromise';
 
 function makeHost(E) {
-  /*
-  const contractMetaMint = makeMint('contractHost',
-                                    makeMetaOps);
-  const contractMetaIssuer = contractMetaMint.getIssuer();
-*/
-
   // Maps from ticket issuers to seats
   const seats = new WeakMap();
+
+  const ticketLabelToOps = new WeakMap();
+  function getTicketLabelToOps(ticketLabel) {
+    return ticketLabelToOps.get(ticketLabel);
+  }
+  const makeMetaTicketOps = makeMetaTicketOpsMaker(getTicketLabelToOps);
+  const metaTicketMint = makeMint('contractHost', makeMetaTicketOps);
+  const metaTicketIssuer = metaTicketMint.getIssuer();
 
   // The contract host is designed to have a long-lived credible
   // identity.
   return harden({
+    getMetaTicketIssuer() {
+      return metaTicketIssuer;
+    },
+
     // The `contractSrc` is code for a contract function parameterized
     // by `terms` and `ticketMaker`. `start` evaluates this code,
     // calls that function to start the contract, and returns whatever
