@@ -153,11 +153,19 @@ Payment expected: ${src}`;
 }
 harden(makeMint);
 
+// Creates a local issuer that locally represents a remotely issued
+// currency. Returns a promise for a peg object that asynchonously
+// converts between the two. The local currency is synchronously
+// transferable locally.
 function makePeg(E, remoteIssuerP, makeAssayOps = makeNatOps) {
   const remoteLabelP = E(remoteIssuerP).getLabel();
   return Promise.resolve(remoteLabelP).then(remoteLabel => {
-    const { description } = remoteLabel;
+
+    // Retaining remote currency deposits it in here.
+    // Redeeming local currency withdraws remote from here.
     const backingPurseP = E(remoteIssuerP).makeEmptyPurse();
+
+    const { description } = remoteLabel;
     const localMint = makeMint(description, makeAssayOps);
     const localIssuer = localMint.getIssuer();
     const localLabel = localIssuer.getLabel();
