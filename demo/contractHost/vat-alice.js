@@ -8,10 +8,10 @@ import { allSettled } from '../../collections/allSettled';
 import { escrowExchange } from './escrow';
 
 function makeAlice(E, host) {
-
   function showPaymentBalance(name, paymentP) {
-    E(paymentP).getXferBalance().then(
-      amount => console.log(name, ' xfer balance ', amount));
+    E(paymentP)
+      .getXferBalance()
+      .then(amount => console.log(name, ' xfer balance ', amount));
   }
 
   const escrowSrc = `(${escrowExchange})`;
@@ -47,17 +47,17 @@ ERR: invite called before init()`;
       const tIssuerP = E(ticketP).getIssuer();
       const moneyIssuerP = E(myMoneyPurseP).getIssuer();
       const stockIssuerP = E(myStockPurseP).getIssuer();
-      
-      function verifyTix([tIssuer, mIssuer, sIssuer])  {
+
+      function verifyTix([tIssuer, mIssuer, sIssuer]) {
         const mLabel = harden({ issuer: mIssuer, description: 'clams' });
         const clams10 = harden({ label: mLabel, data: 10 });
         const sLabel = harden({ issuer: sIssuer, description: 'fudco' });
         const fudco7 = harden({ label: sLabel, data: 7 });
-        
+
         const tDesc = harden({
           contractSrc: escrowSrc,
           terms: [clams10, fudco7],
-          seatDesc: [clams10, fudco7]
+          seatDesc: [clams10, fudco7],
         });
         const tLabel = harden({ issuer: tIssuer, description: tDesc });
         const tix1 = harden({ label: tLabel, data: 1 });
@@ -81,9 +81,12 @@ ERR: invite called before init()`;
         // TODO: Test all variations of the expectations above and see
         // that they fail.
         return E(tIssuer).getExclusive(tix1, ticketP, 'verified tix');
-      }      
-      const verifiedTixP = Promise.all([tIssuerP, moneyIssuerP, stockIssuerP])
-            .then(verifyTix);
+      }
+      const verifiedTixP = Promise.all([
+        tIssuerP,
+        moneyIssuerP,
+        stockIssuerP,
+      ]).then(verifyTix);
 
       showPaymentBalance('verified tix', verifiedTixP);
 

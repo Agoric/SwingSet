@@ -5,16 +5,18 @@ import harden from '@agoric/harden';
 import { check } from '../../collections/insist';
 
 function build(E) {
-
   function showPaymentBalance(name, paymentP) {
-    E(paymentP).getXferBalance().then(
-      amount => console.log(name, ' xfer balance ', amount));
+    E(paymentP)
+      .getXferBalance()
+      .then(amount => console.log(name, ' xfer balance ', amount));
   }
   function showPurseBalances(name, purseP) {
-    E(purseP).getXferBalance().then(
-      amount => console.log(name, ' xfer balance ', amount));
-    E(purseP).getUseBalance().then(
-      amount => console.log(name, ' use balance ', amount));
+    E(purseP)
+      .getXferBalance()
+      .then(amount => console.log(name, ' xfer balance ', amount));
+    E(purseP)
+      .getUseBalance()
+      .then(amount => console.log(name, ' use balance ', amount));
   }
 
   // This is written in the full assay style, where bare number

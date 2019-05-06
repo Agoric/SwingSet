@@ -69,6 +69,11 @@ Payment expected: ${src}`;
   }
 
   const issuer = harden({
+    getLabel() {
+      // eslint-disable-next-line no-use-before-define
+      return ops.getLabel();
+    },
+
     getAssayOps() {
       // eslint-disable-next-line no-use-before-define
       return ops;
@@ -131,6 +136,8 @@ Payment expected: ${src}`;
             xferRights.set(purse, purseNewXferAmount);
             useRights.set(homePurse, homeNewUseAmount);
             useRights.set(purse, purseNewUseAmount);
+
+            return amount;
           });
         },
         withdraw(amount, name = 'a withdrawal payment') {
@@ -146,4 +153,54 @@ Payment expected: ${src}`;
 }
 harden(makeMint);
 
-export { makeMint };
+function makePeg(E, remoteIssuerP, makeAssayOps = makeNatOps) {
+  const remoteLabelP = E(remoteIssuerP).getLabel();
+  return Promise.resolve(remoteLabelP).then(remoteLabel => {
+    const { description } = remoteLabel;
+    const backingPurseP = E(remoteIssuerP).makeEmptyPurse();
+    const localMint = makeMint(description, makeAssayOps);
+    const localIssuer = localMint.getIssuer();
+    const localLabel = localIssuer.getLabel();
+    const localSink = localIssuer.makeEmptyPurse();
+
+    function localAmountOf(remoteAmount) {
+      return harden({
+        label: localLabel,
+        data: remoteAmount.data,
+      });
+    }
+
+    function remoteAmountOf(localAmount) {
+      return harden({
+        label: remoteLabel,
+        data: localAmount.data,
+      });
+    }
+
+    return harden({
+      getLocalIssuer() {
+        return localIssuer;
+      },
+
+      getRemoteIssuer() {
+        return remoteIssuerP;
+      },
+
+      retain(remoteAmount, remotePaymentP, name) {
+        return E(backingPurseP)
+          .deposit(remoteAmount, remotePaymentP)
+          .then(amount => localMint.mint(localAmountOf(amount), name));
+      },
+
+      redeem(localAmount, localPayment, name) {
+        return localSink
+          .deposit(localAmount, localPayment)
+          .then(amount =>
+            E(backingPurseP).withdraw(remoteAmountOf(amount), name),
+          );
+      },
+    });
+  });
+}
+
+export { makeMint, makePeg };

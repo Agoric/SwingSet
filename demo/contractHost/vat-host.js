@@ -13,7 +13,6 @@ import makePromise from '../../src/kernel/makePromise';
 function makeHost(E) {
   /*
   const contractMetaMint = makeMint('contractHost',
-                                    undefined,
                                     makeMetaOps);
   const contractMetaIssuer = contractMetaMint.getIssuer();
 */

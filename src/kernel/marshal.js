@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import Nat from '@agoric/nat';
+// import Nat from '@agoric/nat';
 
 // Special property name that indicates an encoding that needs special
 // decoding.
@@ -258,10 +258,10 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
             // commenting out the following case.
 
             // Backreference to prior occurrence
-//            return harden({
-//              [QCLASS]: 'ibid',
-//              index: ibidMap.get(val),
-//            });
+            //            return harden({
+            //              [QCLASS]: 'ibid',
+            //              index: ibidMap.get(val),
+            //            });
           }
           ibidMap.set(val, ibidCount);
           ibidCount += 1;
@@ -356,11 +356,11 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
             console.log('ibids not yet implemented correctly', data);
             throw new Error(`ibids not yet implemented: ${data}`);
 
-            const index = Nat(data.index);
-            if (index >= ibids.length) {
-              throw new RangeError(`ibid out of range: ${index}`);
-            }
-            return ibids[index];
+            //            const index = Nat(data.index);
+            //            if (index >= ibids.length) {
+            //              throw new RangeError(`ibid out of range: ${index}`);
+            //            }
+            //            return ibids[index];
           }
 
           case 'error': {
