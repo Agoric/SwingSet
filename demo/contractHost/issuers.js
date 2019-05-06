@@ -160,7 +160,6 @@ harden(makeMint);
 function makePeg(E, remoteIssuerP, makeAssayOps = makeNatOps) {
   const remoteLabelP = E(remoteIssuerP).getLabel();
   return Promise.resolve(remoteLabelP).then(remoteLabel => {
-
     // Retaining remote currency deposits it in here.
     // Redeeming local currency withdraws remote from here.
     const backingPurseP = E(remoteIssuerP).makeEmptyPurse();

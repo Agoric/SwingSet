@@ -12,11 +12,15 @@ function makeBob(E, host) {
 
   let initialized = false;
   let myMoneyPurseP;
+  let moneyIssuerP;
   let myStockPurseP;
+  let stockIssuerP;
 
   function init(myMoneyPurse, myStockPurse) {
     myMoneyPurseP = Promise.resolve(myMoneyPurse);
     myStockPurseP = Promise.resolve(myStockPurse);
+    moneyIssuerP = E(myMoneyPurseP).getIssuer();
+    stockIssuerP = E(myStockPurseP).getIssuer();
     initialized = true;
     /* eslint-disable-next-line no-use-before-define */
     return bob; // bob and init use each other
@@ -60,9 +64,7 @@ ERR: buy called before init()`;
       check(initialized)`\
 ERR: tradeWell called before init()`;
 
-      const moneyIssuerP = E(myMoneyPurseP).getIssuer();
       const moneyNeededP = E(E(moneyIssuerP).getAssayOps()).make(10);
-      const stockIssuerP = E(myStockPurseP).getIssuer();
       const stockNeededP = E(E(stockIssuerP).getAssayOps()).make(7);
 
       return Promise.all([moneyNeededP, stockNeededP]).then(terms => {

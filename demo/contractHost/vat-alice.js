@@ -18,11 +18,15 @@ function makeAlice(E, host) {
 
   let initialized = false;
   let myMoneyPurseP;
+  let moneyIssuerP;
   let myStockPurseP;
+  let stockIssuerP;
 
   function init(myMoneyPurse, myStockPurse) {
     myMoneyPurseP = Promise.resolve(myMoneyPurse);
+    moneyIssuerP = E(myMoneyPurseP).getIssuer();
     myStockPurseP = Promise.resolve(myStockPurse);
+    stockIssuerP = E(myStockPurseP).getIssuer();
     initialized = true;
     // eslint-disable-next-line no-use-before-define
     return alice; // alice and init use each other
@@ -45,8 +49,6 @@ ERR: invite called before init()`;
       showPaymentBalance('alice tix', ticketP);
 
       const tIssuerP = E(ticketP).getIssuer();
-      const moneyIssuerP = E(myMoneyPurseP).getIssuer();
-      const stockIssuerP = E(myStockPurseP).getIssuer();
 
       function verifyTix([tIssuer, mIssuer, sIssuer]) {
         const mLabel = harden({ issuer: mIssuer, description: 'clams' });
