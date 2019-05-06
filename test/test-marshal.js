@@ -173,6 +173,16 @@ test('deserialize imports', t => {
   ]);
   t.is(a, c);
 
+  // Kate's error: happens when passing an array with two items that
+  // are the same presence
+  const d = m.unserialize(
+    '[{"@qclass":"slot","index":0},{"@qclass":"ibid","index":1}]',
+    [{ type: 'import', id: 1 }],
+  );
+
+  console.log(d);
+  t.ok(false); // not sure what the result should be
+
   t.end();
 });
 
