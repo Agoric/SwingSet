@@ -4,9 +4,9 @@ import harden from '@agoric/harden';
 
 import { makePrivateName } from '../../collections/PrivateName';
 import { check } from '../../collections/insist';
-import { makeNatOps } from './assays';
+import { makeNatAssay } from './assays';
 
-function makeMint(description, makeAssayOps = makeNatOps) {
+function makeMint(description, makeAssay = makeNatAssay) {
   check(description)`\
 Description must be truthy: ${description}`;
 
@@ -31,7 +31,7 @@ Description must be truthy: ${description}`;
   // internal function used for both cases, since they are so similar.
   function takePayment(amount, isPurse, srcP, _name) {
     // eslint-disable-next-line no-use-before-define
-    amount = ops.coerce(amount);
+    amount = assay.coerce(amount);
     _name = `${_name}`;
     return Promise.resolve(srcP).then(src => {
       if (isPurse) {
@@ -43,7 +43,7 @@ Payment expected: ${src}`;
       }
       const srcOldXferAmount = xferRights.get(src);
       // eslint-disable-next-line no-use-before-define
-      const srcNewXferAmount = ops.without(srcOldXferAmount, amount);
+      const srcNewXferAmount = assay.without(srcOldXferAmount, amount);
 
       // ///////////////// commit point //////////////////
       // All queries above passed with no side effects.
@@ -70,17 +70,17 @@ Payment expected: ${src}`;
   const issuer = harden({
     getLabel() {
       // eslint-disable-next-line no-use-before-define
-      return ops.getLabel();
+      return assay.getLabel();
     },
 
-    getAssayOps() {
+    getAssay() {
       // eslint-disable-next-line no-use-before-define
-      return ops;
+      return assay;
     },
 
     makeEmptyPurse(name = 'a purse') {
       // eslint-disable-next-line no-use-before-define
-      return mint.mint(ops.empty(), name); // mint and issuer call each other
+      return mint.mint(assay.empty(), name); // mint and issuer call each other
     },
 
     getExclusive(amount, srcPaymentP, name = 'a payment') {
@@ -90,14 +90,14 @@ Payment expected: ${src}`;
 
   const label = harden({ issuer, description });
 
-  const ops = makeAssayOps(label);
+  const assay = makeAssay(label);
 
   const mint = harden({
     getIssuer() {
       return issuer;
     },
     mint(initialBalance, _name = 'a purse') {
-      initialBalance = ops.coerce(initialBalance);
+      initialBalance = assay.coerce(initialBalance);
       _name = `${_name}`;
 
       const purse = harden({
@@ -111,20 +111,20 @@ Payment expected: ${src}`;
           return useRights.get(purse);
         },
         deposit(amount, srcPaymentP) {
-          amount = ops.coerce(amount);
+          amount = assay.coerce(amount);
           return Promise.resolve(srcPaymentP).then(srcPayment => {
             const purseOldXferAmount = xferRights.get(purse);
             const srcOldXferAmount = xferRights.get(srcPayment);
             // Also checks that the union is representable
-            const purseNewXferAmount = ops.with(purseOldXferAmount, amount);
-            const srcNewXferAmount = ops.without(srcOldXferAmount, amount);
+            const purseNewXferAmount = assay.with(purseOldXferAmount, amount);
+            const srcNewXferAmount = assay.without(srcOldXferAmount, amount);
 
             const homePurse = homePurses.get(srcPayment);
             const purseOldUseAmount = useRights.get(purse);
             const homeOldUseAmount = useRights.get(homePurse);
             // Also checks that the union is representable
-            const purseNewUseAmount = ops.with(purseOldUseAmount, amount);
-            const homeNewUseAmount = ops.without(homeOldUseAmount, amount);
+            const purseNewUseAmount = assay.with(purseOldUseAmount, amount);
+            const homeNewUseAmount = assay.without(homeOldUseAmount, amount);
 
             // ///////////////// commit point //////////////////
             // All queries above passed with no side effects.
@@ -156,7 +156,7 @@ harden(makeMint);
 // currency. Returns a promise for a peg object that asynchonously
 // converts between the two. The local currency is synchronously
 // transferable locally.
-function makePeg(E, remoteIssuerP, makeAssayOps = makeNatOps) {
+function makePeg(E, remoteIssuerP, makeAssay = makeNatAssay) {
   const remoteLabelP = E(remoteIssuerP).getLabel();
   return Promise.resolve(remoteLabelP).then(remoteLabel => {
     // Retaining remote currency deposits it in here.
@@ -164,7 +164,7 @@ function makePeg(E, remoteIssuerP, makeAssayOps = makeNatOps) {
     const backingPurseP = E(remoteIssuerP).makeEmptyPurse();
 
     const { description } = remoteLabel;
-    const localMint = makeMint(description, makeAssayOps);
+    const localMint = makeMint(description, makeAssay);
     const localIssuer = localMint.getIssuer();
     const localLabel = localIssuer.getLabel();
     const localSink = localIssuer.makeEmptyPurse();

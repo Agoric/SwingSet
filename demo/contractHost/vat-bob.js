@@ -64,8 +64,8 @@ ERR: buy called before init()`;
       check(initialized)`\
 ERR: tradeWell called before init()`;
 
-      const moneyNeededP = E(E(moneyIssuerP).getAssayOps()).make(10);
-      const stockNeededP = E(E(stockIssuerP).getAssayOps()).make(7);
+      const moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
+      const stockNeededP = E(E(stockIssuerP).getAssay()).make(7);
 
       return Promise.all([moneyNeededP, stockNeededP]).then(terms => {
         const ticketsP = E(host).start(escrowSrc, terms);

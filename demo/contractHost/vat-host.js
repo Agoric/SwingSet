@@ -6,7 +6,7 @@ import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
 
 import { check } from '../../collections/insist';
-import { makeMetaTicketOpsMaker } from './assays';
+import { makeMetaSingleAssayMaker } from './assays';
 import { makeMint } from './issuers';
 import makePromise from '../../src/kernel/makePromise';
 
@@ -14,12 +14,12 @@ function makeHost(E) {
   // Maps from ticket issuers to seats
   const seats = new WeakMap();
 
-  const ticketLabelToOps = new WeakMap();
-  function getTicketLabelToOps(ticketLabel) {
-    return ticketLabelToOps.get(ticketLabel);
+  const ticketLabelToAssay = new WeakMap();
+  function getTicketLabelToAssay(ticketLabel) {
+    return ticketLabelToAssay.get(ticketLabel);
   }
-  const makeMetaTicketOps = makeMetaTicketOpsMaker(getTicketLabelToOps);
-  const metaTicketMint = makeMint('contractHost', makeMetaTicketOps);
+  const makeMetaTicketAssay = makeMetaSingleAssayMaker(getTicketLabelToAssay);
+  const metaTicketMint = makeMint('contractHost', makeMetaTicketAssay);
   const metaTicketIssuer = metaTicketMint.getIssuer();
 
   // The contract host is designed to have a long-lived credible

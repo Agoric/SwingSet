@@ -20,7 +20,7 @@ function build(E) {
   }
 
   // This is written in the full assay style, where bare number
-  // objects are never used in lieu of full assay objects. This has
+  // objects are never used in lieu of full amount objects. This has
   // the virtue of unit typing, where 3 dollars cannot be confused
   // with 3 seconds.
   function mintTestAssay(mint) {
@@ -45,7 +45,7 @@ function build(E) {
     });
   }
 
-  // Uses raw numbers rather than assays. Until we have support for
+  // Uses raw numbers rather than amounts. Until we have support for
   // pass-by-presence, the full assay style shown in mintTestAssay is
   // too awkward.
   function mintTestNumber(mint) {

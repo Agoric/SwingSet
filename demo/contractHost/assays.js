@@ -9,226 +9,226 @@ import {
   mustBeComparable,
 } from '../../collections/sameStructure';
 
-// Return an assayOps, which makes assays, validates assays, and
-// provides set operations over assays. An assay is a pass-by-copy
+// Return an assay, which makes amounts, validates amounts, and
+// provides set operations over amounts. An amount is a pass-by-copy
 // description of some set of erights.
 //
-// The default assayOps makes the default kind of assay.  The default
-// kind of assay is a labeled natural number describing a quantity of
+// The default assay makes the default kind of amount.  The default
+// kind of amount is a labeled natural number describing a quantity of
 // fungible erights. The label describes what kinds of rights these
 // are. This is a form of labeled unit, as in unit typing.
-function makeNatOps(label) {
+function makeNatAssay(label) {
   mustBeComparable(label);
 
   // memoize well formedness check.
   const brand = new WeakSet();
 
-  const ops = harden({
+  const assay = harden({
     getLabel() {
       return label;
     },
 
-    // Given the raw data that this kind of assay would label, return
-    // an assay so labeling that data.
+    // Given the raw data that this kind of amount would label, return
+    // an amount so labeling that data.
     make(allegedData) {
-      const assay = harden({ label, data: Nat(allegedData) });
-      brand.add(assay);
-      return assay;
+      const amount = harden({ label, data: Nat(allegedData) });
+      brand.add(amount);
+      return amount;
     },
 
-    // Is this an assay object made by this assayOps? If so, return
+    // Is this an amount object made by this assay? If so, return
     // it. Otherwise error.
-    vouch(assay) {
-      check(brand.has(assay))`\
-Unrecognized assay: ${assay}`;
-      return assay;
+    vouch(amount) {
+      check(brand.has(amount))`\
+Unrecognized amount: ${amount}`;
+      return amount;
     },
 
-    // Is this like an assay object made by this assayOps, such as one
+    // Is this like an amount object made by this assay, such as one
     // received by pass-by-copy from an otherwise-identical remote
-    // assay? On success, return an assay object made by this
-    // assayOps. Otherwise error.
+    // amount? On success, return an amount object made by this
+    // assay. Otherwise error.
     //
     // Until we have good support for pass-by-construction, the full
     // assay style is too awkward to use remotely. See
     // mintTestAssay. So coerce also accepts a bare number which it
-    // will coerce to a labeled number via ops.make.
-    coerce(assayLike) {
-      if (typeof assayLike === 'number') {
+    // will coerce to a labeled number via assay.make.
+    coerce(amountLike) {
+      if (typeof amountLike === 'number') {
         // Will throw on inappropriate number
-        return ops.make(assayLike);
+        return assay.make(amountLike);
       }
-      if (brand.has(assayLike)) {
-        return assayLike;
+      if (brand.has(amountLike)) {
+        return amountLike;
       }
-      const { label: allegedLabel, data } = assayLike;
+      const { label: allegedLabel, data } = amountLike;
       check(sameStructure(label, allegedLabel))`\
 Unrecognized label: ${allegedLabel}`;
       // Will throw on inappropriate data
-      return ops.make(data);
+      return assay.make(data);
     },
 
-    // Return the raw data that this assay labels.
-    data(assay) {
-      return ops.vouch(assay).data;
+    // Return the raw data that this amount labels.
+    data(amount) {
+      return assay.vouch(amount).data;
     },
 
     // Represents the empty set of erights, i.e., no erights
     empty() {
-      return ops.make(0);
+      return assay.make(0);
     },
 
-    isEmpty(assay) {
-      return ops.data(assay) === 0;
+    isEmpty(amount) {
+      return assay.data(amount) === 0;
     },
 
     // Set inclusion of erights.
-    // Does the set of erights described by `leftAssay` include all
-    // the erights described by `rightAssay`?
-    includes(leftAssay, rightAssay) {
-      return ops.data(leftAssay) >= ops.data(rightAssay);
+    // Does the set of erights described by `leftAmount` include all
+    // the erights described by `rightAmount`?
+    includes(leftAmount, rightAmount) {
+      return assay.data(leftAmount) >= assay.data(rightAmount);
     },
 
     // Set union of erights.
-    // Describe all the erights described by `leftAssay` and those
-    // described by `rightAssay`.
-    with(leftAssay, rightAssay) {
-      return ops.make(ops.data(leftAssay) + ops.data(rightAssay));
+    // Describe all the erights described by `leftAmount` and those
+    // described by `rightAmount`.
+    with(leftAmount, rightAmount) {
+      return assay.make(assay.data(leftAmount) + assay.data(rightAmount));
     },
 
     // Covering set subtraction of erights.
-    // If leftAssay does not include rightAssay, error.
-    // Describe the erights described by `leftAssay` and not described
-    // by `rightAssay`.
-    without(leftAssay, rightAssay) {
-      return ops.make(ops.data(leftAssay) - ops.data(rightAssay));
+    // If leftAmount does not include rightAmount, error.
+    // Describe the erights described by `leftAmount` and not described
+    // by `rightAmount`.
+    without(leftAmount, rightAmount) {
+      return assay.make(assay.data(leftAmount) - assay.data(rightAmount));
     },
   });
-  return ops;
+  return assay;
 }
-harden(makeNatOps);
+harden(makeNatAssay);
 
-function makeMetaTicketOpsMaker(baseLabelToOps) {
-  function makeMetaOps(metaLabel) {
+function makeMetaSingleAssayMaker(baseLabelToAssay) {
+  function makeMetaSingleAssay(metaLabel) {
     mustBeComparable(metaLabel);
 
     // memoize well formedness check.
     const metaBrand = new WeakSet();
 
-    const metaOps = harden({
+    const metaAssay = harden({
       getLabel() {
         return metaLabel;
       },
 
-      // Given the raw data that this kind of assay would label, return
-      // an assay so labeling that data.
-      make(allegedBaseAssay) {
-        const baseOps = baseLabelToOps.get(allegedBaseAssay.label);
-        const baseAssay = baseOps.make(allegedBaseAssay.data);
-        const metaAssay = harden({ metaLabel, data: baseAssay });
-        metaBrand.add(metaAssay);
-        return metaAssay;
+      // Given the raw data that this kind of amount would label, return
+      // an amount so labeling that data.
+      make(allegedBaseAmount) {
+        const baseAssay = baseLabelToAssay.get(allegedBaseAmount.label);
+        const baseAmount = baseAssay.make(allegedBaseAmount.data);
+        const metaAmount = harden({ metaLabel, data: baseAmount });
+        metaBrand.add(metaAmount);
+        return metaAmount;
       },
 
-      // Is this an assay object made by this assayOps? If so, return
+      // Is this an amount object made by this assay? If so, return
       // it. Otherwise error.
-      vouch(metaAssay) {
-        check(metaBrand.has(metaAssay))`\
-Unrecognized metaAssay: ${metaAssay}`;
-        return metaAssay;
+      vouch(metaAmount) {
+        check(metaBrand.has(metaAmount))`\
+Unrecognized metaAmount: ${metaAmount}`;
+        return metaAmount;
       },
 
-      // Is this like an assay object made by this assayOps, such as one
+      // Is this like an amount object made by this assay, such as one
       // received by pass-by-copy from an otherwise-identical remote
-      // assay? On success, return an assay object made by this
-      // assayOps. Otherwise error.
+      // amount? On success, return an amount object made by this
+      // assay. Otherwise error.
       //
       // Until we have good support for pass-by-construction, the full
       // assay style is too awkward to use remotely. See
       // mintTestAssay. So coerce also accepts a bare number which it
-      // will coerce to a labeled number via metaOps.make.
-      coerce(metaAssayLike) {
-        if (metaBrand.has(metaAssayLike)) {
-          return metaAssayLike;
+      // will coerce to a labeled number via metaAssay.make.
+      coerce(metaAmountLike) {
+        if (metaBrand.has(metaAmountLike)) {
+          return metaAmountLike;
         }
         const {
           label: allegedMetaLabel,
-          data: allegedBaseAssay,
-        } = metaAssayLike;
+          data: allegedBaseAmount,
+        } = metaAmountLike;
         check(sameStructure(metaLabel, allegedMetaLabel))`\
 Unrecognized label: ${allegedMetaLabel}`;
         // Will throw on inappropriate data
-        return metaOps.make(allegedBaseAssay);
+        return metaAssay.make(allegedBaseAmount);
       },
 
-      // Return the raw data that this assay labels.
-      data(metaAssay) {
-        return metaOps.vouch(metaAssay).data;
+      // Return the raw data that this amount labels.
+      data(metaAmount) {
+        return metaAssay.vouch(metaAmount).data;
       },
 
       // Represents the empty set of erights, i.e., no erights
       empty() {
-        return metaOps.make(0);
+        return metaAssay.make(0);
       },
 
-      isEmpty(assay) {
-        return metaOps.data(assay) === 0;
+      isEmpty(amount) {
+        return metaAssay.data(amount) === 0;
       },
 
       // Set inclusion of erights.
-      // Does the set of erights described by `leftAssay` include all
-      // the erights described by `rightAssay`?
-      includes(leftMetaAssay, rightMetaAssay) {
-        const leftBaseAssay = leftMetaAssay.data;
-        const leftBaseLabel = leftBaseAssay.label;
-        const rightBaseAssay = rightMetaAssay.data;
-        const rightBaseLabel = rightBaseAssay.label;
+      // Does the set of erights described by `leftAmount` include all
+      // the erights described by `rightAmount`?
+      includes(leftMetaAmount, rightMetaAmount) {
+        const leftBaseAmount = leftMetaAmount.data;
+        const leftBaseLabel = leftBaseAmount.label;
+        const rightBaseAmount = rightMetaAmount.data;
+        const rightBaseLabel = rightBaseAmount.label;
 
         if (!sameStructure(leftBaseLabel, rightBaseLabel)) {
           return false;
         }
-        const baseOps = baseLabelToOps.get(leftBaseLabel);
+        const baseAssay = baseLabelToAssay.get(leftBaseLabel);
 
-        return baseOps.includes(leftBaseAssay, rightBaseAssay);
+        return baseAssay.includes(leftBaseAmount, rightBaseAmount);
       },
 
       // Set union of erights.
-      // Describe all the erights described by `leftAssay` and those
-      // described by `rightAssay`.
-      with(leftMetaAssay, rightMetaAssay) {
-        const leftBaseAssay = leftMetaAssay.data;
-        const leftBaseLabel = leftBaseAssay.label;
-        const rightBaseAssay = rightMetaAssay.data;
-        const rightBaseLabel = rightBaseAssay.label;
+      // Describe all the erights described by `leftAmount` and those
+      // described by `rightAmount`.
+      with(leftMetaAmount, rightMetaAmount) {
+        const leftBaseAmount = leftMetaAmount.data;
+        const leftBaseLabel = leftBaseAmount.label;
+        const rightBaseAmount = rightMetaAmount.data;
+        const rightBaseLabel = rightBaseAmount.label;
 
         check(sameStructure(leftBaseLabel, rightBaseLabel))`\
 Cannot yet combine different base rights: ${leftBaseLabel}, ${rightBaseLabel}`;
-        const baseOps = baseLabelToOps.get(leftBaseLabel);
+        const baseAssay = baseLabelToAssay.get(leftBaseLabel);
 
-        return baseOps.with(leftBaseAssay, rightBaseAssay);
+        return baseAssay.with(leftBaseAmount, rightBaseAmount);
       },
 
       // Covering set subtraction of erights.
-      // If leftAssay does not include rightAssay, error.
-      // Describe the erights described by `leftAssay` and not described
-      // by `rightAssay`.
-      without(leftMetaAssay, rightMetaAssay) {
-        const leftBaseAssay = leftMetaAssay.data;
-        const leftBaseLabel = leftBaseAssay.label;
-        const rightBaseAssay = rightMetaAssay.data;
-        const rightBaseLabel = rightBaseAssay.label;
+      // If leftAmount does not include rightAmount, error.
+      // Describe the erights described by `leftAmount` and not described
+      // by `rightAmount`.
+      without(leftMetaAmount, rightMetaAmount) {
+        const leftBaseAmount = leftMetaAmount.data;
+        const leftBaseLabel = leftBaseAmount.label;
+        const rightBaseAmount = rightMetaAmount.data;
+        const rightBaseLabel = rightBaseAmount.label;
 
         check(sameStructure(leftBaseLabel, rightBaseLabel))`\
 Cannot yet subtract different base rights: ${leftBaseLabel}, ${rightBaseLabel}`;
-        const baseOps = baseLabelToOps.get(leftBaseLabel);
+        const baseAssay = baseLabelToAssay.get(leftBaseLabel);
 
-        return baseOps.without(leftBaseAssay, rightBaseAssay);
+        return baseAssay.without(leftBaseAmount, rightBaseAmount);
       },
     });
-    return metaOps;
+    return metaAssay;
   }
-  return harden(makeMetaOps);
+  return harden(makeMetaSingleAssay);
 }
-harden(makeMetaTicketOpsMaker);
+harden(makeMetaSingleAssayMaker);
 
-export { makeNatOps, makeMetaTicketOpsMaker };
+export { makeNatAssay, makeMetaSingleAssayMaker };
