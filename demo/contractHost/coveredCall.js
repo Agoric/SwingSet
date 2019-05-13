@@ -5,13 +5,13 @@ import harden from '@agoric/harden';
 
 import { escrowExchange } from './escrow';
 
-function coveredCall(terms, ticketMaker) {
+function coveredCall(terms, chitMaker) {
   const [moneyNeeded, stockNeeded, timer, deadline] = terms;
 
-  const [aliceTix, bobTix] = escrowExchange([moneyNeeded, stockNeeded]);
+  const [aliceChit, bobChit] = escrowExchange([moneyNeeded, stockNeeded]);
 
-  const aliceEscrowSeat = ticketMaker.redeem(aliceTix);
-  const bobEscrowSeat = ticketMaker.redeem(bobTix);
+  const aliceEscrowSeat = chitMaker.redeem(aliceChit);
+  const bobEscrowSeat = chitMaker.redeem(bobChit);
 
   // Seats
 
@@ -24,14 +24,14 @@ function coveredCall(terms, ticketMaker) {
         .getExclusive(stockNeeded, stockPayment, 'prePay')
         .then(prePayment => {
           bobEscrowSeat.offer(prePayment);
-          return ticketMaker.make([moneyNeeded, stockNeeded], aliceEscrowSeat);
+          return chitMaker.make([moneyNeeded, stockNeeded], aliceEscrowSeat);
         });
     },
     getWinnings: bobEscrowSeat.getWinnings,
     getRefund: bobEscrowSeat.getRefund,
   });
 
-  return ticketMaker.make([stockNeeded, moneyNeeded], bobSeat);
+  return chitMaker.make([stockNeeded, moneyNeeded], bobSeat);
 }
 
 export { coveredCall };

@@ -10,7 +10,7 @@ import harden from '@agoric/harden';
 // players 0 and 1. Money are the rights transfered from player 0 to
 // 1, and Stock are the rights transfered from 1 to 0.
 
-function escrowExchange(terms, ticketMaker) {
+function escrowExchange(terms, chitMaker) {
   const [moneyNeeded, stockNeeded] = terms;
 
   function makeTransfer(amount, srcPaymentP) {
@@ -86,8 +86,8 @@ function escrowExchange(terms, ticketMaker) {
   });
 
   return harden([
-    ticketMaker.make([moneyNeeded, stockNeeded], aliceSeat),
-    ticketMaker.make([stockNeeded, moneyNeeded], bobSeat),
+    chitMaker.make([moneyNeeded, stockNeeded], aliceSeat),
+    chitMaker.make([stockNeeded, moneyNeeded], bobSeat),
   ]);
 }
 

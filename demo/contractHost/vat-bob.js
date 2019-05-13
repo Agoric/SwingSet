@@ -68,12 +68,12 @@ ERR: tradeWell called before init()`;
       const stockNeededP = E(E(stockIssuerP).getAssay()).make(7);
 
       return Promise.all([moneyNeededP, stockNeededP]).then(terms => {
-        const ticketsP = E(host).start(escrowSrc, terms);
-        const aliceTicketP = ticketsP.then(tickets => tickets[0]);
-        const bobTicketP = ticketsP.then(tickets => tickets[1]);
+        const chitsP = E(host).start(escrowSrc, terms);
+        const aliceChitP = chitsP.then(chits => chits[0]);
+        const bobChitP = chitsP.then(chits => chits[1]);
         const doneP = Promise.all([
-          E(alice).invite(aliceTicketP),
-          E(bob).invite(bobTicketP),
+          E(alice).invite(aliceChitP),
+          E(bob).invite(bobChitP),
         ]);
         doneP.then(
           _res => console.log('++ bob.tradeWell done'),
@@ -88,11 +88,11 @@ ERR: tradeWell called before init()`;
      * this object, asking it to join in a contract instance. It is not
      * requesting that this object invite anything.
      */
-    invite(ticketP) {
+    invite(chitP) {
       check(initialized)`\
 ERR: invite called before init()`;
 
-      const seatP = E(host).redeem(ticketP);
+      const seatP = E(host).redeem(chitP);
       const stockPaymentP = E(myStockPurseP).withdraw(7);
       E(seatP).offer(stockPaymentP);
       const doneP = allSettled([

@@ -42,15 +42,15 @@ ERR: payBobWell called before init()`;
       return E(bob).buy('shoe', paymentP);
     },
 
-    invite(ticketP) {
+    invite(chitP) {
       check(initialized)`\
 ERR: invite called before init()`;
 
-      showPaymentBalance('alice tix', ticketP);
+      showPaymentBalance('alice chit', chitP);
 
-      const tIssuerP = E(ticketP).getIssuer();
+      const tIssuerP = E(chitP).getIssuer();
 
-      function verifyTix([tIssuer, mIssuer, sIssuer]) {
+      function verifyChit([tIssuer, mIssuer, sIssuer]) {
         const mLabel = harden({ issuer: mIssuer, description: 'clams' });
         const clams10 = harden({ label: mLabel, data: 10 });
         const sLabel = harden({ issuer: sIssuer, description: 'fudco' });
@@ -62,40 +62,37 @@ ERR: invite called before init()`;
           seatDesc: [clams10, fudco7],
         });
         const tLabel = harden({ issuer: tIssuer, description: tDesc });
-        const tix1 = harden({ label: tLabel, data: 1 });
+        const chit1 = harden({ label: tLabel, data: 1 });
 
         // In order for alice to get a meaningful exclusive on the
-        // ticket, she must know that the deal offered is the one she
+        // chit, she must know that the deal offered is the one she
         // expects. If she already has a prior relationship with
         // tIssuer, then she could just describe the exclusive amount
-        // as the number 1 below, rather than tix1. However, in this
+        // as the number 1 below, rather than chit1. However, in this
         // case, she has not heard of this issuer prior to receiving
-        // the ticket.
+        // the chit.
         //
         // So she instead provides a full description of the amount,
         // where this description contains *almost* everything she
         // needs to verify that this is the deal she wants. We assume
         // that Alice does have a prior to this contract host. Once
-        // this host redeems the ticket, then we know that it was
+        // this host redeems the chit, then we know that it was
         // issued by this contract host and that the description is
         // accurate.
         //
         // TODO: Test all variations of the expectations above and see
         // that they fail.
-        return E(tIssuer).getExclusive(tix1, ticketP, 'verified tix');
+        return E(tIssuer).getExclusive(chit1, chitP, 'verified chit');
       }
-      const verifiedTixP = Promise.all([
+      const verifiedChitP = Promise.all([
         tIssuerP,
         moneyIssuerP,
         stockIssuerP,
-      ]).then(verifyTix);
+      ]).then(verifyChit);
 
-      showPaymentBalance('verified tix', verifiedTixP);
+      showPaymentBalance('verified chit', verifiedChitP);
 
-      // TODO: get an exclusive on the ticket using the full assay
-      // style, so Alice knows that the ticket means what she expects.
-
-      const seatP = E(host).redeem(verifiedTixP);
+      const seatP = E(host).redeem(verifiedChitP);
       const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
       E(seatP).offer(moneyPaymentP);
       // TODO Bug if we change the "_ => 7" below to "_ => undefined",
