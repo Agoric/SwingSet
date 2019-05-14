@@ -9,6 +9,10 @@ import {
   mustBeComparable,
 } from '../../collections/sameStructure';
 
+// This assays.js module treats labels as black boxes. It is not aware
+// of issuers, and so can handle labels whose issuers are merely
+// presences of remote issuers.
+
 // Return an assay, which makes amounts, validates amounts, and
 // provides set operations over amounts. An amount is a pass-by-copy
 // description of some set of erights. An amount has a label and a

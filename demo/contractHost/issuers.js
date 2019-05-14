@@ -202,6 +202,10 @@ harden(makeMetaIssuerController);
 // transferable locally.
 function makePeg(E, remoteIssuerP, makeAssay = makeNatAssay) {
   const remoteLabelP = E(remoteIssuerP).getLabel();
+
+  // The remoteLabel is a local copy of the remote pass-by-copy
+  // label. It has a presence of the remote issuer and a copy of the
+  // description.
   return Promise.resolve(remoteLabelP).then(remoteLabel => {
     // Retaining remote currency deposits it in here.
     // Redeeming local currency withdraws remote from here.
