@@ -17,10 +17,10 @@ function makeContractHost(E) {
   const metaIssuer = controller.getMetaIssuer();
   const metaAssay = metaIssuer.getAssay();
 
-  function metaOneOf(baseIssuer) {
+  function metaAmountOf(baseIssuer, baseQuantity) {
     const baseAssay = baseIssuer.getAssay();
-    const baseOneAmount = baseAssay.make(1);
-    return metaAssay.make(baseOneAmount);
+    const baseAmount = baseAssay.make(baseQuantity);
+    return metaAssay.make(baseAmount);
   }
 
   function redeem(allegedChitPayment) {
@@ -32,7 +32,7 @@ No chits left`;
     const baseIssuer = baseAmount.label.issuer;
     check(seats.has(baseIssuer))`\
 Not a registered chit base issuer ${baseIssuer}`;
-    const metaOneAmount = metaOneOf(baseIssuer);
+    const metaOneAmount = metaAmountOf(baseIssuer, 1);
     const metaSinkPurse = metaIssuer.makeEmptyPurse();
     metaSinkPurse.deposit(metaOneAmount, allegedChitPayment);
     // Would throw if failed. If we reach here, we got the chit!
@@ -43,7 +43,7 @@ Not a registered chit base issuer ${baseIssuer}`;
   // identity.
   const contractHost = harden({
     getChitIssuer() {
-      return controller.getIssuer();
+      return controller.getMetaIssuer();
     },
 
     // The `contractSrc` is code for a contract function parameterized
@@ -80,7 +80,7 @@ Not a registered chit base issuer ${baseIssuer}`;
           const baseIssuer = makeMint(baseDescription).getIssuer();
           controller.register(baseIssuer);
           seats.set(baseIssuer, seat);
-          const metaOneAmount = metaOneOf(baseIssuer);
+          const metaOneAmount = metaAmountOf(baseIssuer, 1);
           // This should be the only use of the meta mint, to make a
           // meta purse whose quantity is one unit of a base amount
           // for a unique base label. This meta purse makes the

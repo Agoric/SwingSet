@@ -155,6 +155,8 @@ function makeMetaSingleAssayMaker(baseLabelToAssayFn) {
           return metaEmptyAmount;
         }
         const baseAssay = baseLabelToAssayFn(allegedBaseAmount.label);
+        check(baseAssay !== undefined)`\
+base label not found ${allegedBaseAmount}`;
         const baseAmount = baseAssay.make(allegedBaseAmount.quantity);
         if (baseAssay.isEmpty(baseAmount)) {
           return metaEmptyAmount;
@@ -215,8 +217,8 @@ Unrecognized label: ${allegedMetaLabel}`;
 The empty meta amount should be unique`;
           return true;
         }
-        const baseAssay = baseLabelToAssayFn(baseAmount).label;
-        check(baseAssay.isEmpty(baseAmount))`\
+        const baseAssay = baseLabelToAssayFn(baseAmount.label);
+        check(!baseAssay.isEmpty(baseAmount))`\
 Empty base amount should be canonicalized as a null meta quantity`;
         return false;
       },

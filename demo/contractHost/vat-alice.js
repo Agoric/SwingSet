@@ -21,12 +21,15 @@ function makeAlice(E, host) {
   let moneyIssuerP;
   let myStockPurseP;
   let stockIssuerP;
+  let chitIssuerP;
 
   function init(myMoneyPurse, myStockPurse) {
     myMoneyPurseP = Promise.resolve(myMoneyPurse);
     moneyIssuerP = E(myMoneyPurseP).getIssuer();
     myStockPurseP = Promise.resolve(myStockPurse);
     stockIssuerP = E(myStockPurseP).getIssuer();
+    chitIssuerP = E(host).getChitIssuer();
+
     initialized = true;
     // eslint-disable-next-line no-use-before-define
     return alice; // alice and init use each other
@@ -42,52 +45,62 @@ ERR: payBobWell called before init()`;
       return E(bob).buy('shoe', paymentP);
     },
 
-    invite(chitP) {
+    invite(allegedChitPaymentP) {
       check(initialized)`\
 ERR: invite called before init()`;
 
-      showPaymentBalance('alice chit', chitP);
+      showPaymentBalance('alice chit', allegedChitPaymentP);
 
-      const tIssuerP = E(chitP).getIssuer();
+      const allegedMetaAmountP = E(allegedChitPaymentP).getXferBalance();
 
-      function verifyChit([tIssuer, mIssuer, sIssuer]) {
-        const mLabel = harden({ issuer: mIssuer, description: 'clams' });
-        const clams10 = harden({ label: mLabel, quantity: 10 });
-        const sLabel = harden({ issuer: sIssuer, description: 'fudco' });
-        const fudco7 = harden({ label: sLabel, quantity: 7 });
+      function verifyChit([
+        allegedMetaAmount,
+        moneyIssuerPresence,
+        stockIssuerPresence,
+        chitIssuerPresence,
+      ]) {
+        const clamsLabel = harden({
+          issuer: moneyIssuerPresence,
+          description: 'clams',
+        });
+        const clams10 = harden({ label: clamsLabel, quantity: 10 });
+        const fudcoLabel = harden({
+          issuer: stockIssuerPresence,
+          description: 'fudco',
+        });
+        const fudco7 = harden({ label: fudcoLabel, quantity: 7 });
 
-        const tDesc = harden({
+        const baseDesc = harden({
           contractSrc: escrowSrc,
           terms: [clams10, fudco7],
           seatDesc: [clams10, fudco7],
         });
-        const tLabel = harden({ issuer: tIssuer, description: tDesc });
-        const chit1 = harden({ label: tLabel, quantity: 1 });
+        const baseIssuerPresence = allegedMetaAmount.label.issuer;
+        const baseLabel = harden({
+          issuer: baseIssuerPresence,
+          description: baseDesc,
+        });
+        const baseOneAmount = harden({ label: baseLabel, quantity: 1 });
+        const metaLabel = harden({
+          issuer: chitIssuerPresence,
+          description: 'contract host',
+        });
+        const metaOneAmount = harden({
+          label: metaLabel,
+          quantity: baseOneAmount,
+        });
 
-        // In order for alice to get a meaningful exclusive on the
-        // chit, she must know that the deal offered is the one she
-        // expects. If she already has a prior relationship with
-        // tIssuer, then she could just describe the exclusive amount
-        // as the number 1 below, rather than chit1. However, in this
-        // case, she has not heard of this issuer prior to receiving
-        // the chit.
-        //
-        // So she instead provides a full description of the amount,
-        // where this description contains *almost* everything she
-        // needs to verify that this is the deal she wants. We assume
-        // that Alice does have a prior to this contract host. Once
-        // this host redeems the chit, then we know that it was
-        // issued by this contract host and that the description is
-        // accurate.
-        //
-        // TODO: Test all variations of the expectations above and see
-        // that they fail.
-        return E(tIssuer).getExclusive(chit1, chitP, 'verified chit');
+        return E(chitIssuerP).getExclusive(
+          metaOneAmount,
+          allegedChitPaymentP,
+          'verified chit',
+        );
       }
       const verifiedChitP = Promise.all([
-        tIssuerP,
+        allegedMetaAmountP,
         moneyIssuerP,
         stockIssuerP,
+        chitIssuerP,
       ]).then(verifyChit);
 
       showPaymentBalance('verified chit', verifiedChitP);

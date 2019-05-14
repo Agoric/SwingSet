@@ -248,7 +248,10 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
         default: {
           // if we've seen this object before, serialize a backref
           if (ibidMap.has(val)) {
-            console.log('ibids not yet implemented correctly', val);
+            console.log(
+              'Warning: ibids are not yet implemented correctly',
+              val,
+            );
             // throw new Error(`ibids not yet implemented: ${val}`);
 
             // Throwing doesn't work because we do serialize
