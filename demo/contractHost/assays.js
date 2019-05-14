@@ -15,9 +15,9 @@ import {
 // quantity. All amounts made by the same assay have the same label
 // but differ in quantity.
 //
-// An assay is not pass-by-presence, but is not designed to be
-// usefully passed. Rather, we expect each vat that needs to operate
-// on amounts will have its own local assay to do so.
+// An assay is pass-by-presence, but is not designed to be usefully
+// passed. Rather, we expect each vat that needs to operate on amounts
+// will have its own local assay to do so.
 //
 // The default assay makes the default kind of amount.  The default
 // kind of amount is a labeled natural number describing a quantity of

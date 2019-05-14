@@ -153,6 +153,20 @@ Payment expected: ${src}`;
 }
 harden(makeMint);
 
+// Makes a meta issuer issuing rights represented by registered base
+// issuers. The base issuers do not themselves issue any rights. The
+// base issuers exist to provide a label to their base assay.
+//
+// An empty meta purse or meta payment is not specific to a base
+// issuer. Its balance is the empty meta amount which has a null meta
+// quantity. Non-empty ones have a meta amount whose quantity is a
+// base amount of some base assay, which cannot be combined with
+// amounts of other base assays. (This is the "single" restriction of
+// makeMetaSingleAssayMaker.)
+//
+// Base issuers should be registered as soon as they are
+// made, so that there is no observable state change from not being
+// registered to being registered.
 function makeMetaIssuerController(description) {
   const baseIssuerToAssay = new WeakMap();
   function baseLabelToAssayFn(baseLabel) {
