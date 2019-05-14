@@ -3,7 +3,7 @@
 
 import harden from '@agoric/harden';
 
-import { check } from '../../collections/insist';
+import { insist } from '../../collections/insist';
 import { allSettled } from '../../collections/allSettled';
 import { escrowExchange } from './escrow';
 
@@ -38,7 +38,7 @@ function makeAlice(E, host) {
   const alice = harden({
     init,
     payBobWell(bob) {
-      check(initialized)`\
+      insist(initialized)`\
 ERR: payBobWell called before init()`;
 
       const paymentP = E(myMoneyPurseP).withdraw(10);
@@ -46,7 +46,7 @@ ERR: payBobWell called before init()`;
     },
 
     invite(allegedChitPaymentP) {
-      check(initialized)`\
+      insist(initialized)`\
 ERR: invite called before init()`;
 
       showPaymentBalance('alice chit', allegedChitPaymentP);
@@ -73,10 +73,10 @@ ERR: invite called before init()`;
         const baseDesc = harden({
           contractSrc: escrowSrc,
           terms: [clams10, fudco7],
-          seatDesc: ['alice', clams10, fudco7],
+          seatDesc: [0, clams10, fudco7],
         });
         const baseAmount = allegedMetaAmount.quantity;
-        check(baseAmount !== null)`\
+        insist(baseAmount !== null)`\
 Payment empty ${allegedMetaAmount}`;
         const baseIssuerPresence = baseAmount.label.issuer;
         const baseLabel = harden({

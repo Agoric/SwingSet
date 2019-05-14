@@ -3,7 +3,7 @@
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 
-import { check } from '../../collections/insist';
+import { insist } from '../../collections/insist';
 import {
   sameStructure,
   mustBeComparable,
@@ -49,7 +49,7 @@ function makeNatAssay(label) {
     // Is this an amount object made by this assay? If so, return
     // it. Otherwise error.
     vouch(amount) {
-      check(brand.has(amount))`\
+      insist(brand.has(amount))`\
 Unrecognized amount: ${amount}`;
       return amount;
     },
@@ -72,7 +72,7 @@ Unrecognized amount: ${amount}`;
         return allegedAmount;
       }
       const { label: allegedLabel, quantity } = allegedAmount;
-      check(sameStructure(label, allegedLabel))`\
+      insist(sameStructure(label, allegedLabel))`\
 Unrecognized label: ${allegedLabel}`;
       // Will throw on inappropriate quantity
       return assay.make(quantity);
@@ -159,7 +159,7 @@ function makeMetaSingleAssayMaker(baseLabelToAssayFn) {
           return metaEmptyAmount;
         }
         const baseAssay = baseLabelToAssayFn(allegedBaseAmount.label);
-        check(baseAssay !== undefined)`\
+        insist(baseAssay !== undefined)`\
 base label not found ${allegedBaseAmount}`;
         const baseAmount = baseAssay.make(allegedBaseAmount.quantity);
         if (baseAssay.isEmpty(baseAmount)) {
@@ -173,7 +173,7 @@ base label not found ${allegedBaseAmount}`;
       // Is this an amount object made by this assay? If so, return
       // it. Otherwise error.
       vouch(metaAmount) {
-        check(metaBrand.has(metaAmount))`\
+        insist(metaBrand.has(metaAmount))`\
 Unrecognized metaAmount: ${metaAmount}`;
         return metaAmount;
       },
@@ -195,7 +195,7 @@ Unrecognized metaAmount: ${metaAmount}`;
           label: allegedMetaLabel,
           quantity: allegedBaseAmount,
         } = allegedMetaAmount;
-        check(sameStructure(metaLabel, allegedMetaLabel))`\
+        insist(sameStructure(metaLabel, allegedMetaLabel))`\
 Unrecognized label: ${allegedMetaLabel}`;
         // Will throw on inappropriate quantity
         return metaAssay.make(allegedBaseAmount);
@@ -217,12 +217,12 @@ Unrecognized label: ${allegedMetaLabel}`;
       isEmpty(metaAmount) {
         const baseAmount = metaAssay.quantity(metaAmount);
         if (baseAmount === null) {
-          check(metaAmount === metaEmptyAmount)`\
+          insist(metaAmount === metaEmptyAmount)`\
 The empty meta amount should be unique`;
           return true;
         }
         const baseAssay = baseLabelToAssayFn(baseAmount.label);
-        check(!baseAssay.isEmpty(baseAmount))`\
+        insist(!baseAssay.isEmpty(baseAmount))`\
 Empty base amount should be canonicalized as a null meta quantity`;
         return false;
       },
@@ -264,7 +264,7 @@ Empty base amount should be canonicalized as a null meta quantity`;
         const rightBaseAmount = rightMetaAmount.quantity;
         const rightBaseLabel = rightBaseAmount.label;
 
-        check(sameStructure(leftBaseLabel, rightBaseLabel))`\
+        insist(sameStructure(leftBaseLabel, rightBaseLabel))`\
 Cannot combine different base rights: ${leftBaseLabel}, ${rightBaseLabel}`;
         const baseAssay = baseLabelToAssayFn(leftBaseLabel);
 
@@ -279,7 +279,7 @@ Cannot combine different base rights: ${leftBaseLabel}, ${rightBaseLabel}`;
         if (metaAssay.isEmpty(rightMetaAmount)) {
           return leftMetaAmount;
         }
-        check(!metaAssay.isEmpty(leftMetaAmount))`\
+        insist(!metaAssay.isEmpty(leftMetaAmount))`\
 empty left meta assay does not include ${rightMetaAmount}`;
 
         const leftBaseAmount = leftMetaAmount.quantity;
@@ -287,7 +287,7 @@ empty left meta assay does not include ${rightMetaAmount}`;
         const rightBaseAmount = rightMetaAmount.quantity;
         const rightBaseLabel = rightBaseAmount.label;
 
-        check(sameStructure(leftBaseLabel, rightBaseLabel))`\
+        insist(sameStructure(leftBaseLabel, rightBaseLabel))`\
 Cannot subtract different base rights: ${leftBaseLabel}, ${rightBaseLabel}`;
         const baseAssay = baseLabelToAssayFn(leftBaseLabel);
 

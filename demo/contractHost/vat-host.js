@@ -5,7 +5,7 @@ import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
 
-import { check } from '../../collections/insist';
+import { insist } from '../../collections/insist';
 import { makeMint, makeMetaIssuerController } from './issuers';
 import makePromise from '../../src/kernel/makePromise';
 
@@ -26,11 +26,11 @@ function makeContractHost(E) {
   function redeem(allegedChitPayment) {
     const allegedMetaAmount = allegedChitPayment.getXferBalance();
     const metaAmount = metaAssay.vouch(allegedMetaAmount);
-    check(!metaAssay.isEmpty(metaAmount))`\
+    insist(!metaAssay.isEmpty(metaAmount))`\
 No chits left`;
     const baseAmount = metaAssay.quantity(metaAmount);
     const baseIssuer = baseAmount.label.issuer;
-    check(seats.has(baseIssuer))`\
+    insist(seats.has(baseIssuer))`\
 Not a registered chit base issuer ${baseIssuer}`;
     const metaOneAmount = metaAmountOf(baseIssuer, 1);
     const metaSinkPurse = metaIssuer.makeEmptyPurse();

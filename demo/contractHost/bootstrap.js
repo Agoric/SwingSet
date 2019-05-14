@@ -2,7 +2,7 @@
 
 import harden from '@agoric/harden';
 
-import { check } from '../../collections/insist';
+import { insist } from '../../collections/insist';
 
 function build(E) {
   function showPaymentBalance(name, paymentP) {
@@ -154,7 +154,7 @@ function build(E) {
       } else if (argv[0] === 'bob-first') {
         betterContractTestBobFirst(vats.mint, alice, bob);
       } else {
-        check(argv.length === 0)`\
+        insist(argv.length === 0)`\
 Unrecognized arg0: ${argv[0]}`;
       }
       return undefined;

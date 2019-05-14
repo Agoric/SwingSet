@@ -3,7 +3,7 @@
 import harden from '@agoric/harden';
 
 import { makePrivateName } from './PrivateName';
-import { check } from './insist';
+import { insist } from './insist';
 
 // Maps from EMaps to encapsulated Maps. All lookups from this table
 // are only queries. (Except for the one in the FlexMap constructor)
@@ -12,7 +12,7 @@ const hiddenEMap = makePrivateName();
 // Abstract superclass with query-only methods.
 class EMap {
   constructor(optIterable = undefined) {
-    check(new.target !== EMap)`\
+    insist(new.target !== EMap)`\
 EMap is abstract`;
     const newHidden = new Map(optIterable);
     hiddenEMap.init(this, newHidden);
@@ -79,7 +79,7 @@ harden(EMap);
 // TODO: Somehow arrange for this to be pass-by-copy-ish.
 class FixedMap extends EMap {
   constructor(optIterable = undefined) {
-    check(new.target === FixedMap)`\
+    insist(new.target === FixedMap)`\
 FixedMap is final`;
     super(optIterable);
     harden(this);
@@ -104,12 +104,12 @@ const hiddenFlexMap = makePrivateName();
 // Supports mutation.
 class FlexMap extends EMap {
   constructor(optIterable = undefined) {
-    check(new.target === FlexMap)`\
+    insist(new.target === FlexMap)`\
 FlexMap is final`;
     super(optIterable);
     // Be very scared of the following line, since it looks up on
     // hiddenEMap for purposes of enabling mutation. We assume it is
-    // safe because the `new.target` check above ensures this
+    // safe because the `new.target` insist check above ensures this
     // constructor is being called as-if directly with `new`. We say
     // "as-if" because it might be invoked by `Reflect.construct`, but
     // only in an equivalent manner.
@@ -186,9 +186,9 @@ class InternalReadOnlyMap extends EMap {
 // Guarantee that an instance of ReadOnlyMap does not provide the
 // ability to modify.
 function ReadOnlyMap() {
-  check(new.target === ReadOnlyMap)`\
+  insist(new.target === ReadOnlyMap)`\
 ReadOnlyMap is final`;
-  check(false)`\
+  insist(false)`\
 Use readOnlyView() to view an existing EMap`;
 }
 Object.setPrototypeOf(ReadOnlyMap, EMap);

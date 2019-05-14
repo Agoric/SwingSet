@@ -3,12 +3,12 @@
 import harden from '@agoric/harden';
 
 import { makePrivateName } from '../../collections/PrivateName';
-import { check } from '../../collections/insist';
+import { insist } from '../../collections/insist';
 import { makeNatAssay, makeMetaSingleAssayMaker } from './assays';
 import { sameStructure } from '../../collections/sameStructure';
 
 function makeMint(description, makeAssay = makeNatAssay) {
-  check(description)`\
+  insist(description)`\
 Description must be truthy: ${description}`;
 
   // Map from purse or payment to the transfer rights it currently
@@ -36,10 +36,10 @@ Description must be truthy: ${description}`;
     _name = `${_name}`;
     return Promise.resolve(srcP).then(src => {
       if (isPurse) {
-        check(useRights.has(src))`\
+        insist(useRights.has(src))`\
 Purse expected: ${src}`;
       } else {
-        check(homePurses.has(src))`\
+        insist(homePurses.has(src))`\
 Payment expected: ${src}`;
       }
       const srcOldXferAmount = xferRights.get(src);
@@ -171,9 +171,9 @@ function makeMetaIssuerController(description) {
   const baseIssuerToAssay = new WeakMap();
   function baseLabelToAssayFn(baseLabel) {
     const baseAssay = baseIssuerToAssay.get(baseLabel.issuer);
-    check(baseAssay !== undefined)`\
+    insist(baseAssay !== undefined)`\
 Issuer not found ${baseLabel}.issuer === ${baseLabel.issuer}`;
-    check(sameStructure(baseAssay.getLabel(), baseLabel))`\
+    insist(sameStructure(baseAssay.getLabel(), baseLabel))`\
 Labels don't match ${baseAssay.getLabel()} vs ${baseLabel}`;
     return baseAssay;
   }

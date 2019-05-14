@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-import { check } from './insist';
+import { insist } from './insist';
 import { passStyleOf } from '../src/kernel/marshal';
 
 // Are left and right structurally equivalent? This compares
@@ -14,9 +14,9 @@ import { passStyleOf } from '../src/kernel/marshal';
 function sameStructure(left, right) {
   const leftStyle = passStyleOf(left);
   const rightStyle = passStyleOf(right);
-  check(leftStyle !== 'promise')`\
+  insist(leftStyle !== 'promise')`\
 Cannot structurally compare promises: ${left}`;
-  check(rightStyle !== 'promise')`\
+  insist(rightStyle !== 'promise')`\
 Cannot structurally compare promises: ${right}`;
 
   if (leftStyle !== rightStyle) {
@@ -68,7 +68,7 @@ function mustBeComparable(val) {
   // Currently, we can test this by just comparing it to itself using
   // `sameStructure`. But if `sameStructure` changes to use an
   // identity test to exit early, we'll need to be more clever.
-  check(sameStructure(val, val))`\
+  insist(sameStructure(val, val))`\
 Internal error: ${val} not reflexive`;
 }
 

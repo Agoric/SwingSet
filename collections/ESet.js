@@ -3,7 +3,7 @@
 import harden from '@agoric/harden';
 
 import { makePrivateName } from './PrivateName';
-import { check } from './insist';
+import { insist } from './insist';
 
 // Maps from ESets to encapsulated Sets. All lookups from this table
 // are only queries. (Except for the one in the FlexSet constructor)
@@ -12,7 +12,7 @@ const hiddenESet = makePrivateName();
 // Abstract superclass with query-only methods.
 class ESet {
   constructor(optIterable = undefined) {
-    check(new.target !== ESet)`\
+    insist(new.target !== ESet)`\
 ESet is abstract`;
     const newHidden = new Set(optIterable);
     hiddenESet.init(this, newHidden);
@@ -75,7 +75,7 @@ harden(ESet);
 // TODO: Somehow arrange for this to be pass-by-copy-ish.
 class FixedSet extends ESet {
   constructor(optIterable = undefined) {
-    check(new.target === FixedSet)`\
+    insist(new.target === FixedSet)`\
 FixedSet is final`;
     super(optIterable);
     harden(this);
@@ -100,12 +100,12 @@ const hiddenFlexSet = makePrivateName();
 // Supports mutation.
 class FlexSet extends ESet {
   constructor(optIterable = undefined) {
-    check(new.target === FlexSet)`\
+    insist(new.target === FlexSet)`\
 FlexSet is final`;
     super(optIterable);
     // Be very scared of the following line, since it looks up on
     // hiddenESet for purposes of enabling mutation. We assume it is
-    // safe because the `new.target` check above ensures this
+    // safe because the `new.target` insist check above ensures this
     // constructor is being called as-if directly with `new`. We say
     // "as-if" because it might be invoked by `Reflect.construct`, but
     // only in an equivalent manner.
@@ -182,9 +182,9 @@ class InternalReadOnlySet extends ESet {
 // Guarantee that an instance of ReadOnlySet does not provide the
 // ability to modify.
 function ReadOnlySet() {
-  check(new.target === ReadOnlySet)`\
+  insist(new.target === ReadOnlySet)`\
 ReadOnlySet is final`;
-  check(false)`\
+  insist(false)`\
 Use readOnlyView() to view an existing ESet`;
 }
 Object.setPrototypeOf(ReadOnlySet, ESet);

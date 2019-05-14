@@ -2,7 +2,7 @@
 
 import harden from '@agoric/harden';
 
-import { check } from './insist';
+import { insist } from './insist';
 
 function makePrivateName(...args) {
   const wm = new WeakMap(...args);
@@ -11,17 +11,17 @@ function makePrivateName(...args) {
       return wm.has(key);
     },
     init(key, value) {
-      check(!wm.has(key))`\
+      insist(!wm.has(key))`\
 key already registered: ${key}`;
       wm.set(key, value);
     },
     get(key) {
-      check(wm.has(key))`\
+      insist(wm.has(key))`\
 key not found: ${key}`;
       return wm.get(key);
     },
     set(key, value) {
-      check(wm.has(key))`\
+      insist(wm.has(key))`\
 key not found: ${key}`;
       wm.set(key, value);
     },

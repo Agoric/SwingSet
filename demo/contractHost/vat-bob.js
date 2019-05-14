@@ -3,7 +3,7 @@
 
 import harden from '@agoric/harden';
 
-import { check } from '../../collections/insist';
+import { insist } from '../../collections/insist';
 import { allSettled } from '../../collections/allSettled';
 import { escrowExchange } from './escrow';
 
@@ -36,7 +36,7 @@ function makeBob(E, host) {
      * is a bit confusing here.
      */
     buy(desc, paymentP) {
-      check(initialized)`\
+      insist(initialized)`\
 ERR: buy called before init()`;
 
       /* eslint-disable-next-line no-unused-vars */
@@ -61,7 +61,7 @@ ERR: buy called before init()`;
 
     tradeWell(alice) {
       console.log('++ bob.tradeWell starting');
-      check(initialized)`\
+      insist(initialized)`\
 ERR: tradeWell called before init()`;
 
       const moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
@@ -89,7 +89,7 @@ ERR: tradeWell called before init()`;
      * requesting that this object invite anything.
      */
     invite(chitP) {
-      check(initialized)`\
+      insist(initialized)`\
 ERR: invite called before init()`;
 
       const seatP = E(host).redeem(chitP);
