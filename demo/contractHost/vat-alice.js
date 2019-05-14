@@ -52,9 +52,9 @@ ERR: invite called before init()`;
 
       function verifyChit([tIssuer, mIssuer, sIssuer]) {
         const mLabel = harden({ issuer: mIssuer, description: 'clams' });
-        const clams10 = harden({ label: mLabel, data: 10 });
+        const clams10 = harden({ label: mLabel, quantity: 10 });
         const sLabel = harden({ issuer: sIssuer, description: 'fudco' });
-        const fudco7 = harden({ label: sLabel, data: 7 });
+        const fudco7 = harden({ label: sLabel, quantity: 7 });
 
         const tDesc = harden({
           contractSrc: escrowSrc,
@@ -62,7 +62,7 @@ ERR: invite called before init()`;
           seatDesc: [clams10, fudco7],
         });
         const tLabel = harden({ issuer: tIssuer, description: tDesc });
-        const chit1 = harden({ label: tLabel, data: 1 });
+        const chit1 = harden({ label: tLabel, quantity: 1 });
 
         // In order for alice to get a meaningful exclusive on the
         // chit, she must know that the deal offered is the one she

@@ -4,7 +4,7 @@ import harden from '@agoric/harden';
 
 import { makePrivateName } from '../../collections/PrivateName';
 import { check } from '../../collections/insist';
-import { makeNatAssay } from './assays';
+import { makeNatAssay, makeMetaSingleAssayMaker } from './assays';
 
 function makeMint(description, makeAssay = makeNatAssay) {
   check(description)`\
@@ -152,6 +152,30 @@ Payment expected: ${src}`;
 }
 harden(makeMint);
 
+function makeMetaIssuerController(description) {
+  const baseLabelToAssay = new WeakMap();
+  function baseLabelToAssayFn(baseLabel) {
+    return baseLabelToAssay.get(baseLabel);
+  }
+  const makeMetaAssay = makeMetaSingleAssayMaker(baseLabelToAssayFn);
+  const metaMint = makeMint(description, makeMetaAssay);
+  const metaIssuer = metaMint.getIssuer();
+
+  const controller = harden({
+    getMetaMint() {
+      return metaMint;
+    },
+    getMetaIssuer() {
+      return metaIssuer;
+    },
+    register(baseIssuer) {
+      baseLabelToAssay.set(baseIssuer.getLabel(), baseIssuer.getAssay());
+    },
+  });
+  return controller;
+}
+harden(makeMetaIssuerController);
+
 // Creates a local issuer that locally represents a remotely issued
 // currency. Returns a promise for a peg object that asynchonously
 // converts between the two. The local currency is synchronously
@@ -172,14 +196,14 @@ function makePeg(E, remoteIssuerP, makeAssay = makeNatAssay) {
     function localAmountOf(remoteAmount) {
       return harden({
         label: localLabel,
-        data: remoteAmount.data,
+        quantity: remoteAmount.quantity,
       });
     }
 
     function remoteAmountOf(localAmount) {
       return harden({
         label: remoteLabel,
-        data: localAmount.data,
+        quantity: localAmount.quantity,
       });
     }
 
@@ -208,5 +232,6 @@ function makePeg(E, remoteIssuerP, makeAssay = makeNatAssay) {
     });
   });
 }
+harden(makePeg);
 
-export { makeMint, makePeg };
+export { makeMint, makeMetaIssuerController, makePeg };

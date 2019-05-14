@@ -6,27 +6,44 @@ import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
 
 import { check } from '../../collections/insist';
-import { makeMetaSingleAssayMaker } from './assays';
-import { makeMint } from './issuers';
+import { makeMint, makeMetaIssuerController } from './issuers';
 import makePromise from '../../src/kernel/makePromise';
 
-function makeHost(E) {
-  // Maps from chit issuers to seats
+function makeContractHost(E) {
+  // Maps from base issuers to seats
   const seats = new WeakMap();
 
-  const chitLabelToAssay = new WeakMap();
-  function getChitLabelToAssay(chitLabel) {
-    return chitLabelToAssay.get(chitLabel);
+  const controller = makeMetaIssuerController('contract host');
+  const metaIssuer = controller.getMetaIssuer();
+  const metaAssay = metaIssuer.getAssay();
+
+  function metaOneOf(baseIssuer) {
+    const baseAssay = baseIssuer.getAssay();
+    const baseOneAmount = baseAssay.make(1);
+    return metaAssay.make(baseOneAmount);
   }
-  const makeMetaChitAssay = makeMetaSingleAssayMaker(getChitLabelToAssay);
-  const metaChitMint = makeMint('contractHost', makeMetaChitAssay);
-  const metaChitIssuer = metaChitMint.getIssuer();
+
+  function redeem(allegedChitPayment) {
+    const allegedMetaAmount = allegedChitPayment.getXferBalance();
+    const metaAmount = metaAssay.vouch(allegedMetaAmount);
+    check(!metaAssay.isEmpty(metaAmount))`\
+No chits left`;
+    const baseAmount = metaAssay.quantity(metaAmount);
+    const baseIssuer = baseAmount.label.issuer;
+    check(seats.has(baseIssuer))`\
+Not a registered chit base issuer ${baseIssuer}`;
+    const metaOneAmount = metaOneOf(baseIssuer);
+    const metaSinkPurse = metaIssuer.makeEmptyPurse();
+    metaSinkPurse.deposit(metaOneAmount, allegedChitPayment);
+    // Would throw if failed. If we reach here, we got the chit!
+    return seats.get(baseIssuer);
+  }
 
   // The contract host is designed to have a long-lived credible
   // identity.
-  return harden({
-    getMetaChitIssuer() {
-      return metaChitIssuer;
+  const contractHost = harden({
+    getChitIssuer() {
+      return controller.getIssuer();
     },
 
     // The `contractSrc` is code for a contract function parameterized
@@ -51,45 +68,42 @@ function makeHost(E) {
         // contract host redeems a chit, then the contractSrc and
         // terms are accurate. The seatDesc is according to that
         // contractSrc code.
-        make(seatDesc, seat) {
-          const chitDescription = harden({
+        make(seatDesc, seat, name = 'a chit payment') {
+          const baseDescription = harden({
             contractSrc,
             terms,
             seatDesc,
           });
-          const chitMint = makeMint(chitDescription);
-          const chitIssuer = chitMint.getIssuer();
-          seats.set(chitIssuer, harden(seat));
-          const chitPurse = chitMint.mint(1);
-          return chitPurse.withdraw(1);
+          // We purposely avoid reifying baseMint because there should
+          // never be any base purses or base payments. A chit only
+          // resides in a meta purse or meta payment.
+          const baseIssuer = makeMint(baseDescription).getIssuer();
+          controller.register(baseIssuer);
+          seats.set(baseIssuer, seat);
+          const metaOneAmount = metaOneOf(baseIssuer);
+          // This should be the only use of the meta mint, to make a
+          // meta purse whose quantity is one unit of a base amount
+          // for a unique base label. This meta purse makes the
+          // returned meta payment, and then the empty meta purse is
+          // dropped.
+          const metaPurse = controller.getMetaMint().mint(metaOneAmount, name);
+          return metaPurse.withdraw(metaOneAmount, name);
         },
+        redeem,
       });
-
       return contract(terms, chitMaker);
     },
 
-    // If this is a chit made by a chitMaker of this contract
+    // If this is a chit payment made by a chitMaker of this contract
     // host, redeem it for the associated seat. Else error. Redeeming
-    // consumes the chit; both the xferRights and the useRights.
-    redeem(allegedChitP) {
-      return E(allegedChitP)
-        .getIssuer()
-        .then(allegedIssuer => {
-          check(seats.has(allegedIssuer))`\
-Not one of my chit issuers: ${allegedIssuer}`;
-
-          // Make an empty purse and deposit chit into it, rather than
-          // just doing a getExclusive on the chit, so that the
-          // useRights are used up as well as the xferRights.
-          const sinkPurse = allegedIssuer.makeEmptyPurse();
-          return sinkPurse.deposit(1, allegedChitP).then(_ => {
-            const seat = seats.get(allegedIssuer);
-            seats.delete(allegedIssuer);
-            return seat;
-          });
-        });
+    // consumes the chit payment and also transfers the use rights.
+    redeem(allegedChitPaymentP) {
+      return Promise.resolve(allegedChitPaymentP).then(allegedChitPayment => {
+        return redeem(allegedChitPayment);
+      });
     },
   });
+  return contractHost;
 }
 
 function setup(syscall, state, helpers) {
@@ -99,7 +113,7 @@ function setup(syscall, state, helpers) {
     E =>
       harden({
         makeHost() {
-          return harden(makeHost(E));
+          return harden(makeContractHost(E));
         },
       }),
     helpers.vatID,

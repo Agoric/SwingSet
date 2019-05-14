@@ -33,8 +33,8 @@ function build(E) {
       // agree. The veracity of the description is, however, only as
       // good as the issuer doing the check.
       const label = harden({ issuer, description: 'bucks' });
-      const bucks1000 = harden({ label, data: 1000 });
-      const bucks50 = harden({ label, data: 50 });
+      const bucks1000 = harden({ label, quantity: 1000 });
+      const bucks50 = harden({ label, quantity: 50 });
 
       const alicePurseP = E(mMintP).mint(bucks1000, 'alice');
       const paymentP = E(alicePurseP).withdraw(bucks50);

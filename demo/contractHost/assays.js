@@ -11,7 +11,13 @@ import {
 
 // Return an assay, which makes amounts, validates amounts, and
 // provides set operations over amounts. An amount is a pass-by-copy
-// description of some set of erights.
+// description of some set of erights. An amount has a label and a
+// quantity. All amounts made by the same assay have the same label
+// but differ in quantity.
+//
+// An assay is not pass-by-presence, but is not designed to be
+// usefully passed. Rather, we expect each vat that needs to operate
+// on amounts will have its own local assay to do so.
 //
 // The default assay makes the default kind of amount.  The default
 // kind of amount is a labeled natural number describing a quantity of
@@ -20,7 +26,7 @@ import {
 function makeNatAssay(label) {
   mustBeComparable(label);
 
-  // memoize well formedness check.
+  // memoize well formedness check of amounts
   const brand = new WeakSet();
 
   const assay = harden({
@@ -28,10 +34,10 @@ function makeNatAssay(label) {
       return label;
     },
 
-    // Given the raw data that this kind of amount would label, return
-    // an amount so labeling that data.
-    make(allegedData) {
-      const amount = harden({ label, data: Nat(allegedData) });
+    // Given the raw quantity that this kind of amount would label, return
+    // an amount so labeling that quantity.
+    make(allegedQuantity) {
+      const amount = harden({ label, quantity: Nat(allegedQuantity) });
       brand.add(amount);
       return amount;
     },
@@ -53,24 +59,24 @@ Unrecognized amount: ${amount}`;
     // assay style is too awkward to use remotely. See
     // mintTestAssay. So coerce also accepts a bare number which it
     // will coerce to a labeled number via assay.make.
-    coerce(amountLike) {
-      if (typeof amountLike === 'number') {
+    coerce(allegedAmount) {
+      if (typeof allegedAmount === 'number') {
         // Will throw on inappropriate number
-        return assay.make(amountLike);
+        return assay.make(allegedAmount);
       }
-      if (brand.has(amountLike)) {
-        return amountLike;
+      if (brand.has(allegedAmount)) {
+        return allegedAmount;
       }
-      const { label: allegedLabel, data } = amountLike;
+      const { label: allegedLabel, quantity } = allegedAmount;
       check(sameStructure(label, allegedLabel))`\
 Unrecognized label: ${allegedLabel}`;
-      // Will throw on inappropriate data
-      return assay.make(data);
+      // Will throw on inappropriate quantity
+      return assay.make(quantity);
     },
 
-    // Return the raw data that this amount labels.
-    data(amount) {
-      return assay.vouch(amount).data;
+    // Return the raw quantity that this amount labels.
+    quantity(amount) {
+      return assay.vouch(amount).quantity;
     },
 
     // Represents the empty set of erights, i.e., no erights
@@ -79,21 +85,23 @@ Unrecognized label: ${allegedLabel}`;
     },
 
     isEmpty(amount) {
-      return assay.data(amount) === 0;
+      return assay.quantity(amount) === 0;
     },
 
     // Set inclusion of erights.
     // Does the set of erights described by `leftAmount` include all
     // the erights described by `rightAmount`?
     includes(leftAmount, rightAmount) {
-      return assay.data(leftAmount) >= assay.data(rightAmount);
+      return assay.quantity(leftAmount) >= assay.quantity(rightAmount);
     },
 
     // Set union of erights.
     // Describe all the erights described by `leftAmount` and those
     // described by `rightAmount`.
     with(leftAmount, rightAmount) {
-      return assay.make(assay.data(leftAmount) + assay.data(rightAmount));
+      return assay.make(
+        assay.quantity(leftAmount) + assay.quantity(rightAmount),
+      );
     },
 
     // Covering set subtraction of erights.
@@ -101,31 +109,57 @@ Unrecognized label: ${allegedLabel}`;
     // Describe the erights described by `leftAmount` and not described
     // by `rightAmount`.
     without(leftAmount, rightAmount) {
-      return assay.make(assay.data(leftAmount) - assay.data(rightAmount));
+      return assay.make(
+        assay.quantity(leftAmount) - assay.quantity(rightAmount),
+      );
     },
   });
   return assay;
 }
 harden(makeNatAssay);
 
-function makeMetaSingleAssayMaker(baseLabelToAssay) {
+// A meta assay wraps those base assays returned by
+// baseLabelToAssayFn. A meta amount's quantity is a base amount, or
+// null for empty. Thus, different meta amounts that have the same
+// meta label can contain different meta quantities, each of whom is a
+// base amount with a different base label. The "single" qualifier
+// here is for the restriction that a metaSingleAssay cannot combine
+// base amounts with different base labels.
+//
+// TODO: Before we can make a more general meta assay, we need to
+// recognize a ConstMap as a pass-by-copy object. Once we have that,
+// we can have a meta amount be a ConstMap from base labels to base
+// amounts.
+//
+// Since an empty meta amount has a null quantity rather than a base
+// amount, it has no corresponding base assay.
+function makeMetaSingleAssayMaker(baseLabelToAssayFn) {
   function makeMetaSingleAssay(metaLabel) {
     mustBeComparable(metaLabel);
 
-    // memoize well formedness check.
+    // memoize well formedness check of meta amounts.
     const metaBrand = new WeakSet();
+
+    const metaEmptyAmount = harden({ label: metaLabel, quantity: null });
+    metaBrand.add(metaEmptyAmount);
 
     const metaAssay = harden({
       getLabel() {
         return metaLabel;
       },
 
-      // Given the raw data that this kind of amount would label, return
-      // an amount so labeling that data.
+      // Given the raw quantity that this kind of amount would label, return
+      // an amount so labeling that quantity.
       make(allegedBaseAmount) {
-        const baseAssay = baseLabelToAssay.get(allegedBaseAmount.label);
-        const baseAmount = baseAssay.make(allegedBaseAmount.data);
-        const metaAmount = harden({ metaLabel, data: baseAmount });
+        if (allegedBaseAmount === null) {
+          return metaEmptyAmount;
+        }
+        const baseAssay = baseLabelToAssayFn(allegedBaseAmount.label);
+        const baseAmount = baseAssay.make(allegedBaseAmount.quantity);
+        if (baseAssay.isEmpty(baseAmount)) {
+          return metaEmptyAmount;
+        }
+        const metaAmount = harden({ label: metaLabel, quantity: baseAmount });
         metaBrand.add(metaAmount);
         return metaAmount;
       },
@@ -147,48 +181,65 @@ Unrecognized metaAmount: ${metaAmount}`;
       // assay style is too awkward to use remotely. See
       // mintTestAssay. So coerce also accepts a bare number which it
       // will coerce to a labeled number via metaAssay.make.
-      coerce(metaAmountLike) {
-        if (metaBrand.has(metaAmountLike)) {
-          return metaAmountLike;
+      coerce(allegedMetaAmount) {
+        if (metaBrand.has(allegedMetaAmount)) {
+          return allegedMetaAmount;
         }
         const {
           label: allegedMetaLabel,
-          data: allegedBaseAmount,
-        } = metaAmountLike;
+          quantity: allegedBaseAmount,
+        } = allegedMetaAmount;
         check(sameStructure(metaLabel, allegedMetaLabel))`\
 Unrecognized label: ${allegedMetaLabel}`;
-        // Will throw on inappropriate data
+        // Will throw on inappropriate quantity
         return metaAssay.make(allegedBaseAmount);
       },
 
-      // Return the raw data that this amount labels.
-      data(metaAmount) {
-        return metaAssay.vouch(metaAmount).data;
+      // Return the raw quantity that this meta amount labels. This
+      // will be either null or a base amount of some label recognized
+      // by baseLabelToAssayFn.
+      quantity(metaAmount) {
+        return metaAssay.vouch(metaAmount).quantity;
       },
 
-      // Represents the empty set of erights, i.e., no erights
+      // The meta empty amount has a quantity of null, rather than a
+      // base amount.
       empty() {
-        return metaAssay.make(0);
+        return metaEmptyAmount;
       },
 
-      isEmpty(amount) {
-        return metaAssay.data(amount) === 0;
+      isEmpty(metaAmount) {
+        const baseAmount = metaAssay.quantity(metaAmount);
+        if (baseAmount === null) {
+          check(metaAmount === metaEmptyAmount)`\
+The empty meta amount should be unique`;
+          return true;
+        }
+        const baseAssay = baseLabelToAssayFn(baseAmount).label;
+        check(baseAssay.isEmpty(baseAmount))`\
+Empty base amount should be canonicalized as a null meta quantity`;
+        return false;
       },
 
       // Set inclusion of erights.
       // Does the set of erights described by `leftAmount` include all
       // the erights described by `rightAmount`?
       includes(leftMetaAmount, rightMetaAmount) {
-        const leftBaseAmount = leftMetaAmount.data;
+        if (metaAssay.isEmpty(rightMetaAmount)) {
+          return true;
+        }
+        if (metaAssay.isEmpty(leftMetaAmount)) {
+          return false;
+        }
+        const leftBaseAmount = leftMetaAmount.quantity;
         const leftBaseLabel = leftBaseAmount.label;
-        const rightBaseAmount = rightMetaAmount.data;
+        const rightBaseAmount = rightMetaAmount.quantity;
         const rightBaseLabel = rightBaseAmount.label;
 
         if (!sameStructure(leftBaseLabel, rightBaseLabel)) {
           return false;
         }
-        const baseAssay = baseLabelToAssay.get(leftBaseLabel);
-
+        const baseAssay = baseLabelToAssayFn(leftBaseLabel);
         return baseAssay.includes(leftBaseAmount, rightBaseAmount);
       },
 
@@ -196,16 +247,22 @@ Unrecognized label: ${allegedMetaLabel}`;
       // Describe all the erights described by `leftAmount` and those
       // described by `rightAmount`.
       with(leftMetaAmount, rightMetaAmount) {
-        const leftBaseAmount = leftMetaAmount.data;
+        if (metaAssay.isEmpty(leftMetaAmount)) {
+          return rightMetaAmount;
+        }
+        if (metaAssay.isEmpty(rightMetaAmount)) {
+          return leftMetaAmount;
+        }
+        const leftBaseAmount = leftMetaAmount.quantity;
         const leftBaseLabel = leftBaseAmount.label;
-        const rightBaseAmount = rightMetaAmount.data;
+        const rightBaseAmount = rightMetaAmount.quantity;
         const rightBaseLabel = rightBaseAmount.label;
 
         check(sameStructure(leftBaseLabel, rightBaseLabel))`\
-Cannot yet combine different base rights: ${leftBaseLabel}, ${rightBaseLabel}`;
-        const baseAssay = baseLabelToAssay.get(leftBaseLabel);
+Cannot combine different base rights: ${leftBaseLabel}, ${rightBaseLabel}`;
+        const baseAssay = baseLabelToAssayFn(leftBaseLabel);
 
-        return baseAssay.with(leftBaseAmount, rightBaseAmount);
+        return metaAssay.make(baseAssay.with(leftBaseAmount, rightBaseAmount));
       },
 
       // Covering set subtraction of erights.
@@ -213,16 +270,24 @@ Cannot yet combine different base rights: ${leftBaseLabel}, ${rightBaseLabel}`;
       // Describe the erights described by `leftAmount` and not described
       // by `rightAmount`.
       without(leftMetaAmount, rightMetaAmount) {
-        const leftBaseAmount = leftMetaAmount.data;
+        if (metaAssay.isEmpty(rightMetaAmount)) {
+          return leftMetaAmount;
+        }
+        check(!metaAssay.isEmpty(leftMetaAmount))`\
+empty left meta assay does not include ${rightMetaAmount}`;
+
+        const leftBaseAmount = leftMetaAmount.quantity;
         const leftBaseLabel = leftBaseAmount.label;
-        const rightBaseAmount = rightMetaAmount.data;
+        const rightBaseAmount = rightMetaAmount.quantity;
         const rightBaseLabel = rightBaseAmount.label;
 
         check(sameStructure(leftBaseLabel, rightBaseLabel))`\
-Cannot yet subtract different base rights: ${leftBaseLabel}, ${rightBaseLabel}`;
-        const baseAssay = baseLabelToAssay.get(leftBaseLabel);
+Cannot subtract different base rights: ${leftBaseLabel}, ${rightBaseLabel}`;
+        const baseAssay = baseLabelToAssayFn(leftBaseLabel);
 
-        return baseAssay.without(leftBaseAmount, rightBaseAmount);
+        return metaAssay.make(
+          baseAssay.without(leftBaseAmount, rightBaseAmount),
+        );
       },
     });
     return metaAssay;
