@@ -6,6 +6,7 @@ import harden from '@agoric/harden';
 import { insist } from '../../collections/insist';
 import {
   sameStructure,
+  mustBeSameStructure,
   mustBeComparable,
 } from '../../collections/sameStructure';
 
@@ -72,8 +73,7 @@ Unrecognized amount: ${amount}`;
         return allegedAmount;
       }
       const { label: allegedLabel, quantity } = allegedAmount;
-      insist(sameStructure(label, allegedLabel))`\
-Unrecognized label: ${allegedLabel}`;
+      mustBeSameStructure(label, allegedLabel, 'Unrecognized label');
       // Will throw on inappropriate quantity
       return assay.make(quantity);
     },
@@ -195,8 +195,11 @@ Unrecognized metaAmount: ${metaAmount}`;
           label: allegedMetaLabel,
           quantity: allegedBaseAmount,
         } = allegedMetaAmount;
-        insist(sameStructure(metaLabel, allegedMetaLabel))`\
-Unrecognized label: ${allegedMetaLabel}`;
+        mustBeSameStructure(
+          metaLabel,
+          allegedMetaLabel,
+          'Unrecognized meta label',
+        );
         // Will throw on inappropriate quantity
         return metaAssay.make(allegedBaseAmount);
       },
@@ -264,8 +267,11 @@ Empty base amount should be canonicalized as a null meta quantity`;
         const rightBaseAmount = rightMetaAmount.quantity;
         const rightBaseLabel = rightBaseAmount.label;
 
-        insist(sameStructure(leftBaseLabel, rightBaseLabel))`\
-Cannot combine different base rights: ${leftBaseLabel}, ${rightBaseLabel}`;
+        mustBeSameStructure(
+          leftBaseLabel,
+          rightBaseLabel,
+          'Cannot combine different base rights',
+        );
         const baseAssay = baseLabelToAssayFn(leftBaseLabel);
 
         return metaAssay.make(baseAssay.with(leftBaseAmount, rightBaseAmount));
@@ -287,8 +293,11 @@ empty left meta assay does not include ${rightMetaAmount}`;
         const rightBaseAmount = rightMetaAmount.quantity;
         const rightBaseLabel = rightBaseAmount.label;
 
-        insist(sameStructure(leftBaseLabel, rightBaseLabel))`\
-Cannot subtract different base rights: ${leftBaseLabel}, ${rightBaseLabel}`;
+        mustBeSameStructure(
+          leftBaseLabel,
+          rightBaseLabel,
+          'Cannot subtract different base rights',
+        );
         const baseAssay = baseLabelToAssayFn(leftBaseLabel);
 
         return metaAssay.make(

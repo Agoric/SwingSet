@@ -62,14 +62,106 @@ Cannot structurally compare promises: ${right}`;
 }
 harden(sameStructure);
 
+function pathStr(path) {
+  if (path === null) {
+    return 'top';
+  }
+  const [base, index] = path;
+  let i = index;
+  const baseStr = pathStr(base);
+  if (typeof i === 'string' && /^[a-zA-Z]\w*$/.test(i)) {
+    return `${baseStr}.${i}`;
+  }
+  if (typeof i === 'string' && `${+i}` === i) {
+    i = +i;
+  }
+  return `${baseStr}[${JSON.stringify(i)}]`;
+}
+
+// TODO: Reduce redundancy between sameStructure and
+// mustBeSameStructureInternal
+function mustBeSameStructureInternal(left, right, message, path) {
+  function complain(problem) {
+    const template = harden([
+      `${message}:${problem} at ${pathStr(path)}: (`,
+      ') vs (',
+      ')',
+    ]);
+    insist(false)(template, left, right);
+  }
+
+  const leftStyle = passStyleOf(left);
+  const rightStyle = passStyleOf(right);
+  if (leftStyle === 'promise') {
+    complain('Promise on left');
+  }
+  if (rightStyle === 'promise') {
+    complain('Promise on right');
+  }
+
+  if (leftStyle !== rightStyle) {
+    complain('different passing style');
+  }
+  switch (leftStyle) {
+    case 'null':
+    case 'undefined':
+    case 'string':
+    case 'boolean':
+    case 'number':
+    case 'symbol':
+    case 'bigint':
+    case 'presence': {
+      if (!Object.is(left, right)) {
+        complain('different');
+      }
+      break;
+    }
+    case 'copyRecord':
+    case 'copyArray': {
+      const leftNames = Object.getOwnPropertyNames(left);
+      const rightNames = Object.getOwnPropertyNames(right);
+      if (leftNames.length !== rightNames.length) {
+        complain(`${leftNames.length} vs ${rightNames.length} own properties`);
+      }
+      for (const name of leftNames) {
+        // TODO: Better hasOwnProperty check
+        if (!Object.getOwnPropertyDescriptor(right, name)) {
+          complain(`${name} not found on right`);
+        }
+        // TODO: Make cycle tolerant
+        mustBeSameStructureInternal(left[name], right[name], message, [
+          path,
+          name,
+        ]);
+      }
+      break;
+    }
+    case 'copyError': {
+      if (left.name !== right.name) {
+        complain(`different error name: ${left.name} vs ${right.name}`);
+      }
+      if (left.message !== right.message) {
+        complain(
+          `different error message: ${left.message} vs ${right.message}`,
+        );
+      }
+      break;
+    }
+    default: {
+      complain(`unrecognized passStyle ${leftStyle}`);
+      break;
+    }
+  }
+}
+function mustBeSameStructure(left, right, message) {
+  mustBeSameStructureInternal(left, right, `${message}`, null);
+}
+harden(mustBeSameStructure);
+
 // If `val` would be a valid input to `sameStructure`, return
 // normally. Otherwise error.
 function mustBeComparable(val) {
-  // Currently, we can test this by just comparing it to itself using
-  // `sameStructure`. But if `sameStructure` changes to use an
-  // identity test to exit early, we'll need to be more clever.
-  insist(sameStructure(val, val))`\
-Internal error: ${val} not reflexive`;
+  mustBeSameStructure(val, val, 'not comparable');
 }
 
-export { sameStructure, mustBeComparable };
+export { sameStructure, mustBeSameStructure, mustBeComparable };

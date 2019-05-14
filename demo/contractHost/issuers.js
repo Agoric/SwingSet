@@ -5,7 +5,7 @@ import harden from '@agoric/harden';
 import { makePrivateName } from '../../collections/PrivateName';
 import { insist } from '../../collections/insist';
 import { makeNatAssay, makeMetaSingleAssayMaker } from './assays';
-import { sameStructure } from '../../collections/sameStructure';
+import { mustBeSameStructure } from '../../collections/sameStructure';
 
 function makeMint(description, makeAssay = makeNatAssay) {
   insist(description)`\
@@ -173,8 +173,7 @@ function makeMetaIssuerController(description) {
     const baseAssay = baseIssuerToAssay.get(baseLabel.issuer);
     insist(baseAssay !== undefined)`\
 Issuer not found ${baseLabel}.issuer === ${baseLabel.issuer}`;
-    insist(sameStructure(baseAssay.getLabel(), baseLabel))`\
-Labels don't match ${baseAssay.getLabel()} vs ${baseLabel}`;
+    mustBeSameStructure(baseAssay.getLabel(), baseLabel, `Labels don't match`);
     return baseAssay;
   }
   const makeMetaAssay = makeMetaSingleAssayMaker(baseLabelToAssayFn);
