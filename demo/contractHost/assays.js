@@ -198,7 +198,7 @@ Unrecognized label: ${allegedMetaLabel}`;
       },
 
       // Return the raw quantity that this meta amount labels. This
-      // will be either null or a base amount of some label recognized
+      // will be either null or a base amount with a label recognized
       // by baseLabelToAssayFn.
       quantity(metaAmount) {
         return metaAssay.vouch(metaAmount).quantity;

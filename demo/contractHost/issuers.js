@@ -5,6 +5,7 @@ import harden from '@agoric/harden';
 import { makePrivateName } from '../../collections/PrivateName';
 import { check } from '../../collections/insist';
 import { makeNatAssay, makeMetaSingleAssayMaker } from './assays';
+import { sameStructure } from '../../collections/sameStructure';
 
 function makeMint(description, makeAssay = makeNatAssay) {
   check(description)`\
@@ -153,9 +154,14 @@ Payment expected: ${src}`;
 harden(makeMint);
 
 function makeMetaIssuerController(description) {
-  const baseLabelToAssay = new WeakMap();
+  const baseIssuerToAssay = new WeakMap();
   function baseLabelToAssayFn(baseLabel) {
-    return baseLabelToAssay.get(baseLabel);
+    const baseAssay = baseIssuerToAssay.get(baseLabel.issuer);
+    check(baseAssay !== undefined)`\
+Issuer not found ${baseLabel}.issuer === ${baseLabel.issuer}`;
+    check(sameStructure(baseAssay.getLabel(), baseLabel))`\
+Labels don't match ${baseAssay.getLabel()} vs ${baseLabel}`;
+    return baseAssay;
   }
   const makeMetaAssay = makeMetaSingleAssayMaker(baseLabelToAssayFn);
   const metaMint = makeMint(description, makeMetaAssay);
@@ -169,7 +175,7 @@ function makeMetaIssuerController(description) {
       return metaIssuer;
     },
     register(baseIssuer) {
-      baseLabelToAssay.set(baseIssuer.getLabel(), baseIssuer.getAssay());
+      baseIssuerToAssay.set(baseIssuer, baseIssuer.getAssay());
     },
   });
   return controller;

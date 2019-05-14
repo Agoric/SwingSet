@@ -73,9 +73,9 @@ ERR: invite called before init()`;
         const baseDesc = harden({
           contractSrc: escrowSrc,
           terms: [clams10, fudco7],
-          seatDesc: [clams10, fudco7],
+          seatDesc: ['alice', clams10, fudco7],
         });
-        const baseIssuerPresence = allegedMetaAmount.label.issuer;
+        const baseIssuerPresence = allegedMetaAmount.quantity.label.issuer;
         const baseLabel = harden({
           issuer: baseIssuerPresence,
           description: baseDesc,

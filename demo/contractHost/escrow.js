@@ -86,8 +86,8 @@ function escrowExchange(terms, chitMaker) {
   });
 
   return harden([
-    chitMaker.make([moneyNeeded, stockNeeded], aliceSeat),
-    chitMaker.make([stockNeeded, moneyNeeded], bobSeat),
+    chitMaker.make(['alice', moneyNeeded, stockNeeded], aliceSeat),
+    chitMaker.make(['bob', stockNeeded, moneyNeeded], bobSeat),
   ]);
 }
 
