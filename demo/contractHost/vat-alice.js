@@ -75,7 +75,10 @@ ERR: invite called before init()`;
           terms: [clams10, fudco7],
           seatDesc: ['alice', clams10, fudco7],
         });
-        const baseIssuerPresence = allegedMetaAmount.quantity.label.issuer;
+        const baseAmount = allegedMetaAmount.quantity;
+        check(baseAmount !== null)`\
+Payment empty ${allegedMetaAmount}`;
+        const baseIssuerPresence = baseAmount.label.issuer;
         const baseLabel = harden({
           issuer: baseIssuerPresence,
           description: baseDesc,
