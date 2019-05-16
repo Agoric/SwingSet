@@ -19,6 +19,13 @@ function build(E) {
       .then(amount => console.log(name, ' use balance ', amount));
   }
 
+  const fakeTimer = harden({
+    delayUntil(deadline, resolution = undefined) {
+      console.log(`Pretend ${deadline} passed`);
+      return Promise.resolve(resolution);
+    },
+  });
+
   // This is written in the full assay style, where bare number
   // objects are never used in lieu of full amount objects. This has
   // the virtue of unit typing, where 3 dollars cannot be confused
@@ -94,9 +101,9 @@ function build(E) {
     const aliceStockPurseP = E(stockMintP).mint(2002);
     const bobStockPurseP = E(stockMintP).mint(2003);
 
-    const aliceP = E(alice).init(aliceMoneyPurseP, aliceStockPurseP);
+    const aliceP = E(alice).init(aliceMoneyPurseP, aliceStockPurseP, fakeTimer);
     /* eslint-disable-next-line no-unused-vars */
-    const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP);
+    const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP, fakeTimer);
     const ifItFitsP = E(aliceP).payBobWell(bob);
     ifItFitsP.then(
       res => {
@@ -117,8 +124,8 @@ function build(E) {
     const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
     const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
 
-    const aliceP = E(alice).init(aliceMoneyPurseP, aliceStockPurseP);
-    const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP);
+    const aliceP = E(alice).init(aliceMoneyPurseP, aliceStockPurseP, fakeTimer);
+    const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP, fakeTimer);
 
     E(bobP)
       .tradeWell(aliceP, false)
@@ -146,8 +153,8 @@ function build(E) {
     const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
     const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
 
-    const aliceP = E(alice).init(aliceMoneyPurseP, aliceStockPurseP);
-    const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP);
+    const aliceP = E(alice).init(aliceMoneyPurseP, aliceStockPurseP, fakeTimer);
+    const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP, fakeTimer);
 
     E(bobP)
       .offerAliceOption(aliceP, false)

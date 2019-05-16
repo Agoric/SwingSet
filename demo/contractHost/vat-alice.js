@@ -5,7 +5,8 @@ import harden from '@agoric/harden';
 
 import { insist } from '../../collections/insist';
 import { allSettled } from '../../collections/allSettled';
-import { escrowExchange } from './escrow';
+import { escrowExchangeSrc } from './escrow';
+import { coveredCallSrc } from './coveredCall';
 
 function makeAlice(E, host) {
   function showPaymentBalance(name, paymentP) {
@@ -14,21 +15,21 @@ function makeAlice(E, host) {
       .then(amount => console.log(name, ' xfer balance ', amount));
   }
 
-  const escrowSrc = `(${escrowExchange})`;
-
   let initialized = false;
   let myMoneyPurseP;
   let moneyIssuerP;
   let myStockPurseP;
   let stockIssuerP;
   let chitIssuerP;
+  let timerP;
 
-  function init(myMoneyPurse, myStockPurse) {
+  function init(myMoneyPurse, myStockPurse, myTimer) {
     myMoneyPurseP = Promise.resolve(myMoneyPurse);
     moneyIssuerP = E(myMoneyPurseP).getIssuer();
     myStockPurseP = Promise.resolve(myStockPurse);
     stockIssuerP = E(myStockPurseP).getIssuer();
     chitIssuerP = E(host).getChitIssuer();
+    timerP = Promise.resolve(myTimer);
 
     initialized = true;
     // eslint-disable-next-line no-use-before-define
@@ -71,7 +72,7 @@ ERR: invite called before init()`;
         const fudco7 = harden({ label: fudcoLabel, quantity: 7 });
 
         const baseDesc = harden({
-          contractSrc: escrowSrc,
+          contractSrc: escrowExchangeSrc,
           terms: [clams10, fudco7],
           seatDesc: [0, clams10, fudco7],
         });
@@ -138,27 +139,28 @@ ERR: invite called before init()`;
 
       const allegedMetaAmountP = E(allegedChitPaymentP).getXferBalance();
 
-      function verifyChit([
+      function verifyOptionsChit([
         allegedMetaAmount,
         moneyIssuerPresence,
         stockIssuerPresence,
         chitIssuerPresence,
+        timerPresence,
       ]) {
-        const clamsLabel = harden({
+        const smackersLabel = harden({
           issuer: moneyIssuerPresence,
-          description: 'clams',
+          description: 'smackers',
         });
-        const clams10 = harden({ label: clamsLabel, quantity: 10 });
-        const fudcoLabel = harden({
+        const smackers10 = harden({ label: smackersLabel, quantity: 10 });
+        const yoyodyneLabel = harden({
           issuer: stockIssuerPresence,
-          description: 'fudco',
+          description: 'yoyodyne',
         });
-        const fudco7 = harden({ label: fudcoLabel, quantity: 7 });
+        const yoyodyne7 = harden({ label: yoyodyneLabel, quantity: 7 });
 
         const baseDesc = harden({
-          contractSrc: escrowSrc,
-          terms: [clams10, fudco7],
-          seatDesc: [0, clams10, fudco7],
+          contractSrc: coveredCallSrc,
+          terms: [smackers10, yoyodyne7, timerPresence, 'singularity'],
+          seatDesc: ['holder', smackers10, yoyodyne7],
         });
         const baseAmount = allegedMetaAmount.quantity;
         insist(baseAmount !== null)`\
@@ -189,7 +191,8 @@ Payment empty ${allegedMetaAmount}`;
         moneyIssuerP,
         stockIssuerP,
         chitIssuerP,
-      ]).then(verifyChit);
+        timerP,
+      ]).then(verifyOptionsChit);
 
       showPaymentBalance('verified chit', verifiedChitP);
 

@@ -91,4 +91,6 @@ function escrowExchange(terms, chitMaker) {
   ]);
 }
 
-export { escrowExchange };
+const escrowExchangeSrc = `(${escrowExchange})`;
+
+export { escrowExchange, escrowExchangeSrc };

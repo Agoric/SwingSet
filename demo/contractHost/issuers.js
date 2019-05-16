@@ -44,7 +44,7 @@ Payment expected: ${src}`;
     const srcOldXferAmount = xferRights.get(src);
     // eslint-disable-next-line no-use-before-define
     const srcNewXferAmount = assay.without(srcOldXferAmount, amount);
-    
+
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
     // During side effects below, any early exits should be made into
@@ -83,8 +83,9 @@ Payment expected: ${src}`;
     },
 
     getExclusive(amount, srcPaymentP, name = 'a payment') {
-      return Promise.resolve(srcPaymentP).then(
-        srcPayment => takePayment(amount, false, srcPayment, name));
+      return Promise.resolve(srcPaymentP).then(srcPayment =>
+        takePayment(amount, false, srcPayment, name),
+      );
     },
   });
 

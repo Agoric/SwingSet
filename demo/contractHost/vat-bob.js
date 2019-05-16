@@ -5,35 +5,24 @@ import harden from '@agoric/harden';
 
 import { insist } from '../../collections/insist';
 import { allSettled } from '../../collections/allSettled';
-import { escrowExchange } from './escrow';
-import { coveredCall } from './coveredCall';
-
-const fakeTimer = harden({
-  delayUntil(deadline, resolution = undefined) {
-    console.log(`Pretend ${deadline} passed`);
-    return Promise.resolve(resolution);
-  },
-});
+import { escrowExchangeSrc } from './escrow';
+import { coveredCallSrc } from './coveredCall';
 
 function makeBob(E, host) {
-  const escrowSrc = `(${escrowExchange})`;
-  const coveredCallSrc = `\
-(function() {
-  ${escrowExchange}
-  return (${coveredCall});
-}())`;
-
   let initialized = false;
   let myMoneyPurseP;
   let moneyIssuerP;
   let myStockPurseP;
   let stockIssuerP;
+  let timerP;
 
-  function init(myMoneyPurse, myStockPurse) {
+  function init(myMoneyPurse, myStockPurse, myTimer) {
     myMoneyPurseP = Promise.resolve(myMoneyPurse);
-    myStockPurseP = Promise.resolve(myStockPurse);
     moneyIssuerP = E(myMoneyPurseP).getIssuer();
+    myStockPurseP = Promise.resolve(myStockPurse);
     stockIssuerP = E(myStockPurseP).getIssuer();
+    timerP = Promise.resolve(myTimer);
+
     initialized = true;
     /* eslint-disable-next-line no-use-before-define */
     return bob; // bob and init use each other
@@ -81,7 +70,7 @@ ERR: tradeWell called before init()`;
       const stockNeededP = E(E(stockIssuerP).getAssay()).make(7);
 
       return Promise.all([moneyNeededP, stockNeededP]).then(terms => {
-        const chitsP = E(host).start(escrowSrc, terms);
+        const chitsP = E(host).start(escrowExchangeSrc, terms);
         const aliceChitP = chitsP.then(chits => chits[0]);
         const bobChitP = chitsP.then(chits => chits[1]);
         const doneP = Promise.all([
@@ -132,7 +121,7 @@ ERR: offerAliceOption called before init()`;
       return Promise.all([
         moneyNeededP,
         stockNeededP,
-        fakeTimer,
+        timerP,
         'singularity',
       ]).then(terms => {
         const bobChitP = E(host).start(coveredCallSrc, terms);
