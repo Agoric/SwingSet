@@ -137,6 +137,35 @@ function build(E) {
       );
   }
 
+  function coveredCallTest(mint, alice, bob) {
+    const moneyMintP = E(mint).makeMint('smackers');
+    const aliceMoneyPurseP = E(moneyMintP).mint(1000, 'aliceMainMoney');
+    const bobMoneyPurseP = E(moneyMintP).mint(1001, 'bobMainMoney');
+
+    const stockMintP = E(mint).makeMint('yoyodyne');
+    const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
+    const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
+
+    const aliceP = E(alice).init(aliceMoneyPurseP, aliceStockPurseP);
+    const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP);
+
+    E(bobP)
+      .offerAliceOption(aliceP, false)
+      .then(
+        res => {
+          showPurseBalances('alice money', aliceMoneyPurseP);
+          showPurseBalances('alice stock', aliceStockPurseP);
+          showPurseBalances('bob money', bobMoneyPurseP);
+          showPurseBalances('bob stock', bobStockPurseP);
+          console.log('++ bobP.offerAliceOption done:', res);
+          console.log('++ DONE');
+        },
+        rej => {
+          console.log('++ bobP.offerAliceOption error:', rej);
+        },
+      );
+  }
+
   const obj0 = {
     async bootstrap(argv, vats) {
       if (argv[0] === 'mint') {
@@ -153,6 +182,8 @@ function build(E) {
         betterContractTestAliceFirst(vats.mint, alice, bob);
       } else if (argv[0] === 'bob-first') {
         betterContractTestBobFirst(vats.mint, alice, bob);
+      } else if (argv[0] === 'covered-call') {
+        coveredCallTest(vats.mint, alice, bob);
       } else {
         insist(argv.length === 0)`\
 Unrecognized arg0: ${argv[0]}`;

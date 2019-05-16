@@ -25,16 +25,38 @@ export { QCLASS };
 // there's nothing else to copy), and pass-by-copy objects have no other
 // behavior (so there's nothing else to invoke)
 
+const errorConstructors = new Map([
+  ['Error', Error],
+  ['EvalError', EvalError],
+  ['RangeError', RangeError],
+  ['ReferenceError', ReferenceError],
+  ['SyntaxError', SyntaxError],
+  ['TypeError', TypeError],
+  ['URIError', URIError],
+]);
+
 function isPassByCopyError(val) {
   if (val instanceof Error) {
     // TODO: Need a better test than instanceof
     // TODO: Check no accessors
     // TODO: Check no extraneous properties other than "stack"
-    // TODO: Check that .name is own and .message inherited from a
+    // TODO: Check that .message is own and .name inherited from a
     // known named error class.
-    if (typeof val.name !== 'string' && typeof val.message !== 'string') {
+    const descs = Object.getOwnPropertyDescriptors(val);
+    if ('name' in descs) {
+      throw new TypeError(`error cannot override .name ${val}`);
+    }
+    const proto = Object.getPrototypeOf(val);
+    const { name } = val;
+    const EC = errorConstructors.get(name);
+    if (!EC || EC.prototype !== proto) {
+      throw TypeError(`Must inherit from an error class .prototype ${val}`);
+    }
+    const message = descs.message.value;
+    if (typeof message !== 'string') {
       throw new TypeError(`malformed error object: ${val}`);
     }
+
     return true;
   }
   return false;
@@ -187,15 +209,6 @@ export function passStyleOf(val) {
     }
   }
 }
-
-const errorConstructors = new Map([
-  ['EvalError', EvalError],
-  ['RangeError', RangeError],
-  ['ReferenceError', ReferenceError],
-  ['SyntaxError', SyntaxError],
-  ['TypeError', TypeError],
-  ['URIError', URIError],
-]);
 
 export function makeMarshal(serializeSlot, unserializeSlot) {
   function makeReplacer(slots, slotMap) {

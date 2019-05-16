@@ -2,19 +2,6 @@
 
 import harden from '@agoric/harden';
 
-// TODO: Should we just use a TypeError, like everyone else?
-class InsistError extends Error {
-  constructor(message) {
-    super(message);
-    harden(this);
-  }
-}
-Object.defineProperties(InsistError.prototype, {
-  name: { value: 'InsistError' },
-  message: { value: '' },
-});
-harden(InsistError);
-
 // Insist that expr is truthy with a tagged template literal like
 // insist(expr)`....`
 // If expr is falsy, then the template contents are reported to the
@@ -42,10 +29,10 @@ function insist(flag) {
       parts.push('\nSee console for error data.');
     }
     console.error(...interleaved);
-    throw new InsistError(parts.join(''));
+    throw new Error(parts.join(''));
   }
   return harden(tag);
 }
 harden(insist);
 
-export { InsistError, insist };
+export { insist };

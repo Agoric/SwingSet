@@ -6,21 +6,26 @@ import harden from '@agoric/harden';
 import { escrowExchange } from './escrow';
 
 function coveredCall(terms, chitMaker) {
-  const [moneyNeeded, stockNeeded, timer, deadline] = terms;
+  const [moneyNeeded, stockNeeded, timerP, deadline] = terms;
 
-  const [aliceChit, bobChit] = escrowExchange([moneyNeeded, stockNeeded]);
+  const [aliceChit, bobChit] = escrowExchange(
+    [moneyNeeded, stockNeeded],
+    chitMaker,
+  );
 
   const aliceEscrowSeat = chitMaker.redeem(aliceChit);
   const bobEscrowSeat = chitMaker.redeem(bobChit);
 
   // Seats
 
-  timer.whenPast(deadline, _ => bobEscrowSeat.cancel('expired'));
+  E(timerP)
+    .delayUntil(deadline)
+    .then(_ => bobEscrowSeat.cancel('expired'));
 
   const bobSeat = harden({
     offer(stockPayment) {
       const sIssuer = stockNeeded.label.issuer;
-      E(sIssuer)
+      return E(sIssuer)
         .getExclusive(stockNeeded, stockPayment, 'prePay')
         .then(prePayment => {
           bobEscrowSeat.offer(prePayment);

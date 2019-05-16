@@ -6,9 +6,22 @@ import harden from '@agoric/harden';
 import { insist } from '../../collections/insist';
 import { allSettled } from '../../collections/allSettled';
 import { escrowExchange } from './escrow';
+import { coveredCall } from './coveredCall';
+
+const fakeTimer = harden({
+  delayUntil(deadline, resolution = undefined) {
+    console.log(`Pretend ${deadline} passed`);
+    return Promise.resolve(resolution);
+  },
+});
 
 function makeBob(E, host) {
   const escrowSrc = `(${escrowExchange})`;
+  const coveredCallSrc = `\
+(function() {
+  ${escrowExchange}
+  return (${coveredCall});
+}())`;
 
   let initialized = false;
   let myMoneyPurseP;
@@ -101,6 +114,53 @@ ERR: invite called before init()`;
           .then(winnings => E(myMoneyPurseP).deposit(10, winnings))
           .then(_ => 10),
         E(seatP)
+          .getRefund()
+          .then(refund => refund && E(myStockPurseP).deposit(7, refund))
+          .then(_ => 7),
+      ]);
+      return doneP;
+    },
+
+    offerAliceOption(alice) {
+      console.log('++ bob.offerAliceOption starting');
+      insist(initialized)`\
+ERR: offerAliceOption called before init()`;
+
+      const moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
+      const stockNeededP = E(E(stockIssuerP).getAssay()).make(7);
+
+      return Promise.all([
+        moneyNeededP,
+        stockNeededP,
+        fakeTimer,
+        'singularity',
+      ]).then(terms => {
+        const bobChitP = E(host).start(coveredCallSrc, terms);
+        const bobSeatP = E(host).redeem(bobChitP);
+        const stockPaymentP = E(myStockPurseP).withdraw(7);
+        const aliceChitP = E(bobSeatP).offer(stockPaymentP);
+        const doneP = Promise.all([
+          E(alice).acceptOption(aliceChitP),
+          E(bob).concludeOption(bobSeatP),
+        ]);
+        doneP.then(
+          _res => console.log('++ bob.offerAliceOption done'),
+          rej => console.log('++ bob.offerAliceOption reject: ', rej),
+        );
+        return doneP;
+      });
+    },
+
+    concludeOption(bobSeatP) {
+      insist(initialized)`\
+ERR: concludeOption called before init()`;
+
+      const doneP = allSettled([
+        E(bobSeatP)
+          .getWinnings()
+          .then(winnings => E(myMoneyPurseP).deposit(10, winnings))
+          .then(_ => 10),
+        E(bobSeatP)
           .getRefund()
           .then(refund => refund && E(myStockPurseP).deposit(7, refund))
           .then(_ => 7),
