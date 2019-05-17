@@ -15,25 +15,52 @@ function makeAlice(E, host) {
       .then(amount => console.log(name, ' xfer balance ', amount));
   }
 
+  // TODO is there a better pattern for initializing to a bunch of
+  // presences rather than promises?
   let initialized = false;
-  let myMoneyPurseP;
-  let moneyIssuerP;
-  let myStockPurseP;
-  let stockIssuerP;
-  let chitIssuerP;
-  let timerP;
+  let myMoneyPursePresence;
+  let moneyIssuerPresence;
+  let myStockPursePresence;
+  let stockIssuerPresence;
+  let chitIssuerPresence;
+  let timerPresence;
 
-  function init(myMoneyPurse, myStockPurse, myTimer) {
-    myMoneyPurseP = Promise.resolve(myMoneyPurse);
-    moneyIssuerP = E(myMoneyPurseP).getIssuer();
-    myStockPurseP = Promise.resolve(myStockPurse);
-    stockIssuerP = E(myStockPurseP).getIssuer();
-    chitIssuerP = E(host).getChitIssuer();
-    timerP = Promise.resolve(myTimer);
+  function init(myMoneyPurseP, myStockPurseP, timerP) {
+    myMoneyPurseP = Promise.resolve(myMoneyPurseP);
+    const moneyIssuerP = E(myMoneyPurseP).getIssuer();
+    myStockPurseP = Promise.resolve(myStockPurseP);
+    const stockIssuerP = E(myStockPurseP).getIssuer();
+    const chitIssuerP = E(host).getChitIssuer();
+    timerP = Promise.resolve(timerP);
 
-    initialized = true;
-    // eslint-disable-next-line no-use-before-define
-    return alice; // alice and init use each other
+    return Promise.all([
+      myMoneyPurseP,
+      moneyIssuerP,
+      myStockPurseP,
+      stockIssuerP,
+      chitIssuerP,
+      timerP,
+    ]).then(
+      ([
+        moneyPurse,
+        moneyIssuer,
+        stockPurse,
+        stockIssuer,
+        chitIssuer,
+        timer,
+      ]) => {
+        myMoneyPursePresence = moneyPurse;
+        moneyIssuerPresence = moneyIssuer;
+        myStockPursePresence = stockPurse;
+        stockIssuerPresence = stockIssuer;
+        chitIssuerPresence = chitIssuer;
+        timerPresence = timer;
+
+        initialized = true;
+        // eslint-disable-next-line no-use-before-define
+        return alice; // alice and init use each other
+      },
+    );
   }
 
   const alice = harden({
@@ -42,7 +69,7 @@ function makeAlice(E, host) {
       insist(initialized)`\
 ERR: payBobWell called before init()`;
 
-      const paymentP = E(myMoneyPurseP).withdraw(10);
+      const paymentP = E(myMoneyPursePresence).withdraw(10);
       return E(bob).buy('shoe', paymentP);
     },
 
@@ -54,12 +81,7 @@ ERR: invite called before init()`;
 
       const allegedMetaAmountP = E(allegedChitPaymentP).getXferBalance();
 
-      function verifyChit([
-        allegedMetaAmount,
-        moneyIssuerPresence,
-        stockIssuerPresence,
-        chitIssuerPresence,
-      ]) {
+      function verifyChit(allegedMetaAmount) {
         const clamsLabel = harden({
           issuer: moneyIssuerPresence,
           description: 'clams',
@@ -94,23 +116,20 @@ Payment empty ${allegedMetaAmount}`;
           quantity: baseOneAmount,
         });
 
-        return E(chitIssuerP).getExclusive(
+        return E(chitIssuerPresence).getExclusive(
           metaOneAmount,
           allegedChitPaymentP,
           'verified chit',
         );
       }
-      const verifiedChitP = Promise.all([
-        allegedMetaAmountP,
-        moneyIssuerP,
-        stockIssuerP,
-        chitIssuerP,
-      ]).then(verifyChit);
+      const verifiedChitP = Promise.resolve(allegedMetaAmountP).then(
+        verifyChit,
+      );
 
       showPaymentBalance('verified chit', verifiedChitP);
 
       const seatP = E(host).redeem(verifiedChitP);
-      const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
+      const moneyPaymentP = E(myMoneyPursePresence).withdraw(10);
       E(seatP).offer(moneyPaymentP);
       // TODO Bug if we change the "_ => 7" below to "_ => undefined",
       // or equivalently if we just omit these unnecessary last .then
@@ -121,11 +140,11 @@ Payment empty ${allegedMetaAmount}`;
       const doneP = allSettled([
         E(seatP)
           .getWinnings()
-          .then(winnings => E(myStockPurseP).deposit(7, winnings))
+          .then(winnings => E(myStockPursePresence).deposit(7, winnings))
           .then(_ => 7),
         E(seatP)
           .getRefund()
-          .then(refund => refund && E(myMoneyPurseP).deposit(10, refund))
+          .then(refund => refund && E(myMoneyPursePresence).deposit(10, refund))
           .then(_ => 10),
       ]);
       return doneP;
@@ -139,13 +158,7 @@ ERR: invite called before init()`;
 
       const allegedMetaAmountP = E(allegedChitPaymentP).getXferBalance();
 
-      function verifyOptionsChit([
-        allegedMetaAmount,
-        moneyIssuerPresence,
-        stockIssuerPresence,
-        chitIssuerPresence,
-        timerPresence,
-      ]) {
+      function verifyOptionsChit(allegedMetaAmount) {
         const smackersLabel = harden({
           issuer: moneyIssuerPresence,
           description: 'smackers',
@@ -180,24 +193,20 @@ Payment empty ${allegedMetaAmount}`;
           quantity: baseOneAmount,
         });
 
-        return E(chitIssuerP).getExclusive(
+        return E(chitIssuerPresence).getExclusive(
           metaOneAmount,
           allegedChitPaymentP,
           'verified chit',
         );
       }
-      const verifiedChitP = Promise.all([
-        allegedMetaAmountP,
-        moneyIssuerP,
-        stockIssuerP,
-        chitIssuerP,
-        timerP,
-      ]).then(verifyOptionsChit);
+      const verifiedChitP = Promise.resolve(allegedMetaAmountP).then(
+        verifyOptionsChit,
+      );
 
       showPaymentBalance('verified chit', verifiedChitP);
 
       const seatP = E(host).redeem(verifiedChitP);
-      const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
+      const moneyPaymentP = E(myMoneyPursePresence).withdraw(10);
       E(seatP).offer(moneyPaymentP);
       // TODO Bug if we change the "_ => 7" below to "_ => undefined",
       // or equivalently if we just omit these unnecessary last .then
@@ -208,11 +217,11 @@ Payment empty ${allegedMetaAmount}`;
       const doneP = allSettled([
         E(seatP)
           .getWinnings()
-          .then(winnings => E(myStockPurseP).deposit(7, winnings))
+          .then(winnings => E(myStockPursePresence).deposit(7, winnings))
           .then(_ => 7),
         E(seatP)
           .getRefund()
-          .then(refund => refund && E(myMoneyPurseP).deposit(10, refund))
+          .then(refund => refund && E(myMoneyPursePresence).deposit(10, refund))
           .then(_ => 10),
       ]);
       return doneP;

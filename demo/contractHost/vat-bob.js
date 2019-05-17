@@ -9,23 +9,53 @@ import { escrowExchangeSrc } from './escrow';
 import { coveredCallSrc } from './coveredCall';
 
 function makeBob(E, host) {
+  // TODO is there a better pattern for initializing to a bunch of
+  // presences rather than promises?
   let initialized = false;
-  let myMoneyPurseP;
-  let moneyIssuerP;
-  let myStockPurseP;
-  let stockIssuerP;
-  let timerP;
+  let myMoneyPursePresence;
+  let moneyIssuerPresence;
+  let myStockPursePresence;
+  let stockIssuerPresence;
+  // eslint-disable-next-line no-unused-vars
+  let chitIssuerPresence;
+  let timerPresence;
 
-  function init(myMoneyPurse, myStockPurse, myTimer) {
-    myMoneyPurseP = Promise.resolve(myMoneyPurse);
-    moneyIssuerP = E(myMoneyPurseP).getIssuer();
-    myStockPurseP = Promise.resolve(myStockPurse);
-    stockIssuerP = E(myStockPurseP).getIssuer();
-    timerP = Promise.resolve(myTimer);
+  function init(myMoneyPurseP, myStockPurseP, timerP) {
+    myMoneyPurseP = Promise.resolve(myMoneyPurseP);
+    const moneyIssuerP = E(myMoneyPurseP).getIssuer();
+    myStockPurseP = Promise.resolve(myStockPurseP);
+    const stockIssuerP = E(myStockPurseP).getIssuer();
+    const chitIssuerP = E(host).getChitIssuer();
+    timerP = Promise.resolve(timerP);
 
-    initialized = true;
-    /* eslint-disable-next-line no-use-before-define */
-    return bob; // bob and init use each other
+    return Promise.all([
+      myMoneyPurseP,
+      moneyIssuerP,
+      myStockPurseP,
+      stockIssuerP,
+      chitIssuerP,
+      timerP,
+    ]).then(
+      ([
+        moneyPurse,
+        moneyIssuer,
+        stockPurse,
+        stockIssuer,
+        chitIssuer,
+        timer,
+      ]) => {
+        myMoneyPursePresence = moneyPurse;
+        moneyIssuerPresence = moneyIssuer;
+        myStockPursePresence = stockPurse;
+        stockIssuerPresence = stockIssuer;
+        chitIssuerPresence = chitIssuer;
+        timerPresence = timer;
+
+        initialized = true;
+        /* eslint-disable-next-line no-use-before-define */
+        return bob; // bob and init use each other
+      },
+    );
   }
 
   const bob = harden({
@@ -56,7 +86,7 @@ ERR: buy called before init()`;
         }
       }
 
-      return E(myMoneyPurseP)
+      return E(myMoneyPursePresence)
         .deposit(10, paymentP)
         .then(_ => good);
     },
@@ -66,8 +96,8 @@ ERR: buy called before init()`;
       insist(initialized)`\
 ERR: tradeWell called before init()`;
 
-      const moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
-      const stockNeededP = E(E(stockIssuerP).getAssay()).make(7);
+      const moneyNeededP = E(E(moneyIssuerPresence).getAssay()).make(10);
+      const stockNeededP = E(E(stockIssuerPresence).getAssay()).make(7);
 
       return Promise.all([moneyNeededP, stockNeededP]).then(terms => {
         const chitsP = E(host).start(escrowExchangeSrc, terms);
@@ -95,16 +125,16 @@ ERR: tradeWell called before init()`;
 ERR: invite called before init()`;
 
       const seatP = E(host).redeem(chitP);
-      const stockPaymentP = E(myStockPurseP).withdraw(7);
+      const stockPaymentP = E(myStockPursePresence).withdraw(7);
       E(seatP).offer(stockPaymentP);
       const doneP = allSettled([
         E(seatP)
           .getWinnings()
-          .then(winnings => E(myMoneyPurseP).deposit(10, winnings))
+          .then(winnings => E(myMoneyPursePresence).deposit(10, winnings))
           .then(_ => 10),
         E(seatP)
           .getRefund()
-          .then(refund => refund && E(myStockPurseP).deposit(7, refund))
+          .then(refund => refund && E(myStockPursePresence).deposit(7, refund))
           .then(_ => 7),
       ]);
       return doneP;
@@ -115,18 +145,18 @@ ERR: invite called before init()`;
       insist(initialized)`\
 ERR: offerAliceOption called before init()`;
 
-      const moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
-      const stockNeededP = E(E(stockIssuerP).getAssay()).make(7);
+      const moneyNeededP = E(E(moneyIssuerPresence).getAssay()).make(10);
+      const stockNeededP = E(E(stockIssuerPresence).getAssay()).make(7);
 
       return Promise.all([
         moneyNeededP,
         stockNeededP,
-        timerP,
+        timerPresence,
         'singularity',
       ]).then(terms => {
         const bobChitP = E(host).start(coveredCallSrc, terms);
         const bobSeatP = E(host).redeem(bobChitP);
-        const stockPaymentP = E(myStockPurseP).withdraw(7);
+        const stockPaymentP = E(myStockPursePresence).withdraw(7);
         const aliceChitP = E(bobSeatP).offer(stockPaymentP);
         const doneP = Promise.all([
           E(alice).acceptOption(aliceChitP),
@@ -147,11 +177,11 @@ ERR: concludeOption called before init()`;
       const doneP = allSettled([
         E(bobSeatP)
           .getWinnings()
-          .then(winnings => E(myMoneyPurseP).deposit(10, winnings))
+          .then(winnings => E(myMoneyPursePresence).deposit(10, winnings))
           .then(_ => 10),
         E(bobSeatP)
           .getRefund()
-          .then(refund => refund && E(myStockPurseP).deposit(7, refund))
+          .then(refund => refund && E(myStockPursePresence).deposit(7, refund))
           .then(_ => 7),
       ]);
       return doneP;
