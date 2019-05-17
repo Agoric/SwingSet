@@ -13,12 +13,16 @@ function makeBob(E, host) {
   // presences rather than promises?
   let initialized = false;
   let myMoneyPursePresence;
+  // eslint-disable-next-line no-unused-vars
   let moneyIssuerPresence;
   let myStockPursePresence;
+  // eslint-disable-next-line no-unused-vars
   let stockIssuerPresence;
   // eslint-disable-next-line no-unused-vars
   let chitIssuerPresence;
   let timerPresence;
+  let moneyNeededAmount;
+  let stockNeededAmount;
 
   function init(myMoneyPurseP, myStockPurseP, timerP) {
     myMoneyPurseP = Promise.resolve(myMoneyPurseP);
@@ -27,6 +31,8 @@ function makeBob(E, host) {
     const stockIssuerP = E(myStockPurseP).getIssuer();
     const chitIssuerP = E(host).getChitIssuer();
     timerP = Promise.resolve(timerP);
+    const moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
+    const stockNeededP = E(E(stockIssuerP).getAssay()).make(7);
 
     return Promise.all([
       myMoneyPurseP,
@@ -35,6 +41,8 @@ function makeBob(E, host) {
       stockIssuerP,
       chitIssuerP,
       timerP,
+      moneyNeededP,
+      stockNeededP,
     ]).then(
       ([
         moneyPurse,
@@ -43,6 +51,8 @@ function makeBob(E, host) {
         stockIssuer,
         chitIssuer,
         timer,
+        moneyNeeded,
+        stockNeeded,
       ]) => {
         myMoneyPursePresence = moneyPurse;
         moneyIssuerPresence = moneyIssuer;
@@ -50,6 +60,8 @@ function makeBob(E, host) {
         stockIssuerPresence = stockIssuer;
         chitIssuerPresence = chitIssuer;
         timerPresence = timer;
+        moneyNeededAmount = moneyNeeded;
+        stockNeededAmount = stockNeeded;
 
         initialized = true;
         /* eslint-disable-next-line no-use-before-define */
@@ -96,23 +108,19 @@ ERR: buy called before init()`;
       insist(initialized)`\
 ERR: tradeWell called before init()`;
 
-      const moneyNeededP = E(E(moneyIssuerPresence).getAssay()).make(10);
-      const stockNeededP = E(E(stockIssuerPresence).getAssay()).make(7);
-
-      return Promise.all([moneyNeededP, stockNeededP]).then(terms => {
-        const chitsP = E(host).start(escrowExchangeSrc, terms);
-        const aliceChitP = chitsP.then(chits => chits[0]);
-        const bobChitP = chitsP.then(chits => chits[1]);
-        const doneP = Promise.all([
-          E(alice).invite(aliceChitP),
-          E(bob).invite(bobChitP),
-        ]);
-        doneP.then(
-          _res => console.log('++ bob.tradeWell done'),
-          rej => console.log('++ bob.tradeWell reject: ', rej),
-        );
-        return doneP;
-      });
+      const terms = harden([moneyNeededAmount, stockNeededAmount]);
+      const chitsP = E(host).start(escrowExchangeSrc, terms);
+      const aliceChitP = chitsP.then(chits => chits[0]);
+      const bobChitP = chitsP.then(chits => chits[1]);
+      const doneP = Promise.all([
+        E(alice).invite(aliceChitP),
+        E(bob).invite(bobChitP),
+      ]);
+      doneP.then(
+        _res => console.log('++ bob.tradeWell done'),
+        rej => console.log('++ bob.tradeWell reject: ', rej),
+      );
+      return doneP;
     },
 
     /**
@@ -145,29 +153,25 @@ ERR: invite called before init()`;
       insist(initialized)`\
 ERR: offerAliceOption called before init()`;
 
-      const moneyNeededP = E(E(moneyIssuerPresence).getAssay()).make(10);
-      const stockNeededP = E(E(stockIssuerPresence).getAssay()).make(7);
-
-      return Promise.all([
-        moneyNeededP,
-        stockNeededP,
+      const terms = harden([
+        moneyNeededAmount,
+        stockNeededAmount,
         timerPresence,
         'singularity',
-      ]).then(terms => {
-        const bobChitP = E(host).start(coveredCallSrc, terms);
-        const bobSeatP = E(host).redeem(bobChitP);
-        const stockPaymentP = E(myStockPursePresence).withdraw(7);
-        const aliceChitP = E(bobSeatP).offer(stockPaymentP);
-        const doneP = Promise.all([
-          E(alice).acceptOption(aliceChitP),
-          E(bob).concludeOption(bobSeatP),
-        ]);
-        doneP.then(
-          _res => console.log('++ bob.offerAliceOption done'),
-          rej => console.log('++ bob.offerAliceOption reject: ', rej),
-        );
-        return doneP;
-      });
+      ]);
+      const bobChitP = E(host).start(coveredCallSrc, terms);
+      const bobSeatP = E(host).redeem(bobChitP);
+      const stockPaymentP = E(myStockPursePresence).withdraw(7);
+      const aliceChitP = E(bobSeatP).offer(stockPaymentP);
+      const doneP = Promise.all([
+        E(alice).acceptOption(aliceChitP),
+        E(bob).concludeOption(bobSeatP),
+      ]);
+      doneP.then(
+        _res => console.log('++ bob.offerAliceOption done'),
+        rej => console.log('++ bob.offerAliceOption reject: ', rej),
+      );
+      return doneP;
     },
 
     concludeOption(bobSeatP) {

@@ -24,6 +24,10 @@ function makeAlice(E, host) {
   let stockIssuerPresence;
   let chitIssuerPresence;
   let timerPresence;
+  // eslint-disable-next-line no-unused-vars
+  let moneyNeededAmount;
+  // eslint-disable-next-line no-unused-vars
+  let stockNeededAmount;
 
   function init(myMoneyPurseP, myStockPurseP, timerP) {
     myMoneyPurseP = Promise.resolve(myMoneyPurseP);
@@ -32,6 +36,8 @@ function makeAlice(E, host) {
     const stockIssuerP = E(myStockPurseP).getIssuer();
     const chitIssuerP = E(host).getChitIssuer();
     timerP = Promise.resolve(timerP);
+    const moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
+    const stockNeededP = E(E(stockIssuerP).getAssay()).make(7);
 
     return Promise.all([
       myMoneyPurseP,
@@ -40,6 +46,8 @@ function makeAlice(E, host) {
       stockIssuerP,
       chitIssuerP,
       timerP,
+      moneyNeededP,
+      stockNeededP,
     ]).then(
       ([
         moneyPurse,
@@ -48,6 +56,8 @@ function makeAlice(E, host) {
         stockIssuer,
         chitIssuer,
         timer,
+        moneyNeeded,
+        stockNeeded,
       ]) => {
         myMoneyPursePresence = moneyPurse;
         moneyIssuerPresence = moneyIssuer;
@@ -55,6 +65,8 @@ function makeAlice(E, host) {
         stockIssuerPresence = stockIssuer;
         chitIssuerPresence = chitIssuer;
         timerPresence = timer;
+        moneyNeededAmount = moneyNeeded;
+        stockNeededAmount = stockNeeded;
 
         initialized = true;
         // eslint-disable-next-line no-use-before-define
