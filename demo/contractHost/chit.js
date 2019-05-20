@@ -5,6 +5,7 @@ import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
 
 import { insist } from '../../collections/insist';
+import { mustBeComparable } from '../../collections/sameStructure';
 import { makeMint, makeMetaIssuerController } from './issuers';
 import makePromise from '../../src/kernel/makePromise';
 
@@ -106,4 +107,38 @@ Not a registered chit base issuer ${baseIssuer}`;
 }
 harden(makeContractHost);
 
-export { makeContractHost };
+function exchangeChitAmount(
+  allegedChitAmount,
+  chitIssuerPresence,
+  contractSrc,
+  terms,
+  seatIndex,
+  giveAmount,
+  takeAmount,
+) {
+  mustBeComparable(allegedChitAmount);
+
+  const baseIssuerPresence =
+    allegedChitAmount.quantity && allegedChitAmount.quantity.label.issuer;
+
+  return harden({
+    label: {
+      issuer: chitIssuerPresence,
+      description: 'contract host',
+    },
+    quantity: {
+      label: {
+        issuer: baseIssuerPresence,
+        description: {
+          contractSrc,
+          terms,
+          seatDesc: [seatIndex, giveAmount, takeAmount],
+        },
+      },
+      quantity: 1,
+    },
+  });
+}
+harden(exchangeChitAmount);
+
+export { makeContractHost, exchangeChitAmount };

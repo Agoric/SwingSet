@@ -7,6 +7,7 @@ import { insist } from '../../collections/insist';
 import { allSettled } from '../../collections/allSettled';
 import { escrowExchangeSrc } from './escrow';
 import { coveredCallSrc } from './coveredCall';
+import { exchangeChitAmount } from './chit';
 
 function makeAlice(E, host) {
   function showPaymentBalance(name, paymentP) {
@@ -94,39 +95,30 @@ ERR: invite called before init()`;
       const allegedMetaAmountP = E(allegedChitPaymentP).getXferBalance();
 
       function verifyChit(allegedMetaAmount) {
-        const clamsLabel = harden({
-          issuer: moneyIssuerPresence,
-          description: 'clams',
+        const clams10 = harden({
+          label: {
+            issuer: moneyIssuerPresence,
+            description: 'clams',
+          },
+          quantity: 10,
         });
-        const clams10 = harden({ label: clamsLabel, quantity: 10 });
-        const fudcoLabel = harden({
-          issuer: stockIssuerPresence,
-          description: 'fudco',
+        const fudco7 = harden({
+          label: {
+            issuer: stockIssuerPresence,
+            description: 'fudco',
+          },
+          quantity: 7,
         });
-        const fudco7 = harden({ label: fudcoLabel, quantity: 7 });
 
-        const baseDesc = harden({
-          contractSrc: escrowExchangeSrc,
-          terms: [clams10, fudco7],
-          seatDesc: [0, clams10, fudco7],
-        });
-        const baseAmount = allegedMetaAmount.quantity;
-        insist(baseAmount !== null)`\
-Payment empty ${allegedMetaAmount}`;
-        const baseIssuerPresence = baseAmount.label.issuer;
-        const baseLabel = harden({
-          issuer: baseIssuerPresence,
-          description: baseDesc,
-        });
-        const baseOneAmount = harden({ label: baseLabel, quantity: 1 });
-        const metaLabel = harden({
-          issuer: chitIssuerPresence,
-          description: 'contract host',
-        });
-        const metaOneAmount = harden({
-          label: metaLabel,
-          quantity: baseOneAmount,
-        });
+        const metaOneAmount = exchangeChitAmount(
+          allegedMetaAmount,
+          chitIssuerPresence,
+          escrowExchangeSrc,
+          [clams10, fudco7],
+          0,
+          clams10,
+          fudco7,
+        );
 
         return E(chitIssuerPresence).getExclusive(
           metaOneAmount,
@@ -171,39 +163,30 @@ ERR: invite called before init()`;
       const allegedMetaAmountP = E(allegedChitPaymentP).getXferBalance();
 
       function verifyOptionsChit(allegedMetaAmount) {
-        const smackersLabel = harden({
-          issuer: moneyIssuerPresence,
-          description: 'smackers',
+        const smackers10 = harden({
+          label: {
+            issuer: moneyIssuerPresence,
+            description: 'smackers',
+          },
+          quantity: 10,
         });
-        const smackers10 = harden({ label: smackersLabel, quantity: 10 });
-        const yoyodyneLabel = harden({
-          issuer: stockIssuerPresence,
-          description: 'yoyodyne',
+        const yoyodyne7 = harden({
+          label: {
+            issuer: stockIssuerPresence,
+            description: 'yoyodyne',
+          },
+          quantity: 7,
         });
-        const yoyodyne7 = harden({ label: yoyodyneLabel, quantity: 7 });
 
-        const baseDesc = harden({
-          contractSrc: coveredCallSrc,
-          terms: [smackers10, yoyodyne7, timerPresence, 'singularity'],
-          seatDesc: ['holder', smackers10, yoyodyne7],
-        });
-        const baseAmount = allegedMetaAmount.quantity;
-        insist(baseAmount !== null)`\
-Payment empty ${allegedMetaAmount}`;
-        const baseIssuerPresence = baseAmount.label.issuer;
-        const baseLabel = harden({
-          issuer: baseIssuerPresence,
-          description: baseDesc,
-        });
-        const baseOneAmount = harden({ label: baseLabel, quantity: 1 });
-        const metaLabel = harden({
-          issuer: chitIssuerPresence,
-          description: 'contract host',
-        });
-        const metaOneAmount = harden({
-          label: metaLabel,
-          quantity: baseOneAmount,
-        });
+        const metaOneAmount = exchangeChitAmount(
+          allegedMetaAmount,
+          chitIssuerPresence,
+          coveredCallSrc,
+          [smackers10, yoyodyne7, timerPresence, 'singularity'],
+          'holder',
+          smackers10,
+          yoyodyne7,
+        );
 
         return E(chitIssuerPresence).getExclusive(
           metaOneAmount,
