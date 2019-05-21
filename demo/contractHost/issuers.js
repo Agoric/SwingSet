@@ -87,11 +87,45 @@ Payment expected: ${src}`;
         takePayment(amount, false, srcPayment, name),
       );
     },
+
+    getExclusiveAll(srcPaymentP, name = 'a payment') {
+      return Promise.resolve(srcPaymentP).then(srcPayment =>
+        takePayment(xferRights.get(srcPayment), false, srcPayment, name),
+      );
+    },
   });
 
   const label = harden({ issuer, description });
 
   const assay = makeAssay(label);
+
+  function depositInto(purse, amount, srcPayment) {
+    amount = assay.coerce(amount);
+    const purseOldXferAmount = xferRights.get(purse);
+    const srcOldXferAmount = xferRights.get(srcPayment);
+    // Also checks that the union is representable
+    const purseNewXferAmount = assay.with(purseOldXferAmount, amount);
+    const srcNewXferAmount = assay.without(srcOldXferAmount, amount);
+
+    const homePurse = homePurses.get(srcPayment);
+    const purseOldUseAmount = useRights.get(purse);
+    const homeOldUseAmount = useRights.get(homePurse);
+    // Also checks that the union is representable
+    const purseNewUseAmount = assay.with(purseOldUseAmount, amount);
+    const homeNewUseAmount = assay.without(homeOldUseAmount, amount);
+
+    // ///////////////// commit point //////////////////
+    // All queries above passed with no side effects.
+    // During side effects below, any early exits should be made into
+    // fatal turn aborts.
+
+    xferRights.set(srcPayment, srcNewXferAmount);
+    xferRights.set(purse, purseNewXferAmount);
+    useRights.set(homePurse, homeNewUseAmount);
+    useRights.set(purse, purseNewUseAmount);
+
+    return amount;
+  }
 
   const mint = harden({
     getIssuer() {
@@ -112,36 +146,20 @@ Payment expected: ${src}`;
           return useRights.get(purse);
         },
         deposit(amount, srcPaymentP) {
-          amount = assay.coerce(amount);
           return Promise.resolve(srcPaymentP).then(srcPayment => {
-            const purseOldXferAmount = xferRights.get(purse);
-            const srcOldXferAmount = xferRights.get(srcPayment);
-            // Also checks that the union is representable
-            const purseNewXferAmount = assay.with(purseOldXferAmount, amount);
-            const srcNewXferAmount = assay.without(srcOldXferAmount, amount);
-
-            const homePurse = homePurses.get(srcPayment);
-            const purseOldUseAmount = useRights.get(purse);
-            const homeOldUseAmount = useRights.get(homePurse);
-            // Also checks that the union is representable
-            const purseNewUseAmount = assay.with(purseOldUseAmount, amount);
-            const homeNewUseAmount = assay.without(homeOldUseAmount, amount);
-
-            // ///////////////// commit point //////////////////
-            // All queries above passed with no side effects.
-            // During side effects below, any early exits should be made into
-            // fatal turn aborts.
-
-            xferRights.set(srcPayment, srcNewXferAmount);
-            xferRights.set(purse, purseNewXferAmount);
-            useRights.set(homePurse, homeNewUseAmount);
-            useRights.set(purse, purseNewUseAmount);
-
-            return amount;
+            return depositInto(purse, amount, srcPayment);
+          });
+        },
+        depositAll(srcPaymentP) {
+          return Promise.resolve(srcPaymentP).then(srcPayment => {
+            return depositInto(purse, xferRights.get(srcPayment), srcPayment);
           });
         },
         withdraw(amount, name = 'a withdrawal payment') {
           return takePayment(amount, true, purse, name);
+        },
+        withdrawAll(name = 'a withdrawal payment') {
+          return takePayment(xferRights.get(purse), true, purse, name);
         },
       });
       xferRights.init(purse, initialBalance);
@@ -208,13 +226,13 @@ function makePeg(E, remoteIssuerP, makeAssay = makeNatAssay) {
   return Promise.resolve(remoteLabelP).then(remoteLabel => {
     // Retaining remote currency deposits it in here.
     // Redeeming local currency withdraws remote from here.
-    const backingPurseP = E(remoteIssuerP).makeEmptyPurse();
+    const backingPurseP = E(remoteIssuerP).makeEmptyPurse('backing');
 
     const { description } = remoteLabel;
     const localMint = makeMint(description, makeAssay);
     const localIssuer = localMint.getIssuer();
     const localLabel = localIssuer.getLabel();
-    const localSink = localIssuer.makeEmptyPurse();
+    const localSink = localIssuer.makeEmptyPurse('local sink');
 
     function localAmountOf(remoteAmount) {
       return harden({
@@ -239,17 +257,21 @@ function makePeg(E, remoteIssuerP, makeAssay = makeNatAssay) {
         return remoteIssuerP;
       },
 
-      retain(remoteAmount, remotePaymentP, name) {
+      retainAll(remotePaymentP, name = 'backed') {
         return E(backingPurseP)
-          .deposit(remoteAmount, remotePaymentP)
-          .then(amount => localMint.mint(localAmountOf(amount), name));
+          .depositAll(remotePaymentP)
+          .then(remoteAmount =>
+            localMint
+              .mint(localAmountOf(remoteAmount), `${name} purse`)
+              .withdrawAll(name),
+          );
       },
 
-      redeem(localAmount, localPayment, name) {
+      redeemAll(localPayment, name = 'redeemed') {
         return localSink
-          .deposit(localAmount, localPayment)
-          .then(amount =>
-            E(backingPurseP).withdraw(remoteAmountOf(amount), name),
+          .depositAll(localPayment)
+          .then(localAmount =>
+            E(backingPurseP).withdraw(remoteAmountOf(localAmount), name),
           );
       },
     });

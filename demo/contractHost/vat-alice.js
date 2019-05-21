@@ -4,12 +4,13 @@
 import harden from '@agoric/harden';
 
 import { insist } from '../../collections/insist';
-import { allSettled } from '../../collections/allSettled';
 import { escrowExchangeSrc } from './escrow';
 import { coveredCallSrc } from './coveredCall';
-import { exchangeChitAmount } from './chit';
+import { exchangeChitAmount, makeCollect } from './chit';
 
 function makeAlice(E, host) {
+  const collect = makeCollect(E);
+
   function showPaymentBalance(name, paymentP) {
     E(paymentP)
       .getXferBalance()
@@ -121,23 +122,7 @@ ERR: invite called before init()`;
       const seatP = E(host).redeem(verifiedChitP);
       const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
       E(seatP).offer(moneyPaymentP);
-      // TODO Bug if we change the "_ => 7" below to "_ => undefined",
-      // or equivalently if we just omit these unnecessary last .then
-      // clauses, then somehow we end up trying to marshal an array
-      // with holes, rather than an array with undefined
-      // elements. This remains true whether we use Promise.all or
-      // allSettled
-      const doneP = allSettled([
-        E(seatP)
-          .getWinnings()
-          .then(winnings => E(myStockPurseP).deposit(7, winnings))
-          .then(_ => 7),
-        E(seatP)
-          .getRefund()
-          .then(refund => refund && E(myMoneyPurseP).deposit(10, refund))
-          .then(_ => 10),
-      ]);
-      return doneP;
+      return collect(seatP, myStockPurseP, myMoneyPurseP);
     },
 
     acceptOption(allegedChitPaymentP) {
@@ -197,17 +182,7 @@ ERR: invite called before init()`;
       const seatP = E(host).redeem(verifiedChitP);
       const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
       E(seatP).offer(moneyPaymentP);
-      const doneP = allSettled([
-        E(seatP)
-          .getWinnings()
-          .then(winnings => E(myStockPurseP).deposit(7, winnings))
-          .then(_ => 7),
-        E(seatP)
-          .getRefund()
-          .then(refund => refund && E(myMoneyPurseP).deposit(10, refund))
-          .then(_ => 10),
-      ]);
-      return doneP;
+      return collect(seatP, myStockPurseP, myMoneyPurseP);
     },
 
     acceptOptionForFred(_allegedChitPaymentP) {

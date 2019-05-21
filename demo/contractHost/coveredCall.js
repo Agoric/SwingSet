@@ -13,14 +13,14 @@ function coveredCall(terms, chitMaker) {
     chitMaker,
   );
 
-  const aliceEscrowSeat = chitMaker.redeem(aliceChit);
-  const bobEscrowSeat = chitMaker.redeem(bobChit);
+  const aliceEscrowSeatP = chitMaker.redeem(aliceChit);
+  const bobEscrowSeatP = chitMaker.redeem(bobChit);
 
   // Seats
 
   E(timerP)
     .delayUntil(deadline)
-    .then(_ => bobEscrowSeat.cancel('expired'));
+    .then(_ => E(bobEscrowSeatP).cancel('expired'));
 
   const bobSeat = harden({
     offer(stockPayment) {
@@ -28,15 +28,19 @@ function coveredCall(terms, chitMaker) {
       return E(sIssuer)
         .getExclusive(stockNeeded, stockPayment, 'prePay')
         .then(prePayment => {
-          bobEscrowSeat.offer(prePayment);
+          E(bobEscrowSeatP).offer(prePayment);
           return chitMaker.make(
             ['holder', moneyNeeded, stockNeeded],
-            aliceEscrowSeat,
+            aliceEscrowSeatP,
           );
         });
     },
-    getWinnings: bobEscrowSeat.getWinnings,
-    getRefund: bobEscrowSeat.getRefund,
+    getWinnings() {
+      return E(bobEscrowSeatP).getWinnings();
+    },
+    getRefund() {
+      return E(bobEscrowSeatP).getRefund();
+    },
   });
 
   return chitMaker.make(['writer', stockNeeded, moneyNeeded], bobSeat);

@@ -1,9 +1,12 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
+// Chit === Contract Host Issuer Token
+
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
 
+import { allSettled } from '../../collections/allSettled';
 import { insist } from '../../collections/insist';
 import {
   allComparable,
@@ -37,9 +40,9 @@ No chits left`;
 Not a registered chit base issuer ${baseIssuer}`;
     const metaOneAmount = metaAmountOf(baseIssuer, 1);
     const metaSinkPurse = metaIssuer.makeEmptyPurse();
-    metaSinkPurse.deposit(metaOneAmount, allegedChitPayment);
-    // Would throw if failed. If we reach here, we got the chit!
-    return seats.get(baseIssuer);
+    return Promise.resolve(
+      metaSinkPurse.deposit(metaOneAmount, allegedChitPayment),
+    ).then(_ => seats.get(baseIssuer));
   }
 
   // The contract host is designed to have a long-lived credible
@@ -93,7 +96,7 @@ Not a registered chit base issuer ${baseIssuer}`;
             const metaPurse = controller
               .getMetaMint()
               .mint(metaOneAmount, name);
-            return metaPurse.withdraw(metaOneAmount, name);
+            return metaPurse.withdrawAll(name);
           },
           redeem,
         });
@@ -155,4 +158,25 @@ function exchangeChitAmount(
 }
 harden(exchangeChitAmount);
 
-export { makeContractHost, exchangeChitAmount };
+function makeCollect(E) {
+  function collect(seatP, winPurseP, refundPurseP) {
+    return allSettled([
+      E(seatP)
+        .getWinnings()
+        .then(winnings => E(winPurseP).depositAll(winnings)),
+      // TODO Bug if replace the comma above with the uncommented out
+      // ".then(_ => undefined)," below, somehow we end up trying to
+      // marshal an array with holes, rather than an array with
+      // undefined elements. This remains true whether we use
+      // Promise.all or allSettled
+      /* .then(_ => undefined), */
+      E(seatP)
+        .getRefund()
+        .then(refund => refund && E(refundPurseP).depositAll(refund)),
+    ]);
+  }
+  return harden(collect);
+}
+harden(makeCollect);
+
+export { makeContractHost, exchangeChitAmount, makeCollect };

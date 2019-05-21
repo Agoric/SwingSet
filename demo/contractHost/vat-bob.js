@@ -4,11 +4,13 @@
 import harden from '@agoric/harden';
 
 import { insist } from '../../collections/insist';
-import { allSettled } from '../../collections/allSettled';
 import { escrowExchangeSrc } from './escrow';
 import { coveredCallSrc } from './coveredCall';
+import { makeCollect } from './chit';
 
 function makeBob(E, host) {
+  const collect = makeCollect(E);
+
   let initialized = false;
   let timerP;
 
@@ -65,7 +67,7 @@ ERR: buy called before init()`;
       }
 
       return E(myMoneyPurseP)
-        .deposit(10, paymentP)
+        .deposit(amount, paymentP)
         .then(_ => good);
     },
 
@@ -101,17 +103,7 @@ ERR: invite called before init()`;
       const seatP = E(host).redeem(chitP);
       const stockPaymentP = E(myStockPurseP).withdraw(7);
       E(seatP).offer(stockPaymentP);
-      const doneP = allSettled([
-        E(seatP)
-          .getWinnings()
-          .then(winnings => E(myMoneyPurseP).deposit(10, winnings))
-          .then(_ => 10),
-        E(seatP)
-          .getRefund()
-          .then(refund => refund && E(myStockPurseP).deposit(7, refund))
-          .then(_ => 7),
-      ]);
-      return doneP;
+      return collect(seatP, myMoneyPurseP, myStockPurseP);
     },
 
     offerAliceOption(alice) {
@@ -131,29 +123,12 @@ ERR: offerAliceOption called before init()`;
       const aliceChitP = E(bobSeatP).offer(stockPaymentP);
       const doneP = Promise.all([
         E(alice).acceptOption(aliceChitP),
-        E(bob).concludeOption(bobSeatP),
+        collect(bobSeatP, myMoneyPurseP, myStockPurseP),
       ]);
       doneP.then(
         _res => console.log('++ bob.offerAliceOption done'),
         rej => console.log('++ bob.offerAliceOption reject: ', rej),
       );
-      return doneP;
-    },
-
-    concludeOption(bobSeatP) {
-      insist(initialized)`\
-ERR: concludeOption called before init()`;
-
-      const doneP = allSettled([
-        E(bobSeatP)
-          .getWinnings()
-          .then(winnings => E(myMoneyPurseP).deposit(10, winnings))
-          .then(_ => 10),
-        E(bobSeatP)
-          .getRefund()
-          .then(refund => refund && E(myStockPurseP).deposit(7, refund))
-          .then(_ => 7),
-      ]);
       return doneP;
     },
   });
