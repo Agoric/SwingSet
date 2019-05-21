@@ -53,8 +53,11 @@ function isPassByCopyError(val) {
 
   const {
     message: { value: messageStr },
-    // Allow but ignore only extraneous own `stack` property
-    stack: optStackDesc,
+    // Allow but ignore only extraneous own `stack` property.
+    // TODO: I began the variable below with "_". Why do I still need
+    // to suppress the lint complaint?
+    // eslint-disable-next-line no-unused-vars
+    stack: _optStackDesc,
     ...restDescs
   } = Object.getOwnPropertyDescriptors(val);
   const restNames = Object.keys(restDescs);
@@ -63,7 +66,7 @@ function isPassByCopyError(val) {
   }
   if (typeof messageStr !== 'string') {
     throw new TypeError(`malformed error object: ${val}`);
-  }  
+  }
   return true;
 }
 

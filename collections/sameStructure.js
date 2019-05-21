@@ -71,8 +71,9 @@ function allComparable(passable) {
     case 'copyRecord': {
       const names = Object.getOwnPropertyNames(passable);
       const valPs = names.map(name => allComparable(passable[name]));
-      return Promise.all(valPs).then(
-        vals => ObjectFromEntries(vals.map((val, i) => [names[i], val])));
+      return Promise.all(valPs).then(vals =>
+        ObjectFromEntries(vals.map((val, i) => [names[i], val])),
+      );
     }
     case 'copyError': {
       const EC = getErrorContructor(passable.name) || Error;
@@ -81,7 +82,7 @@ function allComparable(passable) {
     default: {
       throw new TypeError(`unrecognized passStyle ${passStyle}`);
     }
-  }  
+  }
 }
 harden(allComparable);
 
