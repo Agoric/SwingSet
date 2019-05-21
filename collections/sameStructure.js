@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 
 import { insist } from './insist';
-import { passStyleOf, getErrorContructor } from '../src/kernel/marshal';
+import { passStyleOf } from '../src/kernel/marshal';
 
 // Shim of Object.fromEntries from
 // https://github.com/tc39/proposal-object-from-entries/blob/master/polyfill.js
@@ -58,7 +58,8 @@ function allComparable(passable) {
     case 'number':
     case 'symbol':
     case 'bigint':
-    case 'presence': {
+    case 'presence':
+    case 'copyError': {
       return passable;
     }
     case 'promise': {
@@ -66,18 +67,14 @@ function allComparable(passable) {
     }
     case 'copyArray': {
       const valPs = passable.map(p => allComparable(p));
-      return Promise.all(valPs);
+      return Promise.all(valPs).then(vals => harden(vals));
     }
     case 'copyRecord': {
       const names = Object.getOwnPropertyNames(passable);
       const valPs = names.map(name => allComparable(passable[name]));
       return Promise.all(valPs).then(vals =>
-        ObjectFromEntries(vals.map((val, i) => [names[i], val])),
+        harden(ObjectFromEntries(vals.map((val, i) => [names[i], val]))),
       );
-    }
-    case 'copyError': {
-      const EC = getErrorContructor(passable.name) || Error;
-      return new EC(passable.message);
     }
     default: {
       throw new TypeError(`unrecognized passStyle ${passStyle}`);
