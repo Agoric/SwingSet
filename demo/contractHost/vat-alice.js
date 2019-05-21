@@ -16,8 +16,6 @@ function makeAlice(E, host) {
       .then(amount => console.log(name, ' xfer balance ', amount));
   }
 
-  // TODO is there a better pattern for initializing to a bunch of
-  // presences rather than promises?
   let initialized = false;
   let timerP;
   let chitIssuerP;
