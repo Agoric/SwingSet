@@ -35,31 +35,36 @@ const errorConstructors = new Map([
   ['URIError', URIError],
 ]);
 
-function isPassByCopyError(val) {
-  if (val instanceof Error) {
-    // TODO: Need a better test than instanceof
-    // TODO: Check no accessors
-    // TODO: Check no extraneous properties other than "stack"
-    // TODO: Check that .message is own and .name inherited from a
-    // known named error class.
-    const descs = Object.getOwnPropertyDescriptors(val);
-    if ('name' in descs) {
-      throw new TypeError(`error cannot override .name ${val}`);
-    }
-    const proto = Object.getPrototypeOf(val);
-    const { name } = val;
-    const EC = errorConstructors.get(name);
-    if (!EC || EC.prototype !== proto) {
-      throw TypeError(`Must inherit from an error class .prototype ${val}`);
-    }
-    const message = descs.message.value;
-    if (typeof message !== 'string') {
-      throw new TypeError(`malformed error object: ${val}`);
-    }
+export function getErrorContructor(name) {
+  return errorConstructors.get(name);
+}
 
-    return true;
+function isPassByCopyError(val) {
+  // TODO: Need a better test than instanceof
+  if (!(val instanceof Error)) {
+    return false;
   }
-  return false;
+  const proto = Object.getPrototypeOf(val);
+  const { name } = val;
+  const EC = getErrorContructor(name);
+  if (!EC || EC.prototype !== proto) {
+    throw TypeError(`Must inherit from an error class .prototype ${val}`);
+  }
+
+  const {
+    message: { value: messageStr },
+    // Allow but ignore only extraneous own `stack` property
+    stack: optStackDesc,
+    ...restDescs
+  } = Object.getOwnPropertyDescriptors(val);
+  const restNames = Object.keys(restDescs);
+  if (restNames.length >= 1) {
+    throw new TypeError(`Unexpected own properties in error: ${restNames}`);
+  }
+  if (typeof messageStr !== 'string') {
+    throw new TypeError(`malformed error object: ${val}`);
+  }  
+  return true;
 }
 
 function isPassByCopyArray(val) {
@@ -380,7 +385,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
           }
 
           case 'error': {
-            const EC = errorConstructors.get(`${data.name}`) || Error;
+            const EC = getErrorContructor(`${data.name}`) || Error;
             const e = new EC(`${data.message}`);
             return harden(e);
           }

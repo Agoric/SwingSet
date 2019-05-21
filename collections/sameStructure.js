@@ -1,10 +1,92 @@
 import harden from '@agoric/harden';
 
 import { insist } from './insist';
-import { passStyleOf } from '../src/kernel/marshal';
+import { passStyleOf, getErrorContructor } from '../src/kernel/marshal';
 
-// Are left and right structurally equivalent? This compares
-// pass-by-copy data deeply until non-pass-by-copy values are
+// Shim of Object.fromEntries from
+// https://github.com/tc39/proposal-object-from-entries/blob/master/polyfill.js
+function ObjectFromEntries(iter) {
+  const obj = {};
+
+  for (const pair of iter) {
+    if (Object(pair) !== pair) {
+      throw new TypeError('iterable for fromEntries should yield objects');
+    }
+
+    // Consistency with Map: contract is that entry has "0" and "1" keys, not
+    // that it is an array or iterable.
+
+    const { '0': key, '1': val } = pair;
+
+    Object.defineProperty(obj, key, {
+      configurable: true,
+      enumerable: true,
+      writable: true,
+      value: val,
+    });
+  }
+
+  return obj;
+}
+
+// A *passable* is something that may be mashalled. It consists of a
+// graph of pass-by-copy data terminating in leaves of passable
+// non-pass-by-copy data. These leaves may be promises, or
+// pass-by-presence objects. A *comparable* is a passable whose leaves
+// contain no promises. Two comparables can be synchronously compared
+// for structural equivalence.
+//
+// TODO: Currently, all algorithms here treat the pass-by-copy
+// superstructure as a tree. This means that dags are unwound at
+// potentially exponential code, and cycles cause failure to
+// terminate. We must fix both problems, making all these algorthms
+// graph-aware.
+
+// We say that a function *reveals* an X when it returns either an X
+// or a promise for an X.
+
+// Given a passable, reveal a corresponding comparable, where each
+// leaf promise of the passable has been replaced with its
+// corresponding comparable.
+function allComparable(passable) {
+  const passStyle = passStyleOf(passable);
+  switch (passStyle) {
+    case 'null':
+    case 'undefined':
+    case 'string':
+    case 'boolean':
+    case 'number':
+    case 'symbol':
+    case 'bigint':
+    case 'presence': {
+      return passable;
+    }
+    case 'promise': {
+      return passable.then(nonp => allComparable(nonp));
+    }
+    case 'copyArray': {
+      const valPs = passable.map(p => allComparable(p));
+      return Promise.all(valPs);
+    }
+    case 'copyRecord': {
+      const names = Object.getOwnPropertyNames(passable);
+      const valPs = names.map(name => allComparable(passable[name]));
+      return Promise.all(valPs).then(
+        vals => ObjectFromEntries(vals.map((val, i) => [names[i], val])));
+    }
+    case 'copyError': {
+      const EC = getErrorContructor(passable.name) || Error;
+      return new EC(passable.message);
+    }
+    default: {
+      throw new TypeError(`unrecognized passStyle ${passStyle}`);
+    }
+  }  
+}
+harden(allComparable);
+
+// Are left and right structurally equivalent comparables? This
+// compares pass-by-copy data deeply until non-pass-by-copy values are
 // reached. The non-pass-by-copy values at the leaves of the
 // comparison may only be pass-by-presence objects. If they are
 // anything else, including promises, throw an error.
@@ -164,4 +246,4 @@ function mustBeComparable(val) {
   mustBeSameStructure(val, val, 'not comparable');
 }
 
-export { sameStructure, mustBeSameStructure, mustBeComparable };
+export { allComparable, sameStructure, mustBeSameStructure, mustBeComparable };
