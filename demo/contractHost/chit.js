@@ -53,7 +53,7 @@ Not a registered chit base issuer ${baseIssuer}`;
     // by `terms` and `chitMaker`. `start` evaluates this code,
     // calls that function to start the contract, and returns whatever
     // the contract returns.
-    start(contractSrc, terms) {
+    start(contractSrc, termsP) {
       contractSrc = `${contractSrc}`;
       const contract = evaluate(contractSrc, {
         Nat,
@@ -63,38 +63,42 @@ Not a registered chit base issuer ${baseIssuer}`;
         makePromise,
       });
 
-      const chitMaker = harden({
-        // Used by the contract to make chits for credibly
-        // participating in the contract. The returned chit can be
-        // redeemed for this seat. The chitMaker contributes the
-        // description `{ contractSrc, terms, seatDesc }`. If this
-        // contract host redeems a chit, then the contractSrc and
-        // terms are accurate. The seatDesc is according to that
-        // contractSrc code.
-        make(seatDesc, seat, name = 'a chit payment') {
-          const baseDescription = harden({
-            contractSrc,
-            terms,
-            seatDesc,
-          });
-          // We purposely avoid reifying baseMint because there should
-          // never be any base purses or base payments. A chit only
-          // resides in a meta purse or meta payment.
-          const baseIssuer = makeMint(baseDescription).getIssuer();
-          controller.register(baseIssuer);
-          seats.set(baseIssuer, seat);
-          const metaOneAmount = metaAmountOf(baseIssuer, 1);
-          // This should be the only use of the meta mint, to make a
-          // meta purse whose quantity is one unit of a base amount
-          // for a unique base label. This meta purse makes the
-          // returned meta payment, and then the empty meta purse is
-          // dropped.
-          const metaPurse = controller.getMetaMint().mint(metaOneAmount, name);
-          return metaPurse.withdraw(metaOneAmount, name);
-        },
-        redeem,
+      return Promise.resolve(allComparable(termsP)).then(terms => {
+        const chitMaker = harden({
+          // Used by the contract to make chits for credibly
+          // participating in the contract. The returned chit can be
+          // redeemed for this seat. The chitMaker contributes the
+          // description `{ contractSrc, terms, seatDesc }`. If this
+          // contract host redeems a chit, then the contractSrc and
+          // terms are accurate. The seatDesc is according to that
+          // contractSrc code.
+          make(seatDesc, seat, name = 'a chit payment') {
+            const baseDescription = harden({
+              contractSrc,
+              terms,
+              seatDesc,
+            });
+            // We purposely avoid reifying baseMint because there should
+            // never be any base purses or base payments. A chit only
+            // resides in a meta purse or meta payment.
+            const baseIssuer = makeMint(baseDescription).getIssuer();
+            controller.register(baseIssuer);
+            seats.set(baseIssuer, seat);
+            const metaOneAmount = metaAmountOf(baseIssuer, 1);
+            // This should be the only use of the meta mint, to make a
+            // meta purse whose quantity is one unit of a base amount
+            // for a unique base label. This meta purse makes the
+            // returned meta payment, and then the empty meta purse is
+            // dropped.
+            const metaPurse = controller
+              .getMetaMint()
+              .mint(metaOneAmount, name);
+            return metaPurse.withdraw(metaOneAmount, name);
+          },
+          redeem,
+        });
+        return contract(terms, chitMaker);
       });
-      return contract(terms, chitMaker);
     },
 
     // If this is a chit payment made by a chitMaker of this contract

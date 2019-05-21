@@ -5,7 +5,6 @@ import harden from '@agoric/harden';
 
 import { insist } from '../../collections/insist';
 import { allSettled } from '../../collections/allSettled';
-import { allComparable } from '../../collections/sameStructure';
 import { escrowExchangeSrc } from './escrow';
 import { coveredCallSrc } from './coveredCall';
 
@@ -75,10 +74,8 @@ ERR: buy called before init()`;
       insist(initialized)`\
 ERR: tradeWell called before init()`;
 
-      const termsP = allComparable(harden([moneyNeededP, stockNeededP]));
-      const chitsP = Promise.resolve(termsP).then(terms =>
-        E(host).start(escrowExchangeSrc, terms),
-      );
+      const termsP = harden([moneyNeededP, stockNeededP]);
+      const chitsP = E(host).start(escrowExchangeSrc, termsP);
       const aliceChitP = chitsP.then(chits => chits[0]);
       const bobChitP = chitsP.then(chits => chits[1]);
       const doneP = Promise.all([
@@ -122,12 +119,13 @@ ERR: invite called before init()`;
       insist(initialized)`\
 ERR: offerAliceOption called before init()`;
 
-      const termsP = allComparable(
-        harden([moneyNeededP, stockNeededP, timerP, 'singularity']),
-      );
-      const bobChitP = Promise.resolve(termsP).then(terms =>
-        E(host).start(coveredCallSrc, terms),
-      );
+      const termsP = harden([
+        moneyNeededP,
+        stockNeededP,
+        timerP,
+        'singularity',
+      ]);
+      const bobChitP = E(host).start(coveredCallSrc, termsP);
       const bobSeatP = E(host).redeem(bobChitP);
       const stockPaymentP = E(myStockPurseP).withdraw(7);
       const aliceChitP = E(bobSeatP).offer(stockPaymentP);
