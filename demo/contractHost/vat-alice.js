@@ -79,42 +79,41 @@ ERR: invite called before init()`;
 
       const allegedMetaAmountP = E(allegedChitPaymentP).getXferBalance();
 
-      function verifyChit(allegedMetaAmount) {
-        const clams10 = harden({
-          label: {
-            issuer: moneyIssuerP,
-            description: 'clams',
-          },
-          quantity: 10,
-        });
-        const fudco7 = harden({
-          label: {
-            issuer: stockIssuerP,
-            description: 'fudco',
-          },
-          quantity: 7,
-        });
-
-        const metaOneAmountP = exchangeChitAmount(
-          allegedMetaAmount,
-          chitIssuerP,
-          escrowExchangeSrc,
-          [clams10, fudco7],
-          0,
-          clams10,
-          fudco7,
-        );
-
-        return Promise.resolve(metaOneAmountP).then(metaOneAmount =>
-          E(chitIssuerP).getExclusive(
-            metaOneAmount,
-            allegedChitPaymentP,
-            'verified chit',
-          ),
-        );
-      }
       const verifiedChitP = Promise.resolve(allegedMetaAmountP).then(
-        verifyChit,
+        allegedMetaAmount => {
+          const clams10 = harden({
+            label: {
+              issuer: moneyIssuerP,
+              description: 'clams',
+            },
+            quantity: 10,
+          });
+          const fudco7 = harden({
+            label: {
+              issuer: stockIssuerP,
+              description: 'fudco',
+            },
+            quantity: 7,
+          });
+
+          const metaOneAmountP = exchangeChitAmount(
+            allegedMetaAmount,
+            chitIssuerP,
+            escrowExchangeSrc,
+            [clams10, fudco7],
+            0,
+            clams10,
+            fudco7,
+          );
+
+          return Promise.resolve(metaOneAmountP).then(metaOneAmount =>
+            E(chitIssuerP).getExclusive(
+              metaOneAmount,
+              allegedChitPaymentP,
+              'verified chit',
+            ),
+          );
+        },
       );
 
       showPaymentBalance('verified chit', verifiedChitP);
@@ -156,42 +155,41 @@ ERR: invite called before init()`;
 
       const allegedMetaAmountP = E(allegedChitPaymentP).getXferBalance();
 
-      function verifyOptionsChit(allegedMetaAmount) {
-        const smackers10 = harden({
-          label: {
-            issuer: moneyIssuerP,
-            description: 'smackers',
-          },
-          quantity: 10,
-        });
-        const yoyodyne7 = harden({
-          label: {
-            issuer: stockIssuerP,
-            description: 'yoyodyne',
-          },
-          quantity: 7,
-        });
-
-        const metaOneAmountP = exchangeChitAmount(
-          allegedMetaAmount,
-          chitIssuerP,
-          coveredCallSrc,
-          [smackers10, yoyodyne7, timerP, 'singularity'],
-          'holder',
-          smackers10,
-          yoyodyne7,
-        );
-
-        return Promise.resolve(metaOneAmountP).then(metaOneAmount =>
-          E(chitIssuerP).getExclusive(
-            metaOneAmount,
-            allegedChitPaymentP,
-            'verified chit',
-          ),
-        );
-      }
       const verifiedChitP = Promise.resolve(allegedMetaAmountP).then(
-        verifyOptionsChit,
+        allegedMetaAmount => {
+          const smackers10 = harden({
+            label: {
+              issuer: moneyIssuerP,
+              description: 'smackers',
+            },
+            quantity: 10,
+          });
+          const yoyodyne7 = harden({
+            label: {
+              issuer: stockIssuerP,
+              description: 'yoyodyne',
+            },
+            quantity: 7,
+          });
+
+          const metaOneAmountP = exchangeChitAmount(
+            allegedMetaAmount,
+            chitIssuerP,
+            coveredCallSrc,
+            [smackers10, yoyodyne7, timerP, 'singularity'],
+            'holder',
+            smackers10,
+            yoyodyne7,
+          );
+
+          return Promise.resolve(metaOneAmountP).then(metaOneAmount =>
+            E(chitIssuerP).getExclusive(
+              metaOneAmount,
+              allegedChitPaymentP,
+              'verified chit',
+            ),
+          );
+        },
       );
 
       showPaymentBalance('verified chit', verifiedChitP);
@@ -199,12 +197,6 @@ ERR: invite called before init()`;
       const seatP = E(host).redeem(verifiedChitP);
       const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
       E(seatP).offer(moneyPaymentP);
-      // TODO Bug if we change the "_ => 7" below to "_ => undefined",
-      // or equivalently if we just omit these unnecessary last .then
-      // clauses, then somehow we end up trying to marshal an array
-      // with holes, rather than an array with undefined
-      // elements. This remains true whether we use Promise.all or
-      // allSettled
       const doneP = allSettled([
         E(seatP)
           .getWinnings()
