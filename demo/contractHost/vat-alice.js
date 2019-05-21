@@ -19,61 +19,57 @@ function makeAlice(E, host) {
   // TODO is there a better pattern for initializing to a bunch of
   // presences rather than promises?
   let initialized = false;
+  let timerPresence;
+  let chitIssuerPresence;
+
   let myMoneyPursePresence;
   let moneyIssuerPresence;
+  /* eslint-disable-next-line no-unused-vars */
+  let moneyNeededAmount;
+
   let myStockPursePresence;
   let stockIssuerPresence;
-  let chitIssuerPresence;
-  let timerPresence;
-  // eslint-disable-next-line no-unused-vars
-  let moneyNeededAmount;
-  // eslint-disable-next-line no-unused-vars
+  /* eslint-disable-next-line no-unused-vars */
   let stockNeededAmount;
 
-  function init(myMoneyPurseP, myStockPurseP, timerP) {
-    myMoneyPurseP = Promise.resolve(myMoneyPurseP);
-    const moneyIssuerP = E(myMoneyPurseP).getIssuer();
-    myStockPurseP = Promise.resolve(myStockPurseP);
-    const stockIssuerP = E(myStockPurseP).getIssuer();
-    const chitIssuerP = E(host).getChitIssuer();
+  /* eslint-disable-next-line no-unused-vars */
+  let myOptFinPursePresence;
+  /* eslint-disable-next-line no-unused-vars */
+  let optFinIssuerPresence;
+  /* eslint-disable-next-line no-unused-vars */
+  let optFinNeededAmount;
+
+  /* eslint-disable-next-line no-unused-vars */
+  let optFredP;
+
+  function init(
+    timerP,
+    myMoneyPurseP,
+    myStockPurseP,
+    myOptFinPurseP = undefined,
+    optFred = undefined,
+  ) {
     timerP = Promise.resolve(timerP);
-    const moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
-    const stockNeededP = E(E(stockIssuerP).getAssay()).make(7);
+    chitIssuerP = E(host).getChitIssuer();
 
-    return Promise.all([
-      myMoneyPurseP,
-      moneyIssuerP,
-      myStockPurseP,
-      stockIssuerP,
-      chitIssuerP,
-      timerP,
-      moneyNeededP,
-      stockNeededP,
-    ]).then(
-      ([
-        moneyPurse,
-        moneyIssuer,
-        stockPurse,
-        stockIssuer,
-        chitIssuer,
-        timer,
-        moneyNeeded,
-        stockNeeded,
-      ]) => {
-        myMoneyPursePresence = moneyPurse;
-        moneyIssuerPresence = moneyIssuer;
-        myStockPursePresence = stockPurse;
-        stockIssuerPresence = stockIssuer;
-        chitIssuerPresence = chitIssuer;
-        timerPresence = timer;
-        moneyNeededAmount = moneyNeeded;
-        stockNeededAmount = stockNeeded;
+    myMoneyPurseP = Promise.resolve(myMoneyPurseP);
+    moneyIssuerP = E(myMoneyPurseP).getIssuer();
+    moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
 
-        initialized = true;
-        // eslint-disable-next-line no-use-before-define
-        return alice; // alice and init use each other
-      },
-    );
+    myStockPurseP = Promise.resolve(myStockPurseP);
+    stockIssuerP = E(myStockPurseP).getIssuer();
+    stockNeededP = E(E(stockIssuerP).getAssay()).make(7);
+
+    if (myOptFinPurseP) {
+      myOptFinPurseP = Promise.resolve(myOptFinPurseP);
+      optFinIssuerP = E(myOptFinPurseP).getIssuerP();
+      optFinNeededP = E(E(optFinIssuerP).getAssay()).make(55);
+    }
+    optFredP = optFred;
+
+    initialized = true;
+    // eslint-disable-next-line no-use-before-define
+    return alice; // alice and init use each other
   }
 
   const alice = harden({
@@ -155,6 +151,13 @@ ERR: invite called before init()`;
     },
 
     acceptOption(allegedChitPaymentP) {
+      if (optFredP) {
+        return alice.acceptOptionForFred(allegedChitPaymentP);
+      }
+      return alice.acceptOptionDirectly(allegedChitPaymentP);
+    },
+
+    acceptOptionDirectly(allegedChitPaymentP) {
       insist(initialized)`\
 ERR: invite called before init()`;
 
@@ -192,6 +195,100 @@ ERR: invite called before init()`;
           metaOneAmount,
           allegedChitPaymentP,
           'verified chit',
+        );
+      }
+      const verifiedChitP = Promise.resolve(allegedMetaAmountP).then(
+        verifyOptionsChit,
+      );
+
+      showPaymentBalance('verified chit', verifiedChitP);
+
+      const seatP = E(host).redeem(verifiedChitP);
+      const moneyPaymentP = E(myMoneyPursePresence).withdraw(10);
+      E(seatP).offer(moneyPaymentP);
+      // TODO Bug if we change the "_ => 7" below to "_ => undefined",
+      // or equivalently if we just omit these unnecessary last .then
+      // clauses, then somehow we end up trying to marshal an array
+      // with holes, rather than an array with undefined
+      // elements. This remains true whether we use Promise.all or
+      // allSettled
+      const doneP = allSettled([
+        E(seatP)
+          .getWinnings()
+          .then(winnings => E(myStockPursePresence).deposit(7, winnings))
+          .then(_ => 7),
+        E(seatP)
+          .getRefund()
+          .then(refund => refund && E(myMoneyPursePresence).deposit(10, refund))
+          .then(_ => 10),
+      ]);
+      return doneP;
+    },
+
+    acceptOptionForFred(allegedChitPaymentP) {
+      insist(initialized)`\
+ERR: invite called before init()`;
+
+      showPaymentBalance('alice chit', allegedChitPaymentP);
+
+      const allegedMetaAmountP = E(allegedChitPaymentP).getXferBalance();
+
+      function verifyOptionsChit(allegedMetaAmount) {
+        const dough10 = harden({
+          label: {
+            issuer: moneyIssuerPresence,
+            description: 'dough',
+          },
+          quantity: 10,
+        });
+        const wonka7 = harden({
+          label: {
+            issuer: stockIssuerPresence,
+            description: 'wonka',
+          },
+          quantity: 7,
+        });
+        /* eslint-disable-next-line no-unused-vars */
+        const fin55 = harden({
+          label: {
+            issuer: optFinIssuerPresence,
+            description: 'fin',
+          },
+          quantity: 7,
+        });
+
+        const metaOneAmount = exchangeChitAmount(
+          allegedMetaAmount,
+          chitIssuerPresence,
+          coveredCallSrc,
+          [dough10, wonka7, timerPresence, 'singularity'],
+          'holder',
+          dough10,
+          wonka7,
+        );
+
+        /* eslint-disable-next-line no-unused-vars */
+        const metaXAmount = exchangeChitAmount(
+          metaOneAmount, // XXX
+          chitIssuerPresence,
+          escrowExchangeSrc,
+          [dough10, wonka7, timerPresence, 'singularity'],
+          'holder',
+          dough10,
+          wonka7,
+        );
+
+        /* eslint-disable-next-line no-unused-vars */
+        const optionsChit = E(chitIssuerPresence).getExclusive(
+          metaOneAmount,
+          allegedChitPaymentP,
+          'verified chit AB',
+        );
+
+        return E(chitIssuerPresence).getExclusive(
+          metaOneAmount,
+          allegedChitPaymentP,
+          'verified chit AF',
         );
       }
       const verifiedChitP = Promise.resolve(allegedMetaAmountP).then(

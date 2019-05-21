@@ -101,9 +101,9 @@ function build(E) {
     const aliceStockPurseP = E(stockMintP).mint(2002);
     const bobStockPurseP = E(stockMintP).mint(2003);
 
-    const aliceP = E(alice).init(aliceMoneyPurseP, aliceStockPurseP, fakeTimer);
+    const aliceP = E(alice).init(fakeTimer, aliceMoneyPurseP, aliceStockPurseP);
     /* eslint-disable-next-line no-unused-vars */
-    const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP, fakeTimer);
+    const bobP = E(bob).init(fakeTimer, bobMoneyPurseP, bobStockPurseP);
     const ifItFitsP = E(aliceP).payBobWell(bob);
     ifItFitsP.then(
       res => {
@@ -124,8 +124,8 @@ function build(E) {
     const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
     const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
 
-    const aliceP = E(alice).init(aliceMoneyPurseP, aliceStockPurseP, fakeTimer);
-    const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP, fakeTimer);
+    const aliceP = E(alice).init(fakeTimer, aliceMoneyPurseP, aliceStockPurseP);
+    const bobP = E(bob).init(fakeTimer, bobMoneyPurseP, bobStockPurseP);
 
     E(bobP)
       .tradeWell(aliceP, false)
@@ -153,8 +153,8 @@ function build(E) {
     const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
     const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
 
-    const aliceP = E(alice).init(aliceMoneyPurseP, aliceStockPurseP, fakeTimer);
-    const bobP = E(bob).init(bobMoneyPurseP, bobStockPurseP, fakeTimer);
+    const aliceP = E(alice).init(fakeTimer, aliceMoneyPurseP, aliceStockPurseP);
+    const bobP = E(bob).init(fakeTimer, bobMoneyPurseP, bobStockPurseP);
 
     E(bobP)
       .offerAliceOption(aliceP, false)
@@ -164,6 +164,61 @@ function build(E) {
           showPurseBalances('alice stock', aliceStockPurseP);
           showPurseBalances('bob money', bobMoneyPurseP);
           showPurseBalances('bob stock', bobStockPurseP);
+          console.log('++ bobP.offerAliceOption done:', res);
+          console.log('++ DONE');
+        },
+        rej => {
+          console.log('++ bobP.offerAliceOption error:', rej);
+        },
+      );
+  }
+
+  function coveredCallSaleTest(mint, alice, bob, fred) {
+    const doughMintP = E(mint).makeMint('dough');
+    const aliceDoughPurseP = E(doughMintP).mint(1000, 'aliceDough');
+    const bobDoughPurseP = E(doughMintP).mint(1001, 'bobDough');
+    const fredDoughPurseP = E(doughMintP).mint(1002, 'fredDough');
+
+    const stockMintP = E(mint).makeMint('wonka');
+    const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
+    const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
+    const fredStockPurseP = E(stockMintP).mint(2004, 'fredMainStock');
+
+    const finMintP = E(mint).makeMint('fins');
+    const aliceFinPurseP = E(finMintP).mint(3000, 'aliceFins');
+    const fredFinPurseP = E(finMintP).mint(3001, 'fredFins');
+
+    const aliceP = E(alice).init(
+      fakeTimer,
+      aliceDoughPurseP,
+      aliceStockPurseP,
+      aliceFinPurseP,
+      fred,
+    );
+    const bobP = E(bob).init(fakeTimer, bobDoughPurseP, bobStockPurseP);
+    /* eslint-disable-next-line no-unused-vars */
+    const fredP = E(fred).init(
+      fakeTimer,
+      fredDoughPurseP,
+      fredStockPurseP,
+      fredFinPurseP,
+    );
+
+    E(bobP)
+      .offerAliceOption(aliceP)
+      .then(
+        res => {
+          showPurseBalances('alice dough', aliceDoughPurseP);
+          showPurseBalances('alice stock', aliceStockPurseP);
+          showPurseBalances('alice fins', aliceFinPurseP);
+
+          showPurseBalances('bob dough', bobDoughPurseP);
+          showPurseBalances('bob stock', bobStockPurseP);
+
+          showPurseBalances('fred dough', fredDoughPurseP);
+          showPurseBalances('fred stock', fredStockPurseP);
+          showPurseBalances('fred fins', fredFinPurseP);
+
           console.log('++ bobP.offerAliceOption done:', res);
           console.log('++ DONE');
         },
@@ -185,12 +240,15 @@ function build(E) {
       }
       const alice = await E(vats.alice).makeAlice(host);
       const bob = await E(vats.bob).makeBob(host);
+      const fred = await E(vats.fred).makeFred(host);
       if (argv[0] === 'alice-first') {
         betterContractTestAliceFirst(vats.mint, alice, bob);
       } else if (argv[0] === 'bob-first') {
         betterContractTestBobFirst(vats.mint, alice, bob);
       } else if (argv[0] === 'covered-call') {
         coveredCallTest(vats.mint, alice, bob);
+      } else if (argv[0] === 'covered-call-sale') {
+        coveredCallSaleTest(vats.mint, alice, bob, fred);
       } else {
         insist(argv.length === 0)`\
 Unrecognized arg0: ${argv[0]}`;

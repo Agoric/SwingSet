@@ -12,55 +12,65 @@ function makeBob(E, host) {
   // TODO is there a better pattern for initializing to a bunch of
   // presences rather than promises?
   let initialized = false;
+  let timerPresence;
+  // eslint-disable-next-line no-unused-vars
+  let chitIssuerPresence;
+
   let myMoneyPursePresence;
   // eslint-disable-next-line no-unused-vars
   let moneyIssuerPresence;
+  let moneyNeededAmount;
+
   let myStockPursePresence;
   // eslint-disable-next-line no-unused-vars
   let stockIssuerPresence;
-  // eslint-disable-next-line no-unused-vars
-  let chitIssuerPresence;
-  let timerPresence;
-  let moneyNeededAmount;
   let stockNeededAmount;
 
-  function init(myMoneyPurseP, myStockPurseP, timerP) {
+  function init(timerP, myMoneyPurseP, myStockPurseP) {
+    timerP = Promise.resolve(timerP);
+    const chitIssuerP = E(host).getChitIssuer();
+
     myMoneyPurseP = Promise.resolve(myMoneyPurseP);
     const moneyIssuerP = E(myMoneyPurseP).getIssuer();
+    const moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
+
     myStockPurseP = Promise.resolve(myStockPurseP);
     const stockIssuerP = E(myStockPurseP).getIssuer();
-    const chitIssuerP = E(host).getChitIssuer();
-    timerP = Promise.resolve(timerP);
-    const moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
     const stockNeededP = E(E(stockIssuerP).getAssay()).make(7);
 
     return Promise.all([
+      timerP,
+      chitIssuerP,
+
       myMoneyPurseP,
       moneyIssuerP,
+      moneyNeededP,
+
       myStockPurseP,
       stockIssuerP,
-      chitIssuerP,
-      timerP,
-      moneyNeededP,
       stockNeededP,
     ]).then(
       ([
+        timer,
+        chitIssuer,
+
         moneyPurse,
         moneyIssuer,
+        moneyNeeded,
+
         stockPurse,
         stockIssuer,
-        chitIssuer,
-        timer,
-        moneyNeeded,
         stockNeeded,
       ]) => {
+        timerPresence = timer;
+        chitIssuerPresence = chitIssuer;
+
         myMoneyPursePresence = moneyPurse;
         moneyIssuerPresence = moneyIssuer;
+        moneyNeededAmount = moneyNeeded;
+
         myStockPursePresence = stockPurse;
         stockIssuerPresence = stockIssuer;
-        chitIssuerPresence = chitIssuer;
-        timerPresence = timer;
-        moneyNeededAmount = moneyNeeded;
         stockNeededAmount = stockNeeded;
 
         initialized = true;
