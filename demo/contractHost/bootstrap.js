@@ -102,17 +102,18 @@ function build(E) {
     const bobStockPurseP = E(stockMintP).mint(2003);
 
     const aliceP = E(alice).init(fakeTimer, aliceMoneyPurseP, aliceStockPurseP);
-    /* eslint-disable-next-line no-unused-vars */
     const bobP = E(bob).init(fakeTimer, bobMoneyPurseP, bobStockPurseP);
-    const ifItFitsP = E(aliceP).payBobWell(bob);
-    ifItFitsP.then(
-      res => {
-        console.log('++ ifItFitsP done:', res);
-        console.log('++ DONE');
-      },
-      rej => console.log('++ ifItFitsP failed', rej),
-    );
-    return ifItFitsP;
+    return Promise.all([aliceP, bobP]).then(_ => {
+      const ifItFitsP = E(aliceP).payBobWell(bob);
+      ifItFitsP.then(
+        res => {
+          console.log('++ ifItFitsP done:', res);
+          console.log('++ DONE');
+        },
+        rej => console.log('++ ifItFitsP failed', rej),
+      );
+      return ifItFitsP;
+    });
   }
 
   function betterContractTestBobFirst(mint, alice, bob) {
@@ -126,22 +127,23 @@ function build(E) {
 
     const aliceP = E(alice).init(fakeTimer, aliceMoneyPurseP, aliceStockPurseP);
     const bobP = E(bob).init(fakeTimer, bobMoneyPurseP, bobStockPurseP);
-
-    E(bobP)
-      .tradeWell(aliceP, false)
-      .then(
-        res => {
-          showPurseBalances('alice money', aliceMoneyPurseP);
-          showPurseBalances('alice stock', aliceStockPurseP);
-          showPurseBalances('bob money', bobMoneyPurseP);
-          showPurseBalances('bob stock', bobStockPurseP);
-          console.log('++ bobP.tradeWell done:', res);
-          console.log('++ DONE');
-        },
-        rej => {
-          console.log('++ bobP.tradeWell error:', rej);
-        },
-      );
+    return Promise.all([aliceP, bobP]).then(_ => {
+      E(bobP)
+        .tradeWell(aliceP, false)
+        .then(
+          res => {
+            showPurseBalances('alice money', aliceMoneyPurseP);
+            showPurseBalances('alice stock', aliceStockPurseP);
+            showPurseBalances('bob money', bobMoneyPurseP);
+            showPurseBalances('bob stock', bobStockPurseP);
+            console.log('++ bobP.tradeWell done:', res);
+            console.log('++ DONE');
+          },
+          rej => {
+            console.log('++ bobP.tradeWell error:', rej);
+          },
+        );
+    });
   }
 
   function coveredCallTest(mint, alice, bob) {
@@ -155,22 +157,23 @@ function build(E) {
 
     const aliceP = E(alice).init(fakeTimer, aliceMoneyPurseP, aliceStockPurseP);
     const bobP = E(bob).init(fakeTimer, bobMoneyPurseP, bobStockPurseP);
-
-    E(bobP)
-      .offerAliceOption(aliceP, false)
-      .then(
-        res => {
-          showPurseBalances('alice money', aliceMoneyPurseP);
-          showPurseBalances('alice stock', aliceStockPurseP);
-          showPurseBalances('bob money', bobMoneyPurseP);
-          showPurseBalances('bob stock', bobStockPurseP);
-          console.log('++ bobP.offerAliceOption done:', res);
-          console.log('++ DONE');
-        },
-        rej => {
-          console.log('++ bobP.offerAliceOption error:', rej);
-        },
-      );
+    return Promise.all([aliceP, bobP]).then(_ => {
+      E(bobP)
+        .offerAliceOption(aliceP, false)
+        .then(
+          res => {
+            showPurseBalances('alice money', aliceMoneyPurseP);
+            showPurseBalances('alice stock', aliceStockPurseP);
+            showPurseBalances('bob money', bobMoneyPurseP);
+            showPurseBalances('bob stock', bobStockPurseP);
+            console.log('++ bobP.offerAliceOption done:', res);
+            console.log('++ DONE');
+          },
+          rej => {
+            console.log('++ bobP.offerAliceOption error:', rej);
+          },
+        );
+    });
   }
 
   function coveredCallSaleTest(mint, alice, bob, fred) {
@@ -203,29 +206,30 @@ function build(E) {
       fredStockPurseP,
       fredFinPurseP,
     );
+    return Promise.all([aliceP, bobP, fredP]).then(_ => {
+      E(bobP)
+        .offerAliceOption(aliceP)
+        .then(
+          res => {
+            showPurseBalances('alice dough', aliceDoughPurseP);
+            showPurseBalances('alice stock', aliceStockPurseP);
+            showPurseBalances('alice fins', aliceFinPurseP);
 
-    E(bobP)
-      .offerAliceOption(aliceP)
-      .then(
-        res => {
-          showPurseBalances('alice dough', aliceDoughPurseP);
-          showPurseBalances('alice stock', aliceStockPurseP);
-          showPurseBalances('alice fins', aliceFinPurseP);
+            showPurseBalances('bob dough', bobDoughPurseP);
+            showPurseBalances('bob stock', bobStockPurseP);
 
-          showPurseBalances('bob dough', bobDoughPurseP);
-          showPurseBalances('bob stock', bobStockPurseP);
+            showPurseBalances('fred dough', fredDoughPurseP);
+            showPurseBalances('fred stock', fredStockPurseP);
+            showPurseBalances('fred fins', fredFinPurseP);
 
-          showPurseBalances('fred dough', fredDoughPurseP);
-          showPurseBalances('fred stock', fredStockPurseP);
-          showPurseBalances('fred fins', fredFinPurseP);
-
-          console.log('++ bobP.offerAliceOption done:', res);
-          console.log('++ DONE');
-        },
-        rej => {
-          console.log('++ bobP.offerAliceOption error:', rej);
-        },
-      );
+            console.log('++ bobP.offerAliceOption done:', res);
+            console.log('++ DONE');
+          },
+          rej => {
+            console.log('++ bobP.offerAliceOption error:', rej);
+          },
+        );
+    });
   }
 
   const obj0 = {

@@ -19,51 +19,42 @@ function makeAlice(E, host) {
   // TODO is there a better pattern for initializing to a bunch of
   // presences rather than promises?
   let initialized = false;
-  let timerPresence;
-  let chitIssuerPresence;
+  let timerP;
+  let chitIssuerP;
 
-  let myMoneyPursePresence;
-  let moneyIssuerPresence;
-  /* eslint-disable-next-line no-unused-vars */
-  let moneyNeededAmount;
+  let myMoneyPurseP;
+  let moneyIssuerP;
 
-  let myStockPursePresence;
-  let stockIssuerPresence;
-  /* eslint-disable-next-line no-unused-vars */
-  let stockNeededAmount;
+  let myStockPurseP;
+  let stockIssuerP;
 
   /* eslint-disable-next-line no-unused-vars */
-  let myOptFinPursePresence;
+  let myOptFinPurseP;
   /* eslint-disable-next-line no-unused-vars */
-  let optFinIssuerPresence;
-  /* eslint-disable-next-line no-unused-vars */
-  let optFinNeededAmount;
+  let optFinIssuerP;
 
   /* eslint-disable-next-line no-unused-vars */
   let optFredP;
 
   function init(
-    timerP,
-    myMoneyPurseP,
-    myStockPurseP,
-    myOptFinPurseP = undefined,
+    timer,
+    myMoneyPurse,
+    myStockPurse,
+    myOptFinPurse = undefined,
     optFred = undefined,
   ) {
-    timerP = Promise.resolve(timerP);
+    timerP = Promise.resolve(timer);
     chitIssuerP = E(host).getChitIssuer();
 
-    myMoneyPurseP = Promise.resolve(myMoneyPurseP);
+    myMoneyPurseP = Promise.resolve(myMoneyPurse);
     moneyIssuerP = E(myMoneyPurseP).getIssuer();
-    moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
 
-    myStockPurseP = Promise.resolve(myStockPurseP);
+    myStockPurseP = Promise.resolve(myStockPurse);
     stockIssuerP = E(myStockPurseP).getIssuer();
-    stockNeededP = E(E(stockIssuerP).getAssay()).make(7);
 
     if (myOptFinPurseP) {
-      myOptFinPurseP = Promise.resolve(myOptFinPurseP);
-      optFinIssuerP = E(myOptFinPurseP).getIssuerP();
-      optFinNeededP = E(E(optFinIssuerP).getAssay()).make(55);
+      myOptFinPurseP = Promise.resolve(myOptFinPurse);
+      optFinIssuerP = E(myOptFinPurseP).getIssuer();
     }
     optFredP = optFred;
 
@@ -78,7 +69,7 @@ function makeAlice(E, host) {
       insist(initialized)`\
 ERR: payBobWell called before init()`;
 
-      const paymentP = E(myMoneyPursePresence).withdraw(10);
+      const paymentP = E(myMoneyPurseP).withdraw(10);
       return E(bob).buy('shoe', paymentP);
     },
 
@@ -93,22 +84,22 @@ ERR: invite called before init()`;
       function verifyChit(allegedMetaAmount) {
         const clams10 = harden({
           label: {
-            issuer: moneyIssuerPresence,
+            issuer: moneyIssuerP,
             description: 'clams',
           },
           quantity: 10,
         });
         const fudco7 = harden({
           label: {
-            issuer: stockIssuerPresence,
+            issuer: stockIssuerP,
             description: 'fudco',
           },
           quantity: 7,
         });
 
-        const metaOneAmount = exchangeChitAmount(
+        const metaOneAmountP = exchangeChitAmount(
           allegedMetaAmount,
-          chitIssuerPresence,
+          chitIssuerP,
           escrowExchangeSrc,
           [clams10, fudco7],
           0,
@@ -116,10 +107,12 @@ ERR: invite called before init()`;
           fudco7,
         );
 
-        return E(chitIssuerPresence).getExclusive(
-          metaOneAmount,
-          allegedChitPaymentP,
-          'verified chit',
+        return Promise.resolve(metaOneAmountP).then(metaOneAmount =>
+          E(chitIssuerP).getExclusive(
+            metaOneAmount,
+            allegedChitPaymentP,
+            'verified chit',
+          ),
         );
       }
       const verifiedChitP = Promise.resolve(allegedMetaAmountP).then(
@@ -129,7 +122,7 @@ ERR: invite called before init()`;
       showPaymentBalance('verified chit', verifiedChitP);
 
       const seatP = E(host).redeem(verifiedChitP);
-      const moneyPaymentP = E(myMoneyPursePresence).withdraw(10);
+      const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
       E(seatP).offer(moneyPaymentP);
       // TODO Bug if we change the "_ => 7" below to "_ => undefined",
       // or equivalently if we just omit these unnecessary last .then
@@ -140,11 +133,11 @@ ERR: invite called before init()`;
       const doneP = allSettled([
         E(seatP)
           .getWinnings()
-          .then(winnings => E(myStockPursePresence).deposit(7, winnings))
+          .then(winnings => E(myStockPurseP).deposit(7, winnings))
           .then(_ => 7),
         E(seatP)
           .getRefund()
-          .then(refund => refund && E(myMoneyPursePresence).deposit(10, refund))
+          .then(refund => refund && E(myMoneyPurseP).deposit(10, refund))
           .then(_ => 10),
       ]);
       return doneP;
@@ -168,33 +161,35 @@ ERR: invite called before init()`;
       function verifyOptionsChit(allegedMetaAmount) {
         const smackers10 = harden({
           label: {
-            issuer: moneyIssuerPresence,
+            issuer: moneyIssuerP,
             description: 'smackers',
           },
           quantity: 10,
         });
         const yoyodyne7 = harden({
           label: {
-            issuer: stockIssuerPresence,
+            issuer: stockIssuerP,
             description: 'yoyodyne',
           },
           quantity: 7,
         });
 
-        const metaOneAmount = exchangeChitAmount(
+        const metaOneAmountP = exchangeChitAmount(
           allegedMetaAmount,
-          chitIssuerPresence,
+          chitIssuerP,
           coveredCallSrc,
-          [smackers10, yoyodyne7, timerPresence, 'singularity'],
+          [smackers10, yoyodyne7, timerP, 'singularity'],
           'holder',
           smackers10,
           yoyodyne7,
         );
 
-        return E(chitIssuerPresence).getExclusive(
-          metaOneAmount,
-          allegedChitPaymentP,
-          'verified chit',
+        return Promise.resolve(metaOneAmountP).then(metaOneAmount =>
+          E(chitIssuerP).getExclusive(
+            metaOneAmount,
+            allegedChitPaymentP,
+            'verified chit',
+          ),
         );
       }
       const verifiedChitP = Promise.resolve(allegedMetaAmountP).then(
@@ -204,7 +199,7 @@ ERR: invite called before init()`;
       showPaymentBalance('verified chit', verifiedChitP);
 
       const seatP = E(host).redeem(verifiedChitP);
-      const moneyPaymentP = E(myMoneyPursePresence).withdraw(10);
+      const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
       E(seatP).offer(moneyPaymentP);
       // TODO Bug if we change the "_ => 7" below to "_ => undefined",
       // or equivalently if we just omit these unnecessary last .then
@@ -215,108 +210,19 @@ ERR: invite called before init()`;
       const doneP = allSettled([
         E(seatP)
           .getWinnings()
-          .then(winnings => E(myStockPursePresence).deposit(7, winnings))
+          .then(winnings => E(myStockPurseP).deposit(7, winnings))
           .then(_ => 7),
         E(seatP)
           .getRefund()
-          .then(refund => refund && E(myMoneyPursePresence).deposit(10, refund))
+          .then(refund => refund && E(myMoneyPurseP).deposit(10, refund))
           .then(_ => 10),
       ]);
       return doneP;
     },
 
-    acceptOptionForFred(allegedChitPaymentP) {
+    acceptOptionForFred(_allegedChitPaymentP) {
       insist(initialized)`\
 ERR: invite called before init()`;
-
-      showPaymentBalance('alice chit', allegedChitPaymentP);
-
-      const allegedMetaAmountP = E(allegedChitPaymentP).getXferBalance();
-
-      function verifyOptionsChit(allegedMetaAmount) {
-        const dough10 = harden({
-          label: {
-            issuer: moneyIssuerPresence,
-            description: 'dough',
-          },
-          quantity: 10,
-        });
-        const wonka7 = harden({
-          label: {
-            issuer: stockIssuerPresence,
-            description: 'wonka',
-          },
-          quantity: 7,
-        });
-        /* eslint-disable-next-line no-unused-vars */
-        const fin55 = harden({
-          label: {
-            issuer: optFinIssuerPresence,
-            description: 'fin',
-          },
-          quantity: 7,
-        });
-
-        const metaOneAmount = exchangeChitAmount(
-          allegedMetaAmount,
-          chitIssuerPresence,
-          coveredCallSrc,
-          [dough10, wonka7, timerPresence, 'singularity'],
-          'holder',
-          dough10,
-          wonka7,
-        );
-
-        /* eslint-disable-next-line no-unused-vars */
-        const metaXAmount = exchangeChitAmount(
-          metaOneAmount, // XXX
-          chitIssuerPresence,
-          escrowExchangeSrc,
-          [dough10, wonka7, timerPresence, 'singularity'],
-          'holder',
-          dough10,
-          wonka7,
-        );
-
-        /* eslint-disable-next-line no-unused-vars */
-        const optionsChit = E(chitIssuerPresence).getExclusive(
-          metaOneAmount,
-          allegedChitPaymentP,
-          'verified chit AB',
-        );
-
-        return E(chitIssuerPresence).getExclusive(
-          metaOneAmount,
-          allegedChitPaymentP,
-          'verified chit AF',
-        );
-      }
-      const verifiedChitP = Promise.resolve(allegedMetaAmountP).then(
-        verifyOptionsChit,
-      );
-
-      showPaymentBalance('verified chit', verifiedChitP);
-
-      const seatP = E(host).redeem(verifiedChitP);
-      const moneyPaymentP = E(myMoneyPursePresence).withdraw(10);
-      E(seatP).offer(moneyPaymentP);
-      // TODO Bug if we change the "_ => 7" below to "_ => undefined",
-      // or equivalently if we just omit these unnecessary last .then
-      // clauses, then somehow we end up trying to marshal an array
-      // with holes, rather than an array with undefined
-      // elements. This remains true whether we use Promise.all or
-      // allSettled
-      const doneP = allSettled([
-        E(seatP)
-          .getWinnings()
-          .then(winnings => E(myStockPursePresence).deposit(7, winnings))
-          .then(_ => 7),
-        E(seatP)
-          .getRefund()
-          .then(refund => refund && E(myMoneyPursePresence).deposit(10, refund))
-          .then(_ => 10),
-      ]);
-      return doneP;
     },
   });
   return alice;

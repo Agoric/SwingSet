@@ -5,7 +5,10 @@ import harden from '@agoric/harden';
 import evaluate from '@agoric/evaluate';
 
 import { insist } from '../../collections/insist';
-import { mustBeComparable } from '../../collections/sameStructure';
+import {
+  allComparable,
+  mustBeComparable,
+} from '../../collections/sameStructure';
 import { makeMint, makeMetaIssuerController } from './issuers';
 import makePromise from '../../src/kernel/makePromise';
 
@@ -109,7 +112,7 @@ harden(makeContractHost);
 
 function exchangeChitAmount(
   allegedChitAmount,
-  chitIssuerPresence,
+  chitIssuerP,
   contractSrc,
   terms,
   seatIndex,
@@ -121,9 +124,9 @@ function exchangeChitAmount(
   const baseIssuerPresence =
     allegedChitAmount.quantity && allegedChitAmount.quantity.label.issuer;
 
-  return harden({
+  const passable = harden({
     label: {
-      issuer: chitIssuerPresence,
+      issuer: chitIssuerP,
       description: 'contract host',
     },
     quantity: {
@@ -138,6 +141,13 @@ function exchangeChitAmount(
       quantity: 1,
     },
   });
+  const comparableP = allComparable(passable);
+  /*
+  Promise.resolve(comparableP).then(comparable =>
+    console.log('\n####\n(', passable, ')\n####\n(', comparable, ')\n####\n'),
+  );
+  */
+  return comparableP;
 }
 harden(exchangeChitAmount);
 
