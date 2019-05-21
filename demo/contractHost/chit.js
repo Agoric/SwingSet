@@ -125,7 +125,7 @@ function exchangeChitAmount(
 ) {
   mustBeComparable(allegedChitAmount);
 
-  const baseIssuerPresence =
+  const baseIssuerP =
     allegedChitAmount.quantity && allegedChitAmount.quantity.label.issuer;
 
   const passable = harden({
@@ -135,7 +135,7 @@ function exchangeChitAmount(
     },
     quantity: {
       label: {
-        issuer: baseIssuerPresence,
+        issuer: baseIssuerP,
         description: {
           contractSrc,
           terms,

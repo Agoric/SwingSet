@@ -19,10 +19,18 @@ function build(E) {
       .then(amount => console.log(name, ' use balance ', amount));
   }
 
-  const fakeTimer = harden({
+  /*
+  const fakeNowTimer = harden({
     delayUntil(deadline, resolution = undefined) {
       console.log(`Pretend ${deadline} passed`);
       return Promise.resolve(resolution);
+    },
+  });
+  */
+  const fakeForeverTimer = harden({
+    delayUntil(deadline, _resolution = undefined) {
+      console.log(`Pretend ${deadline} never happens`);
+      return new Promise(_r => {});
     },
   });
 
@@ -101,8 +109,12 @@ function build(E) {
     const aliceStockPurseP = E(stockMintP).mint(2002);
     const bobStockPurseP = E(stockMintP).mint(2003);
 
-    const aliceP = E(alice).init(fakeTimer, aliceMoneyPurseP, aliceStockPurseP);
-    const bobP = E(bob).init(fakeTimer, bobMoneyPurseP, bobStockPurseP);
+    const aliceP = E(alice).init(
+      fakeForeverTimer,
+      aliceMoneyPurseP,
+      aliceStockPurseP,
+    );
+    const bobP = E(bob).init(fakeForeverTimer, bobMoneyPurseP, bobStockPurseP);
     return Promise.all([aliceP, bobP]).then(_ => {
       const ifItFitsP = E(aliceP).payBobWell(bob);
       ifItFitsP.then(
@@ -125,8 +137,12 @@ function build(E) {
     const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
     const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
 
-    const aliceP = E(alice).init(fakeTimer, aliceMoneyPurseP, aliceStockPurseP);
-    const bobP = E(bob).init(fakeTimer, bobMoneyPurseP, bobStockPurseP);
+    const aliceP = E(alice).init(
+      fakeForeverTimer,
+      aliceMoneyPurseP,
+      aliceStockPurseP,
+    );
+    const bobP = E(bob).init(fakeForeverTimer, bobMoneyPurseP, bobStockPurseP);
     return Promise.all([aliceP, bobP]).then(_ => {
       E(bobP)
         .tradeWell(aliceP, false)
@@ -155,8 +171,12 @@ function build(E) {
     const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
     const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
 
-    const aliceP = E(alice).init(fakeTimer, aliceMoneyPurseP, aliceStockPurseP);
-    const bobP = E(bob).init(fakeTimer, bobMoneyPurseP, bobStockPurseP);
+    const aliceP = E(alice).init(
+      fakeForeverTimer,
+      aliceMoneyPurseP,
+      aliceStockPurseP,
+    );
+    const bobP = E(bob).init(fakeForeverTimer, bobMoneyPurseP, bobStockPurseP);
     return Promise.all([aliceP, bobP]).then(_ => {
       E(bobP)
         .offerAliceOption(aliceP, false)
@@ -192,16 +212,16 @@ function build(E) {
     const fredFinPurseP = E(finMintP).mint(3001, 'fredFins');
 
     const aliceP = E(alice).init(
-      fakeTimer,
+      fakeForeverTimer,
       aliceDoughPurseP,
       aliceStockPurseP,
       aliceFinPurseP,
       fred,
     );
-    const bobP = E(bob).init(fakeTimer, bobDoughPurseP, bobStockPurseP);
+    const bobP = E(bob).init(fakeForeverTimer, bobDoughPurseP, bobStockPurseP);
     /* eslint-disable-next-line no-unused-vars */
     const fredP = E(fred).init(
-      fakeTimer,
+      fakeForeverTimer,
       fredDoughPurseP,
       fredStockPurseP,
       fredFinPurseP,

@@ -6,7 +6,7 @@ import harden from '@agoric/harden';
 import { escrowExchange } from './escrow';
 
 function coveredCall(terms, chitMaker) {
-  const [moneyNeeded, stockNeeded, timerPresence, deadline] = terms;
+  const [moneyNeeded, stockNeeded, timerP, deadline] = terms;
 
   const [aliceChit, bobChit] = escrowExchange(
     [moneyNeeded, stockNeeded],
@@ -18,7 +18,7 @@ function coveredCall(terms, chitMaker) {
 
   // Seats
 
-  E(timerPresence)
+  E(timerP)
     .delayUntil(deadline)
     .then(_ => bobEscrowSeat.cancel('expired'));
 
