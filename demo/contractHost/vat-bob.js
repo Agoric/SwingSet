@@ -103,7 +103,7 @@ ERR: invite called before init()`;
       const seatP = E(host).redeem(chitP);
       const stockPaymentP = E(myStockPurseP).withdraw(7);
       E(seatP).offer(stockPaymentP);
-      return collect(seatP, myMoneyPurseP, myStockPurseP);
+      return collect(seatP, myMoneyPurseP, myStockPurseP, 'bob escrow');
     },
 
     offerAliceOption(alice) {
@@ -123,7 +123,7 @@ ERR: offerAliceOption called before init()`;
       const aliceChitP = E(bobSeatP).offer(stockPaymentP);
       const doneP = Promise.all([
         E(alice).acceptOption(aliceChitP),
-        collect(bobSeatP, myMoneyPurseP, myStockPurseP),
+        collect(bobSeatP, myMoneyPurseP, myStockPurseP, 'bob option'),
       ]);
       doneP.then(
         _res => console.log('++ bob.offerAliceOption done'),

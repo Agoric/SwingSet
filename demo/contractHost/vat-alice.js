@@ -27,12 +27,9 @@ function makeAlice(E, host) {
   let myStockPurseP;
   let stockIssuerP;
 
-  /* eslint-disable-next-line no-unused-vars */
   let myOptFinPurseP;
-  /* eslint-disable-next-line no-unused-vars */
   let optFinIssuerP;
 
-  /* eslint-disable-next-line no-unused-vars */
   let optFredP;
 
   function init(
@@ -51,7 +48,7 @@ function makeAlice(E, host) {
     myStockPurseP = Promise.resolve(myStockPurse);
     stockIssuerP = E(myStockPurseP).getIssuer();
 
-    if (myOptFinPurseP) {
+    if (myOptFinPurse) {
       myOptFinPurseP = Promise.resolve(myOptFinPurse);
       optFinIssuerP = E(myOptFinPurseP).getIssuer();
     }
@@ -65,16 +62,18 @@ function makeAlice(E, host) {
   const alice = harden({
     init,
     payBobWell(bob) {
+      console.log('++ alice.payBobWell starting');
       insist(initialized)`\
-ERR: payBobWell called before init()`;
+ERR: alice.payBobWell called before init()`;
 
       const paymentP = E(myMoneyPurseP).withdraw(10);
       return E(bob).buy('shoe', paymentP);
     },
 
     invite(allegedChitPaymentP) {
+      console.log('++ alice.invite starting');
       insist(initialized)`\
-ERR: invite called before init()`;
+ERR: alice.invite called before init()`;
 
       showPaymentBalance('alice chit', allegedChitPaymentP);
 
@@ -98,8 +97,8 @@ ERR: invite called before init()`;
           });
 
           const metaOneAmountP = exchangeChitAmount(
-            allegedMetaAmount,
             chitIssuerP,
+            allegedMetaAmount.quantity.label.issuer,
             escrowExchangeSrc,
             [clams10, fudco7],
             0,
@@ -122,7 +121,7 @@ ERR: invite called before init()`;
       const seatP = E(host).redeem(verifiedChitP);
       const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
       E(seatP).offer(moneyPaymentP);
-      return collect(seatP, myStockPurseP, myMoneyPurseP);
+      return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice escrow');
     },
 
     acceptOption(allegedChitPaymentP) {
@@ -133,8 +132,9 @@ ERR: invite called before init()`;
     },
 
     acceptOptionDirectly(allegedChitPaymentP) {
+      console.log('++ alice.acceptOptionDirectly starting');
       insist(initialized)`\
-ERR: invite called before init()`;
+ERR: alice.acceptOptionDirectly called before init()`;
 
       showPaymentBalance('alice chit', allegedChitPaymentP);
 
@@ -158,8 +158,8 @@ ERR: invite called before init()`;
           });
 
           const metaOneAmountP = exchangeChitAmount(
-            allegedMetaAmount,
             chitIssuerP,
+            allegedMetaAmount.quantity.label.issuer,
             coveredCallSrc,
             [smackers10, yoyodyne7, timerP, 'singularity'],
             'holder',
@@ -182,12 +182,46 @@ ERR: invite called before init()`;
       const seatP = E(host).redeem(verifiedChitP);
       const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
       E(seatP).offer(moneyPaymentP);
-      return collect(seatP, myStockPurseP, myMoneyPurseP);
+      return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice option');
     },
 
-    acceptOptionForFred(_allegedChitPaymentP) {
+    acceptOptionForFred(allegedChitPaymentP) {
+      console.log('++ alice.acceptOptionForFred starting');
       insist(initialized)`\
-ERR: invite called before init()`;
+ERR: alice.acceptOptionForFred called before init()`;
+
+      const finNeededP = E(E(optFinIssuerP).getAssay()).make(55);
+      const chitNeededP = E(allegedChitPaymentP).getXferBalance();
+
+      const termsP = harden([finNeededP, chitNeededP]);
+      const chitsP = E(host).start(escrowExchangeSrc, termsP);
+      const fredChitP = chitsP.then(chits => chits[0]);
+      const aliceForFredChitP = chitsP.then(chits => chits[1]);
+      const doneP = Promise.all([
+        E(optFredP).acceptOptionOffer(fredChitP),
+        E(alice).completeOptionsSale(aliceForFredChitP, allegedChitPaymentP),
+      ]);
+      doneP.then(
+        _res => console.log('++ alice.acceptOptionForFred done'),
+        rej => console.log('++ alice.acceptOptionForFred reject: ', rej),
+      );
+      return doneP;
+    },
+
+    completeOptionsSale(aliceForFredChitP, allegedChitPaymentP) {
+      console.log('++ alice.completeOptionsSale starting');
+      insist(initialized)`\
+ERR: alice.completeOptionsSale called before init()`;
+
+      const aliceForFredSeatP = E(host).redeem(aliceForFredChitP);
+      E(aliceForFredSeatP).offer(allegedChitPaymentP);
+      const myChitPurseP = E(chitIssuerP).makeEmptyPurse();
+      return collect(
+        aliceForFredSeatP,
+        myOptFinPurseP,
+        myChitPurseP,
+        'alice options sale',
+      );
     },
   });
   return alice;

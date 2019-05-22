@@ -8,10 +8,7 @@ import evaluate from '@agoric/evaluate';
 
 import { allSettled } from '../../collections/allSettled';
 import { insist } from '../../collections/insist';
-import {
-  allComparable,
-  mustBeComparable,
-} from '../../collections/sameStructure';
+import { allComparable } from '../../collections/sameStructure';
 import { makeMint, makeMetaIssuerController } from './issuers';
 import makePromise from '../../src/kernel/makePromise';
 
@@ -118,19 +115,14 @@ Not a registered chit base issuer ${baseIssuer}`;
 harden(makeContractHost);
 
 function exchangeChitAmount(
-  allegedChitAmount,
   chitIssuerP,
+  baseChitIssuerP,
   contractSrc,
   terms,
   seatIndex,
   giveAmount,
   takeAmount,
 ) {
-  mustBeComparable(allegedChitAmount);
-
-  const baseIssuerP =
-    allegedChitAmount.quantity && allegedChitAmount.quantity.label.issuer;
-
   const passable = harden({
     label: {
       issuer: chitIssuerP,
@@ -138,7 +130,7 @@ function exchangeChitAmount(
     },
     quantity: {
       label: {
-        issuer: baseIssuerP,
+        issuer: baseChitIssuerP,
         description: {
           contractSrc,
           terms,
@@ -159,8 +151,8 @@ function exchangeChitAmount(
 harden(exchangeChitAmount);
 
 function makeCollect(E) {
-  function collect(seatP, winPurseP, refundPurseP) {
-    return allSettled([
+  function collect(seatP, winPurseP, refundPurseP, name = 'collecting') {
+    const doneP = allSettled([
       E(seatP)
         .getWinnings()
         .then(winnings => E(winPurseP).depositAll(winnings)),
@@ -174,6 +166,10 @@ function makeCollect(E) {
         .getRefund()
         .then(refund => refund && E(refundPurseP).depositAll(refund)),
     ]);
+    Promise.resolve(doneP).then(([wins, refs]) => {
+      console.log(`${name} wins: `, wins, `refs: `, refs);
+    });
+    return doneP;
   }
   return harden(collect);
 }
