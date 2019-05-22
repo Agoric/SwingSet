@@ -68,9 +68,12 @@ ERR: fred.acceptOptionOffer called before init()`;
             quantity: 7,
           });
 
+          const allegedBaseOptionsChitIssuer =
+            allegedMetaAmount.quantity.label.description.terms[1];
+
           const metaOptionAmountP = exchangeChitAmount(
             chitIssuerP,
-            allegedMetaAmount.quantity.label.issuer, // wrong
+            allegedBaseOptionsChitIssuer.quantity.label.issuer,
             coveredCallSrc,
             [dough10, wonka7, timerP, 'singularity'],
             'holder',
@@ -106,9 +109,16 @@ ERR: fred.acceptOptionOffer called before init()`;
         },
       );
       const seatP = E(host).redeem(verifiedChitP);
-      const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
-      E(seatP).offer(moneyPaymentP);
-      return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice escrow');
+      const finPaymentP = E(myFinPurseP).withdraw(55);
+      E(seatP).offer(finPaymentP);
+      const myOptionChitPurseP = E(chitIssuerP).makeEmptyPurse();
+      const gotOptionP = collect(
+        seatP,
+        myOptionChitPurseP,
+        myFinPurseP,
+        'fred option escrow',
+      );
+      return E.resolve(gotOptionP).then(_ => {});
     },
   });
   return fred;
