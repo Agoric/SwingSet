@@ -3,6 +3,7 @@
 
 import harden from '@agoric/harden';
 
+import { allComparable } from '../../collections/sameStructure';
 import { insist } from '../../collections/insist';
 import { escrowExchangeSrc } from './escrow';
 import { coveredCallSrc } from './coveredCall';
@@ -49,25 +50,32 @@ function makeFred(E, host) {
       insist(initialized)`\
 ERR: fred.acceptOptionOffer called before init()`;
 
+      const dough10 = harden({
+        label: {
+          issuer: moneyIssuerP,
+          description: 'dough',
+        },
+        quantity: 10,
+      });
+      const wonka7 = harden({
+        label: {
+          issuer: stockIssuerP,
+          description: 'wonka',
+        },
+        quantity: 7,
+      });
+      const fin55 = harden({
+        label: {
+          issuer: finIssuerP,
+          description: 'fins',
+        },
+        quantity: 55,
+      });
+
       const allegedMetaAmountP = E(allegedChitPaymentP).getXferBalance();
 
       const verifiedChitP = E.resolve(allegedMetaAmountP).then(
         allegedMetaAmount => {
-          const dough10 = harden({
-            label: {
-              issuer: moneyIssuerP,
-              description: 'dough',
-            },
-            quantity: 10,
-          });
-          const wonka7 = harden({
-            label: {
-              issuer: stockIssuerP,
-              description: 'wonka',
-            },
-            quantity: 7,
-          });
-
           const allegedBaseOptionsChitIssuer =
             allegedMetaAmount.quantity.label.description.terms[1];
 
@@ -80,14 +88,6 @@ ERR: fred.acceptOptionOffer called before init()`;
             dough10,
             wonka7,
           );
-
-          const fin55 = harden({
-            label: {
-              issuer: finIssuerP,
-              description: 'fins',
-            },
-            quantity: 55,
-          });
 
           const metaOptionSaleAmountP = exchangeChitAmount(
             chitIssuerP,
@@ -111,14 +111,28 @@ ERR: fred.acceptOptionOffer called before init()`;
       const seatP = E(host).redeem(verifiedChitP);
       const finPaymentP = E(myFinPurseP).withdraw(55);
       E(seatP).offer(finPaymentP);
-      const myOptionChitPurseP = E(chitIssuerP).makeEmptyPurse();
+      const optionChitPurseP = E(chitIssuerP).makeEmptyPurse();
       const gotOptionP = collect(
         seatP,
-        myOptionChitPurseP,
+        optionChitPurseP,
         myFinPurseP,
-        'fred option escrow',
+        'fred buys escrowed option',
       );
-      return E.resolve(gotOptionP).then(_ => {});
+      return E.resolve(gotOptionP).then(_ => {
+        // Fred bought the option. Now fred tries to exercise the option.
+        const optionChitPayment = E(optionChitPurseP).withdrawAll();
+        const optionSeatP = E(host).redeem(optionChitPayment);
+        return E.resolve(allComparable(dough10)).then(d10 => {
+          const doughPaymentP = E(myMoneyPurseP).withdraw(d10);
+          E(optionSeatP).offer(doughPaymentP);
+          return collect(
+            optionSeatP,
+            myStockPurseP,
+            myMoneyPurseP,
+            'fred exercises option, buying stock',
+          );
+        });
+      });
     },
   });
   return fred;

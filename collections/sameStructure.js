@@ -163,7 +163,7 @@ function pathStr(path) {
 function mustBeSameStructureInternal(left, right, message, path) {
   function complain(problem) {
     const template = harden([
-      `${message}:${problem} at ${pathStr(path)}: (`,
+      `${message}: ${problem} at ${pathStr(path)}: (`,
       ') vs (',
       ')',
     ]);
