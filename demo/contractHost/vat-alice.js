@@ -39,17 +39,17 @@ function makeAlice(E, host) {
     myOptFinPurse = undefined,
     optFred = undefined,
   ) {
-    timerP = Promise.resolve(timer);
+    timerP = E.resolve(timer);
     chitIssuerP = E(host).getChitIssuer();
 
-    myMoneyPurseP = Promise.resolve(myMoneyPurse);
+    myMoneyPurseP = E.resolve(myMoneyPurse);
     moneyIssuerP = E(myMoneyPurseP).getIssuer();
 
-    myStockPurseP = Promise.resolve(myStockPurse);
+    myStockPurseP = E.resolve(myStockPurse);
     stockIssuerP = E(myStockPurseP).getIssuer();
 
     if (myOptFinPurse) {
-      myOptFinPurseP = Promise.resolve(myOptFinPurse);
+      myOptFinPurseP = E.resolve(myOptFinPurse);
       optFinIssuerP = E(myOptFinPurseP).getIssuer();
     }
     optFredP = optFred;
@@ -79,7 +79,7 @@ ERR: alice.invite called before init()`;
 
       const allegedMetaAmountP = E(allegedChitPaymentP).getXferBalance();
 
-      const verifiedChitP = Promise.resolve(allegedMetaAmountP).then(
+      const verifiedChitP = E.resolve(allegedMetaAmountP).then(
         allegedMetaAmount => {
           const clams10 = harden({
             label: {
@@ -106,7 +106,7 @@ ERR: alice.invite called before init()`;
             fudco7,
           );
 
-          return Promise.resolve(metaOneAmountP).then(metaOneAmount =>
+          return E.resolve(metaOneAmountP).then(metaOneAmount =>
             E(chitIssuerP).getExclusive(
               metaOneAmount,
               allegedChitPaymentP,
@@ -140,7 +140,7 @@ ERR: alice.acceptOptionDirectly called before init()`;
 
       const allegedMetaAmountP = E(allegedChitPaymentP).getXferBalance();
 
-      const verifiedChitP = Promise.resolve(allegedMetaAmountP).then(
+      const verifiedChitP = E.resolve(allegedMetaAmountP).then(
         allegedMetaAmount => {
           const smackers10 = harden({
             label: {
@@ -167,7 +167,7 @@ ERR: alice.acceptOptionDirectly called before init()`;
             yoyodyne7,
           );
 
-          return Promise.resolve(metaOneAmountP).then(metaOneAmount =>
+          return E.resolve(metaOneAmountP).then(metaOneAmount =>
             E(chitIssuerP).getExclusive(
               metaOneAmount,
               allegedChitPaymentP,

@@ -25,16 +25,16 @@ function makeFred(E, host) {
   let finIssuerP;
 
   function init(timer, myMoneyPurse, myStockPurse, myFinPurse) {
-    timerP = Promise.resolve(timer);
+    timerP = E.resolve(timer);
     chitIssuerP = E(host).getChitIssuer();
 
-    myMoneyPurseP = Promise.resolve(myMoneyPurse);
+    myMoneyPurseP = E.resolve(myMoneyPurse);
     moneyIssuerP = E(myMoneyPurseP).getIssuer();
 
-    myStockPurseP = Promise.resolve(myStockPurse);
+    myStockPurseP = E.resolve(myStockPurse);
     stockIssuerP = E(myStockPurseP).getIssuer();
 
-    myFinPurseP = Promise.resolve(myFinPurse);
+    myFinPurseP = E.resolve(myFinPurse);
     finIssuerP = E(myFinPurseP).getIssuer();
 
     initialized = true;
@@ -51,7 +51,7 @@ ERR: fred.acceptOptionOffer called before init()`;
 
       const allegedMetaAmountP = E(allegedChitPaymentP).getXferBalance();
 
-      const verifiedChitP = Promise.resolve(allegedMetaAmountP).then(
+      const verifiedChitP = E.resolve(allegedMetaAmountP).then(
         allegedMetaAmount => {
           const dough10 = harden({
             label: {
@@ -96,13 +96,12 @@ ERR: fred.acceptOptionOffer called before init()`;
             metaOptionAmountP,
           );
 
-          return Promise.resolve(metaOptionSaleAmountP).then(
-            metaOptionSaleAmount =>
-              E(chitIssuerP).getExclusive(
-                metaOptionSaleAmount,
-                allegedChitPaymentP,
-                'verified chit',
-              ),
+          return E.resolve(metaOptionSaleAmountP).then(metaOptionSaleAmount =>
+            E(chitIssuerP).getExclusive(
+              metaOptionSaleAmount,
+              allegedChitPaymentP,
+              'verified chit',
+            ),
           );
         },
       );

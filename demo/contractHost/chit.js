@@ -37,7 +37,7 @@ No chits left`;
 Not a registered chit base issuer ${baseIssuer}`;
     const metaOneAmount = metaAmountOf(baseIssuer, 1);
     const metaSinkPurse = metaIssuer.makeEmptyPurse();
-    return Promise.resolve(
+    return E.resolve(
       metaSinkPurse.deposit(metaOneAmount, allegedChitPayment),
     ).then(_ => seats.get(baseIssuer));
   }
@@ -63,7 +63,7 @@ Not a registered chit base issuer ${baseIssuer}`;
         makePromise,
       });
 
-      return Promise.resolve(allComparable(termsP)).then(terms => {
+      return E.resolve(allComparable(termsP)).then(terms => {
         const chitMaker = harden({
           // Used by the contract to make chits for credibly
           // participating in the contract. The returned chit can be
@@ -105,7 +105,7 @@ Not a registered chit base issuer ${baseIssuer}`;
     // host, redeem it for the associated seat. Else error. Redeeming
     // consumes the chit payment and also transfers the use rights.
     redeem(allegedChitPaymentP) {
-      return Promise.resolve(allegedChitPaymentP).then(allegedChitPayment => {
+      return E.resolve(allegedChitPaymentP).then(allegedChitPayment => {
         return redeem(allegedChitPayment);
       });
     },
@@ -142,7 +142,7 @@ function exchangeChitAmount(
   });
   const comparableP = allComparable(passable);
   /*
-  Promise.resolve(comparableP).then(comparable =>
+  E.resolve(comparableP).then(comparable =>
     console.log('\n####\n(', passable, ')\n####\n(', comparable, ')\n####\n'),
   );
   */
@@ -166,7 +166,7 @@ function makeCollect(E) {
         .getRefund()
         .then(refund => refund && E(refundPurseP).depositAll(refund)),
     ]);
-    Promise.resolve(doneP).then(([wins, refs]) => {
+    E.resolve(doneP).then(([wins, refs]) => {
       console.log(`${name} wins: `, wins, `refs: `, refs);
     });
     return doneP;

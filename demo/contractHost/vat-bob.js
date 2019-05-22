@@ -23,13 +23,13 @@ function makeBob(E, host) {
   let stockNeededP;
 
   function init(timer, myMoneyPurse, myStockPurse) {
-    timerP = Promise.resolve(timer);
+    timerP = E.resolve(timer);
 
-    myMoneyPurseP = Promise.resolve(myMoneyPurse);
+    myMoneyPurseP = E.resolve(myMoneyPurse);
     moneyIssuerP = E(myMoneyPurseP).getIssuer();
     moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
 
-    myStockPurseP = Promise.resolve(myStockPurse);
+    myStockPurseP = E.resolve(myStockPurse);
     stockIssuerP = E(myStockPurseP).getIssuer();
     stockNeededP = E(E(stockIssuerP).getAssay()).make(7);
 

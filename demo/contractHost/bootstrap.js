@@ -23,7 +23,7 @@ function build(E) {
   const fakeNowTimer = harden({
     delayUntil(deadline, resolution = undefined) {
       console.log(`Pretend ${deadline} passed`);
-      return Promise.resolve(resolution);
+      return E.resolve(resolution);
     },
   });
   */
@@ -42,7 +42,7 @@ function build(E) {
     console.log('starting mintTestAssay');
     const mMintP = E(mint).makeMint('bucks');
     const mIssuerP = E(mMintP).getIssuer();
-    Promise.resolve(mIssuerP).then(issuer => {
+    E.resolve(mIssuerP).then(issuer => {
       // By using an unforgeable issuer presence and a pass-by-copy
       // description together as a unit label, we check that both
       // agree. The veracity of the description is, however, only as
@@ -53,7 +53,7 @@ function build(E) {
 
       const alicePurseP = E(mMintP).mint(bucks1000, 'alice');
       const paymentP = E(alicePurseP).withdraw(bucks50);
-      Promise.resolve(paymentP).then(_ => {
+      E.resolve(paymentP).then(_ => {
         showPurseBalances('alice', alicePurseP);
         showPaymentBalance('payment', paymentP);
       });
@@ -69,7 +69,7 @@ function build(E) {
 
     const alicePurseP = E(mMintP).mint(1000, 'alice');
     const paymentP = E(alicePurseP).withdraw(50);
-    Promise.resolve(paymentP).then(_ => {
+    E.resolve(paymentP).then(_ => {
       showPurseBalances('alice', alicePurseP);
       showPaymentBalance('payment', paymentP);
     });
