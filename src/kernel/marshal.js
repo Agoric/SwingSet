@@ -71,30 +71,30 @@ function isPassByCopyError(val) {
 }
 
 function isPassByCopyArray(val) {
-  if (Array.isArray(val)) {
-    if (Object.getPrototypeOf(val) !== Array.prototype) {
-      throw new TypeError(`malformed array: ${val}`);
-    }
-    const len = val.length;
-    const descs = Object.getOwnPropertyDescriptors(val);
-    for (let i = 0; i < len; i += 1) {
-      const desc = descs[i];
-      if (!desc) {
-        throw new TypeError(`arrays must not contain holes`);
-      }
-      if (!('value' in desc)) {
-        throw new TypeError(`arrays must not contain accessors`);
-      }
-      if (typeof desc.value === 'function') {
-        throw new TypeError(`arrays must not contain methods`);
-      }
-    }
-    if (Object.keys(descs).length !== len + 1) {
-      throw new TypeError(`array must not have non-indexes ${val}`);
-    }
-    return true;
+  if (!Array.isArray(val)) {
+    return false;
   }
-  return false;
+  if (Object.getPrototypeOf(val) !== Array.prototype) {
+    throw new TypeError(`malformed array: ${val}`);
+  }
+  const len = val.length;
+  const descs = Object.getOwnPropertyDescriptors(val);
+  for (let i = 0; i < len; i += 1) {
+    const desc = descs[i];
+    if (!desc) {
+      throw new TypeError(`arrays must not contain holes`);
+    }
+    if (!('value' in desc)) {
+      throw new TypeError(`arrays must not contain accessors`);
+    }
+    if (typeof desc.value === 'function') {
+      throw new TypeError(`arrays must not contain methods`);
+    }
+  }
+  if (Object.keys(descs).length !== len + 1) {
+    throw new TypeError(`array must not have non-indexes ${val}`);
+  }
+  return true;
 }
 
 function isPassByCopyRecord(val) {
@@ -134,6 +134,7 @@ export function mustPassByPresence(val) {
   names.forEach(name => {
     if (name === 'e') {
       // hack to allow Vows to pass-by-presence
+      // TODO: Make sure .e. is gone. Then get rid of this hack.
       return;
     }
     if (typeof val[name] !== 'function') {
@@ -352,6 +353,12 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
         switch (qclass) {
           // Encoding of primitives not handled by JSON
           case 'undefined': {
+            // TODO BUG: This does not work, since JSON.parse will
+            // interpret an undefined returned from the reviver as the
+            // absence of the property. This bug was not masked
+            // because obj.foo is undefined either if obj has a foo
+            // property whose value is undefined or if obj has no foo
+            // property.
             return undefined;
           }
           case '-0': {
