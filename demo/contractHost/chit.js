@@ -9,22 +9,17 @@ import evaluate from '@agoric/evaluate';
 import { allSettled } from '../../collections/allSettled';
 import { insist } from '../../collections/insist';
 import { allComparable } from '../../collections/sameStructure';
-import { makeMint, makeMetaIssuerController } from './issuers';
+import { makeNatAssay } from './assays';
+import { makeMetaIssuerController } from './issuers';
 import makePromise from '../../src/kernel/makePromise';
 
 function makeContractHost(E) {
-  // Maps from base issuers to seats
+  // Maps from seat identity to seats
   const seats = new WeakMap();
 
   const controller = makeMetaIssuerController('contract host');
   const metaIssuer = controller.getMetaIssuer();
   const metaAssay = metaIssuer.getAssay();
-
-  function metaAmountOf(baseIssuer, baseQuantity) {
-    const baseAssay = baseIssuer.getAssay();
-    const baseAmount = baseAssay.make(baseQuantity);
-    return metaAssay.make(baseAmount);
-  }
 
   function redeem(allegedChitPayment) {
     const allegedMetaAmount = allegedChitPayment.getXferBalance();
@@ -32,14 +27,15 @@ function makeContractHost(E) {
     insist(!metaAssay.isEmpty(metaAmount))`\
 No chits left`;
     const baseAmount = metaAssay.quantity(metaAmount);
-    const baseIssuer = baseAmount.label.issuer;
-    insist(seats.has(baseIssuer))`\
-Not a registered chit base issuer ${baseIssuer}`;
-    const metaOneAmount = metaAmountOf(baseIssuer, 1);
+    const seatIdentity = baseAmount.label.identity;
+    insist(seats.has(seatIdentity))`\
+Not a registered chit seat identity ${seatIdentity}`;
     const metaSinkPurse = metaIssuer.makeEmptyPurse();
     return E.resolve(
-      metaSinkPurse.deposit(metaOneAmount, allegedChitPayment),
-    ).then(_ => seats.get(baseIssuer));
+      // We deposit the alleged payment, rather than just doing a get
+      // exclusive on it, in order to consume the usage erights as well.
+      metaSinkPurse.deposit(metaAmount, allegedChitPayment),
+    ).then(_ => seats.get(seatIdentity));
   }
 
   // The contract host is designed to have a long-lived credible
@@ -78,18 +74,26 @@ Not a registered chit base issuer ${baseIssuer}`;
               terms,
               seatDesc,
             });
-            // We purposely avoid reifying baseMint because there should
-            // never be any base purses or base payments. A chit only
-            // resides in a meta purse or meta payment.
-            const baseIssuer = makeMint(baseDescription).getIssuer();
-            controller.register(baseIssuer);
-            seats.set(baseIssuer, seat);
-            const metaOneAmount = metaAmountOf(baseIssuer, 1);
+            // Note that an empty object is pass-by-presence, and so
+            // has an unforgeable identity.
+            const seatIdentity = harden({});
+            const baseLabel = harden({
+              identity: seatIdentity,
+              description: baseDescription,
+            });
+            const baseAssay = makeNatAssay(baseLabel);
+            const baseAmount = baseAssay.make(1);
+            controller.register(baseAssay);
+            seats.set(seatIdentity, seat);
+            const metaOneAmount = metaAssay.make(baseAmount);
             // This should be the only use of the meta mint, to make a
             // meta purse whose quantity is one unit of a base amount
             // for a unique base label. This meta purse makes the
             // returned meta payment, and then the empty meta purse is
-            // dropped.
+            // dropped, in the sense that it becomes inaccessible. But
+            // it is not yet collectable. Until the returned payment
+            // is deposited, it will retain the metaPurse, as the
+            // metaPurse contains the usage rights.
             const metaPurse = controller
               .getMetaMint()
               .mint(metaOneAmount, name);
@@ -116,7 +120,7 @@ harden(makeContractHost);
 
 function exchangeChitAmount(
   chitIssuerP,
-  baseChitIssuerP,
+  seatIdentityP,
   contractSrc,
   terms,
   seatIndex,
@@ -130,7 +134,7 @@ function exchangeChitAmount(
     },
     quantity: {
       label: {
-        issuer: baseChitIssuerP,
+        identity: seatIdentityP,
         description: {
           contractSrc,
           terms,

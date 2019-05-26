@@ -81,7 +81,7 @@ ERR: fred.acceptOptionOffer called before init()`;
 
           const metaOptionAmountP = exchangeChitAmount(
             chitIssuerP,
-            allegedBaseOptionsChitIssuer.quantity.label.issuer,
+            allegedBaseOptionsChitIssuer.quantity.label.identity,
             coveredCallSrc,
             [dough10, wonka7, timerP, 'singularity'],
             'holder',
@@ -91,7 +91,7 @@ ERR: fred.acceptOptionOffer called before init()`;
 
           const metaOptionSaleAmountP = exchangeChitAmount(
             chitIssuerP,
-            allegedMetaAmount.quantity.label.issuer,
+            allegedMetaAmount.quantity.label.identity,
             escrowExchangeSrc,
             [fin55, metaOptionAmountP],
             0,

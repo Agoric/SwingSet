@@ -98,7 +98,7 @@ ERR: alice.invite called before init()`;
 
           const metaOneAmountP = exchangeChitAmount(
             chitIssuerP,
-            allegedMetaAmount.quantity.label.issuer,
+            allegedMetaAmount.quantity.label.identity,
             escrowExchangeSrc,
             [clams10, fudco7],
             0,
@@ -159,7 +159,7 @@ ERR: alice.acceptOptionDirectly called before init()`;
 
           const metaOneAmountP = exchangeChitAmount(
             chitIssuerP,
-            allegedMetaAmount.quantity.label.issuer,
+            allegedMetaAmount.quantity.label.identity,
             coveredCallSrc,
             [smackers10, yoyodyne7, timerP, 'singularity'],
             'holder',

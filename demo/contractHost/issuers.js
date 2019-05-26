@@ -172,25 +172,24 @@ Payment expected: ${src}`;
 harden(makeMint);
 
 // Makes a meta issuer issuing rights represented by registered base
-// issuers. The base issuers do not themselves issue any rights. The
-// base issuers exist to provide a label to their base assay.
+// assays.
 //
 // An empty meta purse or meta payment is not specific to a base
-// issuer. Its balance is the empty meta amount which has a null meta
+// assay. Its balance is the empty meta amount which has a null meta
 // quantity. Non-empty ones have a meta amount whose quantity is a
-// base amount of some base assay, which cannot be combined with
-// amounts of other base assays. (This is the "single" restriction of
-// makeMetaSingleAssayMaker.)
+// base amount of some registered base assay, which cannot be combined
+// with amounts of other base assays. (This is the "single"
+// restriction of makeMetaSingleAssayMaker.)
 //
-// Base issuers should be registered as soon as they are
-// made, so that there is no observable state change from not being
-// registered to being registered.
+// Base assays should be registered as soon as they are made, so that
+// there is no observable state change from not being registered to
+// being registered.
 function makeMetaIssuerController(description) {
-  const baseIssuerToAssay = new WeakMap();
+  const baseIdentityToAssay = new WeakMap();
   function baseLabelToAssayFn(baseLabel) {
-    const baseAssay = baseIssuerToAssay.get(baseLabel.issuer);
+    const baseAssay = baseIdentityToAssay.get(baseLabel.identity);
     insist(baseAssay !== undefined)`\
-Issuer not found ${baseLabel}.issuer === ${baseLabel.issuer}`;
+Label identity not found ${baseLabel}.identity === ${baseLabel.identity}`;
     mustBeSameStructure(baseAssay.getLabel(), baseLabel, `Labels don't match`);
     return baseAssay;
   }
@@ -205,8 +204,8 @@ Issuer not found ${baseLabel}.issuer === ${baseLabel.issuer}`;
     getMetaIssuer() {
       return metaIssuer;
     },
-    register(baseIssuer) {
-      baseIssuerToAssay.set(baseIssuer, baseIssuer.getAssay());
+    register(baseAssay) {
+      baseIdentityToAssay.set(baseAssay.getLabel().identity, baseAssay);
     },
   });
   return controller;
