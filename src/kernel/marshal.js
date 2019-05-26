@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-// import Nat from '@agoric/nat';
+import Nat from '@agoric/nat';
 
 // Special property name that indicates an encoding that needs special
 // decoding.
@@ -219,6 +219,13 @@ export function passStyleOf(val) {
   }
 }
 
+// The ibid logic below relies on
+//    * JSON.stringify visiting array indexes from 0 to .length -1 in
+//      order, and not visiting anything else.
+//    * JSON.parse creating object on which a getOwnPropertyNames will
+//      enumerate properties in the same order in which they appeared
+//      in the parsed JSON string.
+
 export function makeMarshal(serializeSlot, unserializeSlot) {
   function makeReplacer(slots, slotMap) {
     const ibidMap = new Map();
@@ -340,25 +347,60 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
     };
   }
 
-  function makeReviver(slots) {
+  function makeFullRevive(slots) {
+    // ibid table is shared across recursive calls to fullRevive.
     const ibids = [];
+    function addIbid(object) {
+      ibids.push(object);
+      return object;
+    }
 
-    return function reviver(_, data) {
-      if (Object(data) !== data) {
+    // We stay close to the algorith at
+    // https://tc39.github.io/ecma262/#sec-json.parse , where
+    // fullRevive(JSON.parse(str)) is like JSON.parse(str, revive))
+    // for a similar reviver. But with the following differences:
+    //
+    // Rather than pass a reviver to JSON.parse, we first call a plain
+    // (one argument) JSON.parse to get rawTree, and then post-process
+    // the rawTree with fullRevive. The kind of revive function
+    // handled by JSON.parse only does one step in post-order, with
+    // JSON.parse doing the recursion. By contrast, fullParse does its
+    // own recursion, enabling it to interpret ibids in the same
+    // pre-order in which the replacer visited them, and enabling it
+    // to break cycles.
+    //
+    // In order to break cycles, the potentially cyclic objects are
+    // not frozen during the recursion. Rather, the whole graph is
+    // hardened before being returned. Error objects are not
+    // potentially recursive, and so may be harmlessly hardened when
+    // they are produced.
+    //
+    // fullRevive can produce properties whose value is undefined,
+    // which a JSON.parse on a reviver cannot do. If a reviver returns
+    // undefined to JSON.parse, JSON.parse will delete the property
+    // instead.
+    //
+    // fullRevive creates and returns a new graph, rather than
+    // modifying the original tree in place.
+    //
+    // fullRevive may rely on rawTree being the result of a plain call
+    // to JSON.parse. However, it *cannot* rely on it having been
+    // produced by JSON.stringify on the replacer above, i.e., it
+    // cannot rely on it being a valid marshalled
+    // representation. Rather, fullRevive must validate that.
+    return function fullRevive(rawTree) {
+      if (Object(rawTree) !== rawTree) {
         // primitives pass through
-        return data;
+        return rawTree;
       }
-      if (QCLASS in data) {
-        const qclass = `${data[QCLASS]}`;
+      if (QCLASS in rawTree) {
+        const qclass = `${rawTree[QCLASS]}`;
+        if (typeof qclass !== 'string') {
+          throw new TypeError(`invalid qclass typeof ${typeof qclass}`);
+        }
         switch (qclass) {
           // Encoding of primitives not handled by JSON
           case 'undefined': {
-            // TODO BUG: This does not work, since JSON.parse will
-            // interpret an undefined returned from the reviver as the
-            // absence of the property. This bug was not masked
-            // because obj.foo is undefined either if obj has a foo
-            // property whose value is undefined or if obj has no foo
-            // property.
             return undefined;
           }
           case '-0': {
@@ -374,36 +416,48 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
             return -Infinity;
           }
           case 'symbol': {
-            return Symbol.for(data.key);
+            if (typeof rawTree.key !== 'string') {
+              throw new TypeError(
+                `invalid symbol key typeof ${typeof rawTree.key}`,
+              );
+            }
+            return Symbol.for(rawTree.key);
           }
           case 'bigint': {
+            if (typeof rawTree.digits !== 'string') {
+              throw new TypeError(
+                `invalid digits typeof ${typeof rawTree.digits}`,
+              );
+            }
             /* eslint-disable-next-line no-undef */
-            return BigInt(data.digits);
+            return BigInt(rawTree.digits);
           }
 
           case 'ibid': {
-            // Now that we've commented out encoding these, we should
-            // never need to decode.
-            console.log('ibids not yet implemented correctly', data);
-            throw new Error(`ibids not yet implemented: ${data}`);
-
-            //            const index = Nat(data.index);
-            //            if (index >= ibids.length) {
-            //              throw new RangeError(`ibid out of range: ${index}`);
-            //            }
-            //            return ibids[index];
+            const index = Nat(rawTree.index);
+            if (index >= ibids.length) {
+              throw new RangeError(`ibid out of range: ${index}`);
+            }
+            return ibids[index];
           }
 
           case 'error': {
-            const EC = getErrorContructor(`${data.name}`) || Error;
-            const e = new EC(`${data.message}`);
-            return harden(e);
+            if (typeof rawTree.name !== 'string') {
+              throw new TypeError(
+                `invalid error name typeof ${typeof rawTree.name}`,
+              );
+            }
+            if (typeof rawTree.message !== 'string') {
+              throw new TypeError(
+                `invalid error message typeof ${typeof rawTree.message}`,
+              );
+            }
+            const EC = getErrorContructor(`${rawTree.name}`) || Error;
+            return addIbid(harden(new EC(`${rawTree.message}`)));
           }
 
           case 'slot': {
-            data = unserializeSlot(data, slots);
-            // overwrite data and break to ibid registration.
-            break;
+            return addIbid(unserializeSlot(rawTree, slots));
           }
 
           default: {
@@ -411,19 +465,28 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
             throw new TypeError(`unrecognized ${QCLASS} ${qclass}`);
           }
         }
+      } else if (Array.isArray(rawTree)) {
+        const result = addIbid([]);
+        const len = rawTree.length;
+        for (let i = 0; i < len; i += 1) {
+          result[i] = fullRevive(rawTree[i]);
+        }
+        return result;
       } else {
-        // The unserialized copy also becomes pass-by-copy, but we don't need
-        // to mark it specially
-        // todo: what if the unserializer is given "{}"?
+        const result = addIbid({});
+        const names = Object.getOwnPropertyNames(rawTree);
+        for (const name of names) {
+          result[name] = fullRevive(rawTree[name]);
+        }
+        return result;
       }
-      // The ibids case returned early to avoid this.
-      ibids.push(data);
-      return harden(data);
     };
   }
 
   function unserialize(str, slots) {
-    return JSON.parse(str, makeReviver(slots));
+    const rawTree = harden(JSON.parse(str));
+    const fullRevive = makeFullRevive(slots);
+    return harden(fullRevive(rawTree));
   }
 
   return harden({
