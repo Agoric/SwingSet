@@ -219,17 +219,62 @@ export function passStyleOf(val) {
   }
 }
 
-// The ibid logic below relies on
-//    * JSON.stringify visiting array indexes from 0 to .length -1 in
-//      order, and not visiting anything else.
-//    * JSON.parse creating object on which a getOwnPropertyNames will
-//      enumerate properties in the same order in which they appeared
-//      in the parsed JSON string.
+// The ibid logic relies on
+//    * JSON.stringify on an array visiting array indexes from 0 to
+//      arr.length -1 in order, and not visiting anything else.
+//    * JSON.parse of a record (a plain object) creating an object on
+//      which a getOwnPropertyNames will enumerate properties in the
+//      same order in which they appeared in the parsed JSON string.
+
+function makeReplacerIbidTable() {
+  const ibidMap = new Map();
+  let ibidCount = 0;
+
+  return harden({
+    has(obj) {
+      return ibidMap.has(obj);
+    },
+    get(obj) {
+      return ibidMap.get(obj);
+    },
+    add(obj) {
+      ibidMap.set(obj, ibidCount);
+      ibidCount += 1;
+    },
+  });
+}
+
+function makeReviverIbidTable() {
+  const ibids = [];
+  const unfinishedIbids = new WeakSet();
+
+  return harden({
+    get(allegedIndex) {
+      const index = Nat(allegedIndex);
+      if (index >= ibids.length) {
+        throw new RangeError(`ibid out of range: ${index}`);
+      }
+      return ibids[index];
+    },
+    register(obj) {
+      ibids.push(obj);
+      return obj;
+    },
+    start(obj) {
+      ibids.push(obj);
+      unfinishedIbids.add(obj);
+      return obj;
+    },
+    finish(obj) {
+      unfinishedIbids.delete(obj);
+      return obj;
+    },
+  });
+}
 
 export function makeMarshal(serializeSlot, unserializeSlot) {
   function makeReplacer(slots, slotMap) {
-    const ibidMap = new Map();
-    let ibidCount = 0;
+    const ibidTable = makeReplacerIbidTable();
 
     return function replacer(_, val) {
       // First we handle all primitives. Some can be represented directly as
@@ -276,15 +321,14 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
         }
         default: {
           // if we've seen this object before, serialize a backref
-          if (ibidMap.has(val)) {
+          if (ibidTable.has(val)) {
             // Backreference to prior occurrence
             return harden({
               [QCLASS]: 'ibid',
-              index: ibidMap.get(val),
+              index: ibidTable.get(val),
             });
           }
-          ibidMap.set(val, ibidCount);
-          ibidCount += 1;
+          ibidTable.add(val);
 
           switch (passStyle) {
             case 'copyRecord':
@@ -337,11 +381,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
 
   function makeFullRevive(slots) {
     // ibid table is shared across recursive calls to fullRevive.
-    const ibids = [];
-    function addIbid(object) {
-      ibids.push(object);
-      return object;
-    }
+    const ibidTable = makeReviverIbidTable();
 
     // We stay close to the algorith at
     // https://tc39.github.io/ecma262/#sec-json.parse , where
@@ -422,11 +462,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
           }
 
           case 'ibid': {
-            const index = Nat(rawTree.index);
-            if (index >= ibids.length) {
-              throw new RangeError(`ibid out of range: ${index}`);
-            }
-            return ibids[index];
+            return ibidTable.get(rawTree.index);
           }
 
           case 'error': {
@@ -441,11 +477,11 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
               );
             }
             const EC = getErrorContructor(`${rawTree.name}`) || Error;
-            return addIbid(harden(new EC(`${rawTree.message}`)));
+            return ibidTable.register(harden(new EC(`${rawTree.message}`)));
           }
 
           case 'slot': {
-            return addIbid(unserializeSlot(rawTree, slots));
+            return ibidTable.register(unserializeSlot(rawTree, slots));
           }
 
           default: {
@@ -454,19 +490,19 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
           }
         }
       } else if (Array.isArray(rawTree)) {
-        const result = addIbid([]);
+        const result = ibidTable.start([]);
         const len = rawTree.length;
         for (let i = 0; i < len; i += 1) {
           result[i] = fullRevive(rawTree[i]);
         }
-        return result;
+        return ibidTable.finish(result);
       } else {
-        const result = addIbid({});
+        const result = ibidTable.start({});
         const names = Object.getOwnPropertyNames(rawTree);
         for (const name of names) {
           result[name] = fullRevive(rawTree[name]);
         }
-        return result;
+        return ibidTable.finish(result);
       }
     };
   }
