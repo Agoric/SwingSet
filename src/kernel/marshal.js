@@ -244,7 +244,7 @@ function makeReplacerIbidTable() {
   });
 }
 
-function makeReviverIbidTable() {
+function makeReviverIbidTable(cyclePolicy) {
   const ibids = [];
   const unfinishedIbids = new WeakSet();
 
@@ -254,7 +254,25 @@ function makeReviverIbidTable() {
       if (index >= ibids.length) {
         throw new RangeError(`ibid out of range: ${index}`);
       }
-      return ibids[index];
+      const result = ibids[index];
+      if (unfinishedIbids.has(result)) {
+        switch (cyclePolicy) {
+          case 'allowCycles': {
+            break;
+          }
+          case 'warnOfCycles': {
+            console.log(`Warning: ibid cycle at ${index}`);
+            break;
+          }
+          case 'forbidCycles': {
+            throw new TypeError(`Ibid cycle at ${index}`);
+          }
+          default: {
+            throw new TypeError(`Unrecognized cycle policy: ${cyclePolicy}`);
+          }
+        }
+      }
+      return result;
     },
     register(obj) {
       ibids.push(obj);
@@ -379,9 +397,9 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
     };
   }
 
-  function makeFullRevive(slots) {
+  function makeFullRevive(slots, cyclePolicy) {
     // ibid table is shared across recursive calls to fullRevive.
-    const ibidTable = makeReviverIbidTable();
+    const ibidTable = makeReviverIbidTable(cyclePolicy);
 
     // We stay close to the algorith at
     // https://tc39.github.io/ecma262/#sec-json.parse , where
@@ -507,9 +525,9 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
     };
   }
 
-  function unserialize(str, slots) {
+  function unserialize(str, slots, cyclePolicy = 'forbidCycles') {
     const rawTree = harden(JSON.parse(str));
-    const fullRevive = makeFullRevive(slots);
+    const fullRevive = makeFullRevive(slots, cyclePolicy);
     return harden(fullRevive(rawTree));
   }
 
