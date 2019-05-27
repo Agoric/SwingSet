@@ -121,6 +121,28 @@ test('unserialize static data', t => {
   t.end();
 });
 
+test('serialize ibid cycle', t => {
+  const m = makeMarshal();
+  const ser = val => m.serialize(val);
+  const cycle = ['a', 'x', 'c'];
+  cycle[1] = cycle;
+  harden(cycle);
+
+  t.deepEqual(ser(cycle), {
+    argsString: '["a",{"@qclass":"ibid","index":0},"c"]',
+    slots: [],
+  });
+  t.end();
+});
+
+test('unserialize ibid cycle', t => {
+  const m = makeMarshal();
+  const uns = val => m.unserialize(val, []);
+  const cycle = uns('["a",{"@qclass":"ibid","index":0},"c"]');
+  t.ok(Object.is(cycle[1], cycle));
+  t.end();
+});
+
 test('serialize exports', t => {
   const { m } = makeMarshaller();
   const ser = val => m.serialize(val);
@@ -135,11 +157,10 @@ test('serialize exports', t => {
     slots: [{ type: 'export', id: 1 }],
   });
   // m now remembers that o1 is exported as 1
-  // TODO BUG ibids are turned off for now, since they do not yet work
-  //  t.deepEqual(ser(harden([o1, o1])), {
-  //    argsString: '[{"@qclass":"slot","index":0},{"@qclass":"ibid","index":1}]',
-  //    slots: [{ type: 'export', id: 1 }],
-  //  });
+  t.deepEqual(ser(harden([o1, o1])), {
+    argsString: '[{"@qclass":"slot","index":0},{"@qclass":"ibid","index":1}]',
+    slots: [{ type: 'export', id: 1 }],
+  });
   t.deepEqual(ser(harden([o2, o1])), {
     argsString: '[{"@qclass":"slot","index":0},{"@qclass":"slot","index":1}]',
     slots: [{ type: 'export', id: 2 }, { type: 'export', id: 1 }],
