@@ -30,16 +30,16 @@ No chits left`;
     const seatIdentity = baseAmount.label.identity;
     insist(seats.has(seatIdentity))`\
 Not a registered chit seat identity ${seatIdentity}`;
-    const metaSinkPurse = metaIssuer.makeEmptyPurse();
-    return E.resolve(
-      // We deposit the alleged payment, rather than just doing a get
-      // exclusive on it, in order to consume the usage erights as well.
-      metaSinkPurse.deposit(metaAmount, allegedChitPayment),
-    ).then(_ => seats.get(seatIdentity));
+    return E.resolve(metaIssuer.slash(metaAmount, allegedChitPayment)).then(_ =>
+      seats.get(seatIdentity),
+    );
   }
 
   // The contract host is designed to have a long-lived credible
   // identity.
+  //
+  // TODO: The contract host `start` method should spin off a new vat
+  // for each new contract instance.
   const contractHost = harden({
     getChitIssuer() {
       return controller.getMetaIssuer();

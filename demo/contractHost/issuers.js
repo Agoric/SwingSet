@@ -93,6 +93,18 @@ Payment expected: ${src}`;
         takePayment(xferRights.get(srcPayment), false, srcPayment, name),
       );
     },
+
+    slash(amount, srcPaymentP) {
+      // We deposit the alleged payment, rather than just doing a get
+      // exclusive on it, in order to consume the usage erights as well.
+      const sinkPurse = issuer.makeEmptyPurse('sink purse');
+      return sinkPurse.deposit(amount, srcPaymentP);
+    },
+
+    slashAll(srcPaymentP) {
+      const sinkPurse = issuer.makeEmptyPurse('sink purse');
+      return sinkPurse.depositAll(srcPaymentP);
+    },
   });
 
   const label = harden({ issuer, description });
@@ -231,7 +243,6 @@ function makePeg(E, remoteIssuerP, makeAssay = makeNatAssay) {
     const localMint = makeMint(description, makeAssay);
     const localIssuer = localMint.getIssuer();
     const localLabel = localIssuer.getLabel();
-    const localSink = localIssuer.makeEmptyPurse('local sink');
 
     function localAmountOf(remoteAmount) {
       return harden({
@@ -267,8 +278,8 @@ function makePeg(E, remoteIssuerP, makeAssay = makeNatAssay) {
       },
 
       redeemAll(localPayment, name = 'redeemed') {
-        return localSink
-          .depositAll(localPayment)
+        return localIssuer
+          .slashAll(localPayment)
           .then(localAmount =>
             E(backingPurseP).withdraw(remoteAmountOf(localAmount), name),
           );
