@@ -141,8 +141,10 @@ test('serialize ibid cycle', t => {
 test('forbid ibid cycle', t => {
   const m = makeMarshal();
   const uns = val => m.unserialize(val, []);
-  t.throws(() => uns('["a",{"@qclass":"ibid","index":0},"c"]'),
-           /Ibid cycle at 0/);
+  t.throws(
+    () => uns('["a",{"@qclass":"ibid","index":0},"c"]'),
+    /Ibid cycle at 0/,
+  );
   t.end();
 });
 
