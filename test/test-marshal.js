@@ -76,8 +76,11 @@ test('unserialize static data', t => {
   t.ok(Object.is(uns('{"@qclass":"NaN"}'), NaN));
   t.deepEqual(uns('{"@qclass":"Infinity"}'), Infinity);
   t.deepEqual(uns('{"@qclass":"-Infinity"}'), -Infinity);
-  t.deepEqual(uns('{"@qclass":"undefined"}'), undefined);
   t.deepEqual(uns('{"@qclass":"symbol", "key":"sym1"}'), Symbol.for('sym1'));
+
+  // Normal json reviver cannot make properties with undefined values
+  t.deepEqual(uns('[{"@qclass":"undefined"}]'), [undefined]);
+  t.deepEqual(uns('{"foo": {"@qclass":"undefined"}}'), { foo: undefined });
   let bn;
   try {
     bn = BigInt(4);
