@@ -223,8 +223,11 @@ export default function buildKernel(kernelEndowments) {
       vatID,
       makeLiveSlots,
       makeCommsSlots,
-      log(str) {
-        kernelState.log(`${str}`);
+      log(...args) {
+        const rendered = args.map(arg =>
+          typeof arg === 'string' ? arg : JSON.stringify(arg),
+        );
+        kernelState.log(rendered.join(''));
       },
     });
     // the vatManager invokes setup() to build the userspace image
