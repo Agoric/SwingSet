@@ -246,7 +246,14 @@ function build(E, log) {
     });
   }
 
-  function coveredCallSaleTest(host, mint, aliceI, bobI, fredI) {
+  function coveredCallSaleTest(
+    host,
+    mint,
+    aliceI,
+    bobI,
+    fredI,
+    isTerse = false,
+  ) {
     const escrowExchangeInstallationP = E(host).install(escrowExchangeSrc);
     const coveredCallInstallationP = E(host).install(coveredCallSrc);
 
@@ -278,6 +285,7 @@ function build(E, log) {
       fredDoughPurseP,
       fredStockPurseP,
       fredFinPurseP,
+      isTerse,
     );
     const aliceP = E(aliceI).init(
       escrowExchangeInstallationP,
@@ -349,6 +357,20 @@ function build(E, log) {
           const bobI = await E(vats.bob).makeBob(host);
           const fredI = await E(vats.fred).makeFred(host);
           return coveredCallSaleTest(host, vats.mint, aliceI, bobI, fredI);
+        }
+        case 'covered-call-sale-terse': {
+          const host = await E(vats.host).makeHost();
+          const aliceI = await E(vats.alice).makeAlice(host);
+          const bobI = await E(vats.bob).makeBob(host);
+          const fredI = await E(vats.fred).makeFred(host);
+          return coveredCallSaleTest(
+            host,
+            vats.mint,
+            aliceI,
+            bobI,
+            fredI,
+            true,
+          );
         }
         default: {
           throw new Error(`unrecognized argument value ${argv[0]}`);

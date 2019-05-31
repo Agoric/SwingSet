@@ -229,3 +229,19 @@ test('run contractHost Demo --covered-call-sale without SES', async t => {
   t.deepEquals(dump.log, contractCoveredCallSaleGolden);
   t.end();
 });
+
+test('run contractHost Demo --covered-call-sale-terse with SES', async t => {
+  const dump = await main(true, 'demo/contractHost', [
+    'covered-call-sale-terse',
+  ]);
+  t.deepEquals(dump.log, contractCoveredCallSaleGolden);
+  t.end();
+});
+
+test('run contractHost Demo --covered-call-sale-terse without SES', async t => {
+  const dump = await main(false, 'demo/contractHost', [
+    'covered-call-sale-terse',
+  ]);
+  t.deepEquals(dump.log, contractCoveredCallSaleGolden);
+  t.end();
+});
