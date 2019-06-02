@@ -1,4 +1,5 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
+// @flow
 
 import Nat from '@agoric/nat';
 import harden from '@agoric/harden';
@@ -9,6 +10,10 @@ import {
   mustBeSameStructure,
   mustBeComparable,
 } from '../../collections/sameStructure';
+
+/*::
+import type { G, Amount, Assay, Label } from './issuers.flow';
+*/
 
 // This assays.js module treats labels as black boxes. It is not aware
 // of issuers, and so can handle labels whose issuers are merely
@@ -28,7 +33,7 @@ import {
 // kind of amount is a labeled natural number describing a quantity of
 // fungible erights. The label describes what kinds of rights these
 // are. This is a form of labeled unit, as in unit typing.
-function makeNatAssay(label) {
+function makeNatAssay(label /*: G<Label<number>> */) /*: Assay<number> */{
   mustBeComparable(label);
 
   // memoize well formedness check of amounts
@@ -128,8 +133,10 @@ harden(makeNatAssay);
 // represents a single unique unit described by that truthy
 // quantity. Combining two uni amounts with different truthy
 // quantities fails, as they represent non-combinable rights.
-function makeUniAssayMaker(descriptionCoercer = d => d) {
-  function makeUniAssay(label) {
+function makeUniAssayMaker/*:: <U>*/(
+  descriptionCoercer /*: G<U> => U */ = d => d
+) {
+  function makeUniAssay(label /*: G<Label<U>> */) {
     mustBeComparable(label);
 
     const brand = new WeakSet();
@@ -137,7 +144,7 @@ function makeUniAssayMaker(descriptionCoercer = d => d) {
     const emptyAmount = harden({ label, quantity: null });
     brand.add(emptyAmount);
 
-    const assay = harden({
+    const assay /*: Assay<U> */ = harden({
       getLabel() {
         return label;
       },

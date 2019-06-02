@@ -1,7 +1,19 @@
 /* global E makePromise */
 // Copyright (C) 2019 Agoric, under Apache License 2.0
+// @flow
 
 import harden from '@agoric/harden';
+
+/*::
+import type { G, Amount, Assay, Label } from './issuers.flow';
+
+// ISSUE: where do E, makePromise belong? how do they come into scope?
+import { E, makePromise } from './issuers.flow';
+
+type InviteMaker = {
+  make(seatDesc: mixed, seat: mixed, name: ?string): mixed
+}
+*/
 
 // For clarity, the code below internally speaks of a scenario is
 // which Alice is trading some of her money for some of Bob's
@@ -10,7 +22,10 @@ import harden from '@agoric/harden';
 // players 0 and 1. Money are the rights transfered from player 0 to
 // 1, and Stock are the rights transfered from 1 to 0.
 
-function escrowExchange(terms, inviteMaker) {
+function escrowExchange(
+  terms /*: Amount<any>[] */,
+  inviteMaker /*: InviteMaker */,
+) {
   const [moneyNeeded, stockNeeded] = terms;
 
   function makeTransfer(amount, srcPaymentP) {
@@ -91,6 +106,7 @@ function escrowExchange(terms, inviteMaker) {
   ]);
 }
 
+// $FlowFixMe flow thinks "function [1] should not be coerced"
 const escrowExchangeSrc = `(${escrowExchange})`;
 
 export { escrowExchange, escrowExchangeSrc };
