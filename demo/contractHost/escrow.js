@@ -4,7 +4,7 @@
 
 import harden from '@agoric/harden';
 
-/*::
+/* ::
 import type { G, Amount, Assay, Label } from './issuers.flow';
 
 // ISSUE: where do E, makePromise belong? how do they come into scope?
@@ -23,8 +23,8 @@ type InviteMaker = {
 // 1, and Stock are the rights transfered from 1 to 0.
 
 function escrowExchange(
-  terms /*: Amount<any>[] */,
-  inviteMaker /*: InviteMaker */,
+  terms /* : Amount<any>[] */,
+  inviteMaker /* : InviteMaker */,
 ) {
   const [moneyNeeded, stockNeeded] = terms;
 

@@ -15,8 +15,8 @@ import harden from '@agoric/harden';
 // console only. We assume only the virtual platform's owner can read
 // what is written to the console, where the owner is in a privileged
 // position over computation running on that platform.
-function insist(flag /*: boolean */) {
-  function tag(template /*: string[] */, ...args /*: mixed[]*/) {
+function insist(flag /* : boolean */) {
+  function tag(template /* : string[] */, ...args /* : mixed[] */) {
     if (flag) {
       return;
     }

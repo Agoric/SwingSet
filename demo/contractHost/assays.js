@@ -11,7 +11,7 @@ import {
   mustBeComparable,
 } from '../../collections/sameStructure';
 
-/*::
+/* ::
 import type { G, Amount, Assay, Label } from './issuers.flow';
 */
 
@@ -33,7 +33,7 @@ import type { G, Amount, Assay, Label } from './issuers.flow';
 // kind of amount is a labeled natural number describing a quantity of
 // fungible erights. The label describes what kinds of rights these
 // are. This is a form of labeled unit, as in unit typing.
-function makeNatAssay(label /*: G<Label<number>> */) /*: Assay<number> */{
+function makeNatAssay(label /* : G<Label<number>> */) /* : Assay<number> */ {
   mustBeComparable(label);
 
   // memoize well formedness check of amounts
@@ -133,10 +133,10 @@ harden(makeNatAssay);
 // represents a single unique unit described by that truthy
 // quantity. Combining two uni amounts with different truthy
 // quantities fails, as they represent non-combinable rights.
-function makeUniAssayMaker/*:: <U>*/(
-  descriptionCoercer /*: G<U> => U */ = d => d
+function makeUniAssayMaker /* :: <U> */(
+  descriptionCoercer /* : G<U> => U */ = d => d,
 ) {
-  function makeUniAssay(label /*: G<Label<U>> */) {
+  function makeUniAssay(label /* : G<Label<U>> */) {
     mustBeComparable(label);
 
     const brand = new WeakSet();
@@ -144,7 +144,7 @@ function makeUniAssayMaker/*:: <U>*/(
     const emptyAmount = harden({ label, quantity: null });
     brand.add(emptyAmount);
 
-    const assay /*: Assay<U> */ = harden({
+    const assay /* : Assay<U> */ = harden({
       getLabel() {
         return label;
       },
