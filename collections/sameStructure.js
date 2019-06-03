@@ -11,7 +11,7 @@ import type { PassByCopyError } from '../src/kernel/marshal';
 
 // boring: "This type cannot be coerced to string" in template literals
 // https://github.com/facebook/flow/issues/2814
-const _s = x => String(x);
+const ss = x => String(x);
 
 // Shim of Object.fromEntries from
 // https://github.com/tc39/proposal-object-from-entries/blob/master/polyfill.js
@@ -40,10 +40,9 @@ function ObjectFromEntries(iter /* : Iterable<{ '0': string, '1': mixed }> */) {
 }
 
 // ISSUE: passStyleOf could be more static-typing friendly.
-function _as /* :: <T> */(x /* : any */) /* : T */ {
+function asTy /* :: <T> */(x /* : any */) /* : T */ {
   return x;
 }
-
 
 // A *passable* is something that may be mashalled. It consists of a
 // graph of pass-by-copy data terminating in leaves of passable
@@ -79,18 +78,29 @@ function allComparable(passable /* : mixed */) {
       return passable;
     }
     case 'promise': {
-      return _as/* :: <Promise<mixed>> */(passable).then(nonp => allComparable(nonp));
+      // eslint-disable-next-line prettier/prettier
+      return asTy/* :: <Promise<mixed>> */(passable).then(nonp =>
+        allComparable(nonp),
+      );
     }
     case 'copyArray': {
-      const valPs = _as/* :: <Array<mixed>> */(passable).map(p => allComparable(p));
+      // eslint-disable-next-line prettier/prettier
+      const valPs = asTy/* :: <Array<mixed>> */(passable).map(p =>
+        allComparable(p),
+      );
       return Promise.all(valPs).then(vals => harden(vals));
     }
     case 'copyRecord': {
-      const passRec = _as/* :: <{ [string]: mixed }> */(passable);
+      // eslint-disable-next-line prettier/prettier
+      const passRec = asTy/* :: <{ [string]: mixed }> */(passable);
       const names /* : string[] */ = Object.getOwnPropertyNames(passRec);
       const valPs = names.map(name => allComparable(passRec[name]));
       return Promise.all(valPs).then(vals =>
-        harden(ObjectFromEntries(vals.map((val, i) => ({ '0': names[i], '1': val })))),
+        harden(
+          ObjectFromEntries(
+            vals.map((val, i) => ({ '0': names[i], '1': val })),
+          ),
+        ),
       );
     }
     default: {
@@ -132,8 +142,10 @@ Cannot structurally compare promises: ${right}`;
     }
     case 'copyRecord':
     case 'copyArray': {
-      const leftObj = _as/* :: <{[string]: mixed}> */(left);
-      const rightObj = _as/* :: <{[string]: mixed}> */(right);
+      // eslint-disable-next-line prettier/prettier
+      const leftObj = asTy/* :: <{[string]: mixed}> */(left);
+      // eslint-disable-next-line prettier/prettier
+      const rightObj = asTy/* :: <{[string]: mixed}> */(right);
       const leftNames = Object.getOwnPropertyNames(leftObj);
       const rightNames = Object.getOwnPropertyNames(rightObj);
       if (leftNames.length !== rightNames.length) {
@@ -152,9 +164,13 @@ Cannot structurally compare promises: ${right}`;
       return true;
     }
     case 'copyError': {
-      const leftErr = _as/* :: <PassByCopyError> */(left);
-      const rightErr = _as/* :: <PassByCopyError> */(right);
-      return leftErr.name === rightErr.name && leftErr.message === rightErr.message;
+      // eslint-disable-next-line prettier/prettier
+      const leftErr = asTy/* :: <PassByCopyError> */(left);
+      // eslint-disable-next-line prettier/prettier
+      const rightErr = asTy/* :: <PassByCopyError> */(right);
+      return (
+        leftErr.name === rightErr.name && leftErr.message === rightErr.message
+      );
     }
     default: {
       throw new TypeError(`unrecognized passStyle ${leftStyle}`);
@@ -228,8 +244,10 @@ function mustBeSameStructureInternal(
     }
     case 'copyRecord':
     case 'copyArray': {
-      const leftObj = _as/* :: <{[string]: mixed}> */(left);
-      const rightObj = _as/* :: <{[string]: mixed}> */(right);
+      // eslint-disable-next-line prettier/prettier
+      const leftObj = asTy/* :: <{[string]: mixed}> */(left);
+      // eslint-disable-next-line prettier/prettier
+      const rightObj = asTy/* :: <{[string]: mixed}> */(right);
       const leftNames = Object.getOwnPropertyNames(leftObj);
       const rightNames = Object.getOwnPropertyNames(rightObj);
       if (leftNames.length !== rightNames.length) {
@@ -249,8 +267,10 @@ function mustBeSameStructureInternal(
       break;
     }
     case 'copyError': {
-      const leftErr = _as/* :: <PassByCopyError> */(left);
-      const rightErr = _as/* :: <PassByCopyError> */(right);
+      // eslint-disable-next-line prettier/prettier
+      const leftErr = asTy/* :: <PassByCopyError> */(left);
+      // eslint-disable-next-line prettier/prettier
+      const rightErr = asTy/* :: <PassByCopyError> */(right);
       if (leftErr.name !== rightErr.name) {
         complain(`different error name: ${leftErr.name} vs ${rightErr.name}`);
       }
@@ -272,7 +292,7 @@ function mustBeSameStructure(
   right /* : mixed */,
   message /* : mixed */,
 ) {
-  mustBeSameStructureInternal(left, right, `${_s(message)}`, null);
+  mustBeSameStructureInternal(left, right, `${ss(message)}`, null);
 }
 harden(mustBeSameStructure);
 

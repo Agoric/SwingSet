@@ -43,7 +43,7 @@ export function getErrorContructor(name /* : string */) {
 
 // boring: "This type cannot be coerced to string" in template literals
 // https://github.com/facebook/flow/issues/2814
-const _s = x => String(x);
+const ss = x => String(x);
 
 /* ::
 export interface PassByCopyError {
@@ -62,7 +62,7 @@ function isPassByCopyError(val /* : mixed */) {
   const EC = getErrorContructor(name);
   // $FlowFixMe https://github.com/facebook/flow/issues/6110
   if (!EC || EC.prototype !== proto) {
-    throw TypeError(`Must inherit from an error class .prototype ${_s(val)}`);
+    throw TypeError(`Must inherit from an error class .prototype ${ss(val)}`);
   }
 
   const {
@@ -76,10 +76,10 @@ function isPassByCopyError(val /* : mixed */) {
   } = Object.getOwnPropertyDescriptors(val);
   const restNames = Object.keys(restDescs);
   if (restNames.length >= 1) {
-    throw new TypeError(`Unexpected own properties in error: ${_s(restNames)}`);
+    throw new TypeError(`Unexpected own properties in error: ${ss(restNames)}`);
   }
   if (typeof messageStr !== 'string') {
-    throw new TypeError(`malformed error object: ${_s(val)}`);
+    throw new TypeError(`malformed error object: ${ss(val)}`);
   }
   return true;
 }
@@ -90,13 +90,13 @@ function isPassByCopyArray(val /* : mixed */) {
   }
   // $FlowFixMe https://github.com/facebook/flow/issues/6110
   if (Object.getPrototypeOf(val) !== Array.prototype) {
-    throw new TypeError(`malformed array: ${_s(val)}`);
+    throw new TypeError(`malformed array: ${ss(val)}`);
   }
   const len = val.length;
   // $FlowFixMe https://github.com/facebook/flow/blob/master/lib/core.js#L63
   const descs = Object.getOwnPropertyDescriptors(val);
   for (let i = 0; i < len; i += 1) {
-    const desc = descs[_s(i)];
+    const desc = descs[ss(i)];
     if (!desc) {
       throw new TypeError(`arrays must not contain holes`);
     }
@@ -108,7 +108,7 @@ function isPassByCopyArray(val /* : mixed */) {
     }
   }
   if (Object.keys(descs).length !== len + 1) {
-    throw new TypeError(`array must not have non-indexes ${_s(val)}`);
+    throw new TypeError(`array must not have non-indexes ${ss(val)}`);
   }
   return true;
 }
@@ -138,10 +138,10 @@ function isPassByCopyRecord(val /* : mixed */) {
 export function mustPassByPresence(val /* : mixed */) {
   // throws exception if cannot
   if (!Object.isFrozen(val)) {
-    throw new Error(`cannot serialize non-frozen objects like ${_s(val)}`);
+    throw new Error(`cannot serialize non-frozen objects like ${ss(val)}`);
   }
   if (typeof val !== 'object') {
-    throw new Error(`cannot serialize non-objects like ${_s(val)}`);
+    throw new Error(`cannot serialize non-objects like ${ss(val)}`);
   }
   if (Array.isArray(val)) {
     throw new Error(`Arrays cannot be pass-by-presence`);
@@ -159,7 +159,9 @@ export function mustPassByPresence(val /* : mixed */) {
     }
     if (typeof val[name] !== 'function') {
       throw new Error(
-        `cannot serialize objects with non-methods like the .${name} in ${_s(val)}`,
+        `cannot serialize objects with non-methods like the .${name} in ${ss(
+          val,
+        )}`,
       );
       // return false;
     }
@@ -198,7 +200,7 @@ export function passStyleOf(val /* : mixed */) {
         throw new Error(`property "${QCLASS}" reserved`);
       }
       if (!Object.isFrozen(val)) {
-        throw new Error(`cannot pass non-frozen objects like ${_s(val)}`);
+        throw new Error(`cannot pass non-frozen objects like ${ss(val)}`);
       }
       if (Promise.resolve(val) === val) {
         return 'promise';
@@ -219,13 +221,12 @@ export function passStyleOf(val /* : mixed */) {
       return 'presence';
     }
     case 'function': {
-      throw new Error(`bare functions like ${_s(val)} are disabled for now`);
+      throw new Error(`bare functions like ${ss(val)} are disabled for now`);
     }
     case 'undefined':
     case 'string':
     case 'boolean':
     case 'number':
-    // $FlowFixMe flow, you're missing a clue
     case 'bigint': {
       return typestr;
     }
@@ -243,10 +244,9 @@ export function passStyleOf(val /* : mixed */) {
 }
 
 // ISSUE: passStyleOf could be more static-typing friendly.
-function _as /* :: <T> */(x /* : any */) /* : T */ {
+function asTy /* :: <T> */(x /* : any */) /* : T */ {
   return x;
 }
-
 
 // The ibid logic relies on
 //    * JSON.stringify on an array visiting array indexes from 0 to
@@ -274,7 +274,7 @@ function makeReplacerIbidTable() {
 }
 
 function makeReviverIbidTable(cyclePolicy /* : mixed */) {
-  const ibids /* : mixed[] */= [];
+  const ibids /* : mixed[] */ = [];
   const unfinishedIbids = new WeakSet();
 
   return harden({
@@ -297,7 +297,9 @@ function makeReviverIbidTable(cyclePolicy /* : mixed */) {
             throw new TypeError(`Ibid cycle at ${index}`);
           }
           default: {
-            throw new TypeError(`Unrecognized cycle policy: ${_s(cyclePolicy)}`);
+            throw new TypeError(
+              `Unrecognized cycle policy: ${ss(cyclePolicy)}`,
+            );
           }
         }
       }
@@ -307,7 +309,7 @@ function makeReviverIbidTable(cyclePolicy /* : mixed */) {
       ibids.push(obj);
       return obj;
     },
-    start/* :: <T: mixed[] | { [string]: mixed }>*/(obj /* : T */) /* : T */{
+    start /* :: <T: mixed[] | { [string]: mixed }> */(obj /* : T */) /* : T */ {
       ibids.push(obj);
       unfinishedIbids.add(obj);
       return obj;
@@ -320,7 +322,7 @@ function makeReviverIbidTable(cyclePolicy /* : mixed */) {
 }
 
 export function makeMarshal(
-  serializeSlot /* : (mixed, mixed, mixed) => mixed*/,
+  serializeSlot /* : (mixed, mixed, mixed) => mixed */,
   unserializeSlot /* : (mixed, mixed) => mixed */,
 ) {
   function makeReplacer(slots, slotMap) {
@@ -397,11 +399,12 @@ export function makeMarshal(
               // summary. If we do that, we could allocate some random
               // identifier and include it in the message, to help
               // with the correlation.
-              const ceval = _as/* :: <PassByCopyError> */(val);
+              // eslint-disable-next-line prettier/prettier
+              const ceval = asTy/* :: <PassByCopyError> */(val);
               return harden({
                 [QCLASS]: 'error',
-                name: `${_s(ceval.name)}`,
-                message: `${_s(ceval.message)}`,
+                name: `${ss(ceval.name)}`,
+                message: `${ss(ceval.message)}`,
               });
             }
             case 'presence':
@@ -510,7 +513,6 @@ export function makeMarshal(
               );
             }
             /* eslint-disable-next-line no-undef */
-            // $FlowFixMe um... how did BigInt get into scope?
             return BigInt(rawTree.digits);
           }
 
@@ -530,7 +532,7 @@ export function makeMarshal(
               );
             }
             const EC = getErrorContructor(`${rawTree.name}`) || Error;
-            return ibidTable.register(harden(new EC(`${_s(rawTree.message)}`)));
+            return ibidTable.register(harden(new EC(`${ss(rawTree.message)}`)));
           }
 
           case 'slot': {
@@ -551,7 +553,7 @@ export function makeMarshal(
         return ibidTable.finish(result);
       } else {
         const result = ibidTable.start({});
-        const names /* : string[] */= Object.getOwnPropertyNames(rawTree);
+        const names /* : string[] */ = Object.getOwnPropertyNames(rawTree);
         for (const name of names) {
           result[name] = fullRevive(rawTree[name]);
         }
@@ -560,7 +562,11 @@ export function makeMarshal(
     };
   }
 
-  function unserialize(str /* : string */, slots /* : mixed[] */, cyclePolicy /* : string */ = 'forbidCycles') {
+  function unserialize(
+    str /* : string */,
+    slots /* : mixed[] */,
+    cyclePolicy /* : string */ = 'forbidCycles',
+  ) {
     const rawTree /* : mixed */ = harden(JSON.parse(str));
     const fullRevive = makeFullRevive(slots, cyclePolicy);
     return harden(fullRevive(rawTree));
