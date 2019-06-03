@@ -7,12 +7,10 @@ import harden from '@agoric/harden';
 /* ::
 import type { G, Amount, Assay, Label } from './issuers.flow';
 
+import type { InviteMaker } from './issuers.flow';
+
 // ISSUE: where do E, makePromise belong? how do they come into scope?
 import { E, makePromise } from './issuers.flow';
-
-type InviteMaker = {
-  make(seatDesc: mixed, seat: mixed, name: ?string): mixed
-}
 */
 
 // For clarity, the code below internally speaks of a scenario is

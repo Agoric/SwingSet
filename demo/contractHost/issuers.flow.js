@@ -75,3 +75,17 @@ export interface Peg<RemoteQ, LocalQ> {
 declare export function makePeg<LQ, RQ>(e: typeof E,
                 remoteIssuerP: G<Promise<Issuer<RQ>>>,
                 makeAssay :(Label<LQ> => Assay<LQ>)) :Peg<LQ, RQ>;
+
+// ISSUE: what are the types of seats etc?
+// Is InviteMaker parameterized by something
+// like { left: EscrowSeat, right: EscrowSeat }
+// or
+//   { writer: CoveredCallWriter }
+export interface InviteMaker {
+  make(seatDesc: mixed, seat: mixed, name: ?string): mixed;
+  redeem(allegedInvitePayment: mixed): Promise<mixed>;
+}
+
+export interface Timer {
+  delayUntil(deadline: mixed, resolution? :number): Promise<void>
+}

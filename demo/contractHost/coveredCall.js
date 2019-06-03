@@ -1,11 +1,23 @@
 /* global E */
 // Copyright (C) 2019 Agoric, under Apache License 2.0
+// @flow
 
 import harden from '@agoric/harden';
 
 import { escrowExchange } from './escrow';
 
-function coveredCall(terms, inviteMaker) {
+/* ::
+import type { G, Amount, Assay, Label } from './issuers.flow';
+import type { InviteMaker, Timer } from './issuers.flow';
+
+import { E } from './issuers.flow';
+
+*/
+
+function coveredCall /* :: <Money, Stock> */(
+  terms /* : [Amount<Money>, Amount<Stock>, Promise<Timer>, number] */,
+  inviteMaker /* : InviteMaker */,
+) {
   const [moneyNeeded, stockNeeded, timerP, deadline] = terms;
 
   const [aliceInvite, bobInvite] = escrowExchange(
@@ -18,7 +30,8 @@ function coveredCall(terms, inviteMaker) {
 
   // Seats
 
-  E(timerP)
+  // eslint-disable-next-line prettier/prettier
+  E/* :: <Timer> */(timerP)
     .delayUntil(deadline)
     .then(_ => E(bobEscrowSeatP).cancel('expired'));
 
