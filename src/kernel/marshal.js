@@ -1,3 +1,5 @@
+// @flow
+
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
@@ -35,14 +37,22 @@ const errorConstructors = new Map([
   ['URIError', URIError],
 ]);
 
-export function getErrorContructor(name) {
+export function getErrorContructor(name /* : string */) {
   return errorConstructors.get(name);
 }
 
-function isPassByCopyError(val) {
 // boring: "This type cannot be coerced to string" in template literals
 // https://github.com/facebook/flow/issues/2814
 const _s = x => String(x);
+
+/* ::
+export interface PassByCopyError {
+  name: string,
+  message: string,
+};
+
+*/
+function isPassByCopyError(val /* : mixed */) {
   // TODO: Need a better test than instanceof
   if (!(val instanceof Error)) {
     return false;
@@ -74,7 +84,7 @@ const _s = x => String(x);
   return true;
 }
 
-function isPassByCopyArray(val) {
+function isPassByCopyArray(val /* : mixed */) {
   if (!Array.isArray(val)) {
     return false;
   }
@@ -86,7 +96,7 @@ function isPassByCopyArray(val) {
   // $FlowFixMe https://github.com/facebook/flow/blob/master/lib/core.js#L63
   const descs = Object.getOwnPropertyDescriptors(val);
   for (let i = 0; i < len; i += 1) {
-    const desc = descs[i];
+    const desc = descs[_s(i)];
     if (!desc) {
       throw new TypeError(`arrays must not contain holes`);
     }
@@ -103,7 +113,7 @@ function isPassByCopyArray(val) {
   return true;
 }
 
-function isPassByCopyRecord(val) {
+function isPassByCopyRecord(val /* : mixed */) {
   // $FlowFixMe https://github.com/facebook/flow/issues/6110
   if (Object.getPrototypeOf(val) !== Object.prototype) {
     return false;
@@ -125,7 +135,7 @@ function isPassByCopyRecord(val) {
   return true;
 }
 
-export function mustPassByPresence(val) {
+export function mustPassByPresence(val /* : mixed */) {
   // throws exception if cannot
   if (!Object.isFrozen(val)) {
     throw new Error(`cannot serialize non-frozen objects like ${_s(val)}`);
@@ -140,7 +150,7 @@ export function mustPassByPresence(val) {
     throw new Error(`null cannot be pass-by-presence`);
   }
 
-  const names = Object.getOwnPropertyNames(val);
+  const names /* : string[] */ = Object.getOwnPropertyNames(val);
   names.forEach(name => {
     if (name === 'e') {
       // hack to allow Vows to pass-by-presence
@@ -176,7 +186,7 @@ export function mustPassByPresence(val) {
 //   * throwing an error on anything else, including thenables.
 // We export passStyleOf so other algorithms can use this module's
 // classification.
-export function passStyleOf(val) {
+export function passStyleOf(val /* : mixed */) {
   const typestr = typeof val;
   switch (typeof val) {
     case 'object': {
@@ -263,12 +273,12 @@ function makeReplacerIbidTable() {
   });
 }
 
-function makeReviverIbidTable(cyclePolicy) {
-  const ibids = [];
+function makeReviverIbidTable(cyclePolicy /* : mixed */) {
+  const ibids /* : mixed[] */= [];
   const unfinishedIbids = new WeakSet();
 
   return harden({
-    get(allegedIndex) {
+    get(allegedIndex /* : mixed */) {
       const index = Nat(allegedIndex);
       if (index >= ibids.length) {
         throw new RangeError(`ibid out of range: ${index}`);
@@ -293,27 +303,30 @@ function makeReviverIbidTable(cyclePolicy) {
       }
       return result;
     },
-    register(obj) {
+    register(obj /* : mixed */) {
       ibids.push(obj);
       return obj;
     },
-    start(obj) {
+    start/* :: <T: mixed[] | { [string]: mixed }>*/(obj /* : T */) /* : T */{
       ibids.push(obj);
       unfinishedIbids.add(obj);
       return obj;
     },
-    finish(obj) {
+    finish(obj /* : mixed */) {
       unfinishedIbids.delete(obj);
       return obj;
     },
   });
 }
 
-export function makeMarshal(serializeSlot, unserializeSlot) {
+export function makeMarshal(
+  serializeSlot /* : (mixed, mixed, mixed) => mixed*/,
+  unserializeSlot /* : (mixed, mixed) => mixed */,
+) {
   function makeReplacer(slots, slotMap) {
     const ibidTable = makeReplacerIbidTable();
 
-    return function replacer(_, val) {
+    return function replacer(_, val /* : mixed */) {
       // First we handle all primitives. Some can be represented directly as
       // JSON, and some must be encoded as [QCLASS] composites.
       const passStyle = passStyleOf(val);
@@ -408,7 +421,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
   // val might be a primitive, a pass by (shallow) copy object, a
   // remote reference, or other.  We treat all other as a local object
   // to be exported as a local webkey.
-  function serialize(val) {
+  function serialize(val /* : mixed */) {
     const slots = [];
     const slotMap = new Map(); // maps val (proxy or presence) to
     // index of slots[]
@@ -418,7 +431,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
     };
   }
 
-  function makeFullRevive(slots, cyclePolicy) {
+  function makeFullRevive(slots /* : mixed[] */, cyclePolicy /* : mixed */) {
     // ibid table is shared across recursive calls to fullRevive.
     const ibidTable = makeReviverIbidTable(cyclePolicy);
 
@@ -455,7 +468,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
     // produced by JSON.stringify on the replacer above, i.e., it
     // cannot rely on it being a valid marshalled
     // representation. Rather, fullRevive must validate that.
-    return function fullRevive(rawTree) {
+    return function fullRevive(rawTree /* : mixed */) /* : mixed */ {
       if (typeof rawTree !== 'object' || rawTree === null) {
         // primitives pass through
         return rawTree;
@@ -497,6 +510,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
               );
             }
             /* eslint-disable-next-line no-undef */
+            // $FlowFixMe um... how did BigInt get into scope?
             return BigInt(rawTree.digits);
           }
 
@@ -537,7 +551,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
         return ibidTable.finish(result);
       } else {
         const result = ibidTable.start({});
-        const names = Object.getOwnPropertyNames(rawTree);
+        const names /* : string[] */= Object.getOwnPropertyNames(rawTree);
         for (const name of names) {
           result[name] = fullRevive(rawTree[name]);
         }
@@ -546,8 +560,8 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
     };
   }
 
-  function unserialize(str, slots, cyclePolicy = 'forbidCycles') {
-    const rawTree = harden(JSON.parse(str));
+  function unserialize(str /* : string */, slots /* : mixed[] */, cyclePolicy /* : string */ = 'forbidCycles') {
+    const rawTree /* : mixed */ = harden(JSON.parse(str));
     const fullRevive = makeFullRevive(slots, cyclePolicy);
     return harden(fullRevive(rawTree));
   }

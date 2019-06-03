@@ -1,7 +1,13 @@
+// @flow
+
 import harden from '@agoric/harden';
 
 import { insist } from './insist';
 import { passStyleOf } from '../src/kernel/marshal';
+
+/* ::
+import type { PassByCopyError } from '../src/kernel/marshal';
+*/
 
 // boring: "This type cannot be coerced to string" in template literals
 // https://github.com/facebook/flow/issues/2814
@@ -58,7 +64,7 @@ function _as /* :: <T> */(x /* : any */) /* : T */ {
 // Given a passable, reveal a corresponding comparable, where each
 // leaf promise of the passable has been replaced with its
 // corresponding comparable.
-function allComparable(passable) {
+function allComparable(passable /* : mixed */) {
   const passStyle = passStyleOf(passable);
   switch (passStyle) {
     case 'null':
@@ -102,7 +108,7 @@ harden(allComparable);
 //
 // Pass-by-presence objects compare identities.
 
-function sameStructure(left, right) {
+function sameStructure(left /* : mixed */, right /* : mixed */) {
   const leftStyle = passStyleOf(left);
   const rightStyle = passStyleOf(right);
   insist(leftStyle !== 'promise')`\
@@ -157,7 +163,11 @@ Cannot structurally compare promises: ${right}`;
 }
 harden(sameStructure);
 
-function pathStr(path) {
+/* ::
+type Path = null | [Path, string];
+*/
+
+function pathStr(path /* : Path */) /* : string */ {
   if (path === null) {
     return 'top';
   }
@@ -175,7 +185,12 @@ function pathStr(path) {
 
 // TODO: Reduce redundancy between sameStructure and
 // mustBeSameStructureInternal
-function mustBeSameStructureInternal(left, right, message, path) {
+function mustBeSameStructureInternal(
+  left /* : mixed */,
+  right /* : mixed */,
+  message /* : string */,
+  path /* : Path */,
+) {
   function complain(problem) {
     const template = harden([
       `${message}: ${problem} at ${pathStr(path)}: (`,
@@ -252,14 +267,18 @@ function mustBeSameStructureInternal(left, right, message, path) {
     }
   }
 }
-function mustBeSameStructure(left, right, message) {
+function mustBeSameStructure(
+  left /* : mixed */,
+  right /* : mixed */,
+  message /* : mixed */,
+) {
   mustBeSameStructureInternal(left, right, `${_s(message)}`, null);
 }
 harden(mustBeSameStructure);
 
 // If `val` would be a valid input to `sameStructure`, return
 // normally. Otherwise error.
-function mustBeComparable(val) {
+function mustBeComparable(val /* : mixed */) {
   mustBeSameStructure(val, val, 'not comparable');
 }
 
