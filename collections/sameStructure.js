@@ -9,7 +9,7 @@ const _s = x => String(x);
 
 // Shim of Object.fromEntries from
 // https://github.com/tc39/proposal-object-from-entries/blob/master/polyfill.js
-function ObjectFromEntries(iter) {
+function ObjectFromEntries(iter /* : Iterable<{ '0': string, '1': mixed }> */) {
   const obj = {};
 
   for (const pair of iter) {
@@ -84,7 +84,7 @@ function allComparable(passable) {
       const names /* : string[] */ = Object.getOwnPropertyNames(passRec);
       const valPs = names.map(name => allComparable(passRec[name]));
       return Promise.all(valPs).then(vals =>
-        harden(ObjectFromEntries(vals.map((val, i) => [names[i], val]))),
+        harden(ObjectFromEntries(vals.map((val, i) => ({ '0': names[i], '1': val })))),
       );
     }
     default: {

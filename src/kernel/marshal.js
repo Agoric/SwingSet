@@ -178,7 +178,7 @@ export function mustPassByPresence(val) {
 // classification.
 export function passStyleOf(val) {
   const typestr = typeof val;
-  switch (typestr) {
+  switch (typeof val) {
     case 'object': {
       if (val === null) {
         return 'null';
@@ -456,7 +456,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
     // cannot rely on it being a valid marshalled
     // representation. Rather, fullRevive must validate that.
     return function fullRevive(rawTree) {
-      if (Object(rawTree) !== rawTree) {
+      if (typeof rawTree !== 'object' || rawTree === null) {
         // primitives pass through
         return rawTree;
       }
