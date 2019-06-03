@@ -3,6 +3,10 @@ import harden from '@agoric/harden';
 import { insist } from './insist';
 import { passStyleOf } from '../src/kernel/marshal';
 
+// boring: "This type cannot be coerced to string" in template literals
+// https://github.com/facebook/flow/issues/2814
+const _s = x => String(x);
+
 // Shim of Object.fromEntries from
 // https://github.com/tc39/proposal-object-from-entries/blob/master/polyfill.js
 function ObjectFromEntries(iter) {
@@ -234,7 +238,7 @@ function mustBeSameStructureInternal(left, right, message, path) {
   }
 }
 function mustBeSameStructure(left, right, message) {
-  mustBeSameStructureInternal(left, right, `${message}`, null);
+  mustBeSameStructureInternal(left, right, `${_s(message)}`, null);
 }
 harden(mustBeSameStructure);
 

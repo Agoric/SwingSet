@@ -40,6 +40,9 @@ export function getErrorContructor(name) {
 }
 
 function isPassByCopyError(val) {
+// boring: "This type cannot be coerced to string" in template literals
+// https://github.com/facebook/flow/issues/2814
+const _s = x => String(x);
   // TODO: Need a better test than instanceof
   if (!(val instanceof Error)) {
     return false;
@@ -48,7 +51,7 @@ function isPassByCopyError(val) {
   const { name } = val;
   const EC = getErrorContructor(name);
   if (!EC || EC.prototype !== proto) {
-    throw TypeError(`Must inherit from an error class .prototype ${val}`);
+    throw TypeError(`Must inherit from an error class .prototype ${_s(val)}`);
   }
 
   const {
@@ -62,10 +65,10 @@ function isPassByCopyError(val) {
   } = Object.getOwnPropertyDescriptors(val);
   const restNames = Object.keys(restDescs);
   if (restNames.length >= 1) {
-    throw new TypeError(`Unexpected own properties in error: ${restNames}`);
+    throw new TypeError(`Unexpected own properties in error: ${_s(restNames)}`);
   }
   if (typeof messageStr !== 'string') {
-    throw new TypeError(`malformed error object: ${val}`);
+    throw new TypeError(`malformed error object: ${_s(val)}`);
   }
   return true;
 }
@@ -75,7 +78,7 @@ function isPassByCopyArray(val) {
     return false;
   }
   if (Object.getPrototypeOf(val) !== Array.prototype) {
-    throw new TypeError(`malformed array: ${val}`);
+    throw new TypeError(`malformed array: ${_s(val)}`);
   }
   const len = val.length;
   const descs = Object.getOwnPropertyDescriptors(val);
@@ -92,7 +95,7 @@ function isPassByCopyArray(val) {
     }
   }
   if (Object.keys(descs).length !== len + 1) {
-    throw new TypeError(`array must not have non-indexes ${val}`);
+    throw new TypeError(`array must not have non-indexes ${_s(val)}`);
   }
   return true;
 }
@@ -121,10 +124,10 @@ function isPassByCopyRecord(val) {
 export function mustPassByPresence(val) {
   // throws exception if cannot
   if (!Object.isFrozen(val)) {
-    throw new Error(`cannot serialize non-frozen objects like ${val}`);
+    throw new Error(`cannot serialize non-frozen objects like ${_s(val)}`);
   }
   if (typeof val !== 'object') {
-    throw new Error(`cannot serialize non-objects like ${val}`);
+    throw new Error(`cannot serialize non-objects like ${_s(val)}`);
   }
   if (Array.isArray(val)) {
     throw new Error(`Arrays cannot be pass-by-presence`);
@@ -142,7 +145,7 @@ export function mustPassByPresence(val) {
     }
     if (typeof val[name] !== 'function') {
       throw new Error(
-        `cannot serialize objects with non-methods like the .${name} in ${val}`,
+        `cannot serialize objects with non-methods like the .${name} in ${_s(val)}`,
       );
       // return false;
     }
@@ -180,7 +183,7 @@ export function passStyleOf(val) {
         throw new Error(`property "${QCLASS}" reserved`);
       }
       if (!Object.isFrozen(val)) {
-        throw new Error(`cannot pass non-frozen objects like ${val}`);
+        throw new Error(`cannot pass non-frozen objects like ${_s(val)}`);
       }
       if (Promise.resolve(val) === val) {
         return 'promise';
@@ -201,7 +204,7 @@ export function passStyleOf(val) {
       return 'presence';
     }
     case 'function': {
-      throw new Error(`bare functions like ${val} are disabled for now`);
+      throw new Error(`bare functions like ${_s(val)} are disabled for now`);
     }
     case 'undefined':
     case 'string':
@@ -271,7 +274,7 @@ function makeReviverIbidTable(cyclePolicy) {
             throw new TypeError(`Ibid cycle at ${index}`);
           }
           default: {
-            throw new TypeError(`Unrecognized cycle policy: ${cyclePolicy}`);
+            throw new TypeError(`Unrecognized cycle policy: ${_s(cyclePolicy)}`);
           }
         }
       }
@@ -498,7 +501,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
               );
             }
             const EC = getErrorContructor(`${rawTree.name}`) || Error;
-            return ibidTable.register(harden(new EC(`${rawTree.message}`)));
+            return ibidTable.register(harden(new EC(`${_s(rawTree.message)}`)));
           }
 
           case 'slot': {
