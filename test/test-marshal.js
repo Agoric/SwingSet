@@ -293,3 +293,10 @@ test('unserialize promise', t => {
 
   t.end();
 });
+
+test('mal-formed @qclass', t => {
+  const m = makeMarshal();
+  const uns = val => m.unserialize(val, []);
+  t.throws(() => uns('{"@qclass": 0}'), /invalid qclass/);
+  t.end();
+});
