@@ -50,6 +50,7 @@ const _s = x => String(x);
   const proto = Object.getPrototypeOf(val);
   const { name } = val;
   const EC = getErrorContructor(name);
+  // $FlowFixMe https://github.com/facebook/flow/issues/6110
   if (!EC || EC.prototype !== proto) {
     throw TypeError(`Must inherit from an error class .prototype ${_s(val)}`);
   }
@@ -77,10 +78,12 @@ function isPassByCopyArray(val) {
   if (!Array.isArray(val)) {
     return false;
   }
+  // $FlowFixMe https://github.com/facebook/flow/issues/6110
   if (Object.getPrototypeOf(val) !== Array.prototype) {
     throw new TypeError(`malformed array: ${_s(val)}`);
   }
   const len = val.length;
+  // $FlowFixMe https://github.com/facebook/flow/blob/master/lib/core.js#L63
   const descs = Object.getOwnPropertyDescriptors(val);
   for (let i = 0; i < len; i += 1) {
     const desc = descs[i];
@@ -101,6 +104,7 @@ function isPassByCopyArray(val) {
 }
 
 function isPassByCopyRecord(val) {
+  // $FlowFixMe https://github.com/facebook/flow/issues/6110
   if (Object.getPrototypeOf(val) !== Object.prototype) {
     return false;
   }
@@ -152,6 +156,7 @@ export function mustPassByPresence(val) {
   });
 
   const p = Object.getPrototypeOf(val);
+  // $FlowFixMe https://github.com/facebook/flow/issues/6110
   if (p !== null && p !== Object.prototype) {
     mustPassByPresence(p);
   }
@@ -210,10 +215,12 @@ export function passStyleOf(val) {
     case 'string':
     case 'boolean':
     case 'number':
+    // $FlowFixMe flow, you're missing a clue
     case 'bigint': {
       return typestr;
     }
     case 'symbol': {
+      // $FlowFixMe flow, you're confused.
       if (Symbol.keyFor(val) === undefined) {
         throw new TypeError('Cannot pass unregistered symbols');
       }
@@ -337,6 +344,7 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
           return val;
         }
         case 'symbol': {
+          // $FlowFixMe flow is confused about Symbol
           const key = Symbol.keyFor(val);
           return harden({
             [QCLASS]: 'symbol',
