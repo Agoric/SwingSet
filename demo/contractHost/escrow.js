@@ -22,13 +22,16 @@ type InviteMaker = {
 // players 0 and 1. Money are the rights transfered from player 0 to
 // 1, and Stock are the rights transfered from 1 to 0.
 
-function escrowExchange(
-  terms /* : Amount<any>[] */,
+function escrowExchange /* :: <Money, Stock> */(
+  terms /* : [Amount<Money>, Amount<Stock>] */,
   inviteMaker /* : InviteMaker */,
 ) {
   const [moneyNeeded, stockNeeded] = terms;
 
-  function makeTransfer(amount, srcPaymentP) {
+  function makeTransfer /* :: <Q> */(
+    amount /* : Amount<Q> */,
+    srcPaymentP /* Payment<Q> */,
+  ) {
     const { issuer } = amount.label;
     const escrowP = E(issuer).getExclusive(amount, srcPaymentP, 'escrow');
     const winnings = makePromise();

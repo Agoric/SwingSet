@@ -1,22 +1,24 @@
+// @flow
+
 // ISSUE: how to represent guards?
-type G<T> = T;
+export type G<T> = T;
 
 // ISSUE: where do E, makePromise belong? how do they come into scope?
-E<T>(x: T | Promise<T>) => T;
-makePromise<T>(): {
+declare export function E<T>(x: T | Promise<T>): T;
+declare export function makePromise<T>(): {
   p: Promise<T>,
-  res: (T) -> void,
-  rej: (any) -> void,
-  reject: (any) -> void,
+  res: (T) => void,
+  rej: (any) => void,
+  reject: (any) => void,
 };
 
-type Label<Q> = { issuer: Issuer<Q>, description: mixed };
-type Amount<Q> = { label: Label<Q>, quantity: Q };
+export type Label<Q> = { issuer: Issuer<Q>, description: mixed };
+export type Amount<Q> = { label: Label<Q>, quantity: Q };
 
-interface Assay<Quantity> {
-  getLabel() ::Label;
-  make(allegedQuantity G<Quantity>) :Amount<Quantity>;
-  vouch(amount: G<Amount<Quantity>>) :Amount<Quantity>
+export interface Assay<Quantity> {
+  getLabel() :Label<Quantity>;
+  make(allegedQuantity: G<Quantity>) :Amount<Quantity>;
+  vouch(amount: G<Amount<Quantity>>) :Amount<Quantity>;
   coerce(amountLike: G<Amount<Quantity>>) :Amount<Quantity>;
   quantity(amount: G<Amount<Quantity>>) :Quantity;
   empty() :Amount<Quantity>;
@@ -24,43 +26,43 @@ interface Assay<Quantity> {
   includes(leftAmount: G<Amount<Quantity>>,
            rightAmount: G<Amount<Quantity>>) :boolean;
   with(leftAmount: G<Amount<Quantity>>,
-       rightAmount: G<Amount<Quantity>>) :Amount;
+       rightAmount: G<Amount<Quantity>>) :Amount<Quantity>;
   without(leftAmount: G<Amount<Quantity>>,
-          rightAmount: G<Amount<Quantity>>) :Amount;
+          rightAmount: G<Amount<Quantity>>) :Amount<Quantity>;
 }
-makeNatAssay(label :Label) :Assay;
-makeMetaSingleAssayMaker<Q>(
-  baseLabelToAssayFn :(Label -> Assay<Q>)) :(Label -> Assay<Q>);
+declare export function makeNatAssay(label :Label<number>) :Assay<number>;
+declare export function makeMetaSingleAssayMaker<Q>(
+  baseLabelToAssayFn :(Label<Q> => Assay<Q>)) :(Label<Q> => Assay<Q>);
 
-interface Issuer<Q> {
+export interface Issuer<Q> {
   getLabel() :{ issuer :Issuer<Q>, description: mixed };
   getAssay() :Assay<Q>;
-  makeEmptyPurse(name: G<String>) :Purse;
-
+  makeEmptyPurse(name: G<String>) :Purse<Q>;
+  getExclusive(amount :Amount<Q>, srcPaymentP: Promise<Payment<Q>>, name: ?string): Payment<Q>
 }
-interface Mint<Q> {
+export interface Mint<Q> {
   getIssuer(): Issuer<Q>;
-  mint(initialBalance: G<Amount<Q>>, name: G<String>) :Purse;
+  mint(initialBalance: G<Amount<Q>>, name: G<String>) :Purse<Q>;
 }
-interface Payment<Q> {
+export interface Payment<Q> {
   getIssuer() :Issuer<Q>;
   getXferBalance() :Amount<Q>;
 }
-class Purse<Q> {
-  getIssuer() ::Issuer<Q>;
-  getXferBalance() ::Amount<Q>;
-  getUseBalance() ::Amount<Q>;
+export interface Purse<Q> {
+  getIssuer() :Issuer<Q>;
+  getXferBalance() :Amount<Q>;
+  getUseBalance() :Amount<Q>;
   deposit(
-    amount: G<Amount>,
+    amount: G<Amount<Q>>,
     // srcPaymentP: ?reveal[Promise]
-    srcPaymentP: Promise<Payment>
+    srcPaymentP: Promise<Payment<Q>>
   ) :Amount<Q>;
-  withdraw(amount: G<Amount>, name: G<String>) :Purse<Q>;
+  withdraw(amount: G<Amount<Q>>, name: G<String>) :Purse<Q>;
 }
-makeMint<Q>(description: mixed,
-            makeAssay :(Label<Q> -> Assay<Q>)) :Mint<Q>;
+declare export function makeMint<Q>(description: mixed,
+            makeAssay :(Label<Q> => Assay<Q>)) :Mint<Q>;
 
-interface Peg<RemoteQ, LocalQ> {
+export interface Peg<RemoteQ, LocalQ> {
   getLocalIssuer() :Issuer<LocalQ>;
   getRemoteIssuer() :Promise<Issuer<RemoteQ>>;
   retain(remoteAmount: Promise<Amount<RemoteQ>>,
@@ -70,6 +72,6 @@ interface Peg<RemoteQ, LocalQ> {
          localPayment: G<Payment<LocalQ>>,
          name: G<String>) :Promise<Payment<RemoteQ>>;
 }
-makePeg<LQ, RQ>(E,
+declare export function makePeg<LQ, RQ>(e: typeof E,
                 remoteIssuerP: G<Promise<Issuer<RQ>>>,
-                makeAssay :(Label<LQ> -> Assay<LQ>)) ::Peg<LQ, RQ>;
+                makeAssay :(Label<LQ> => Assay<LQ>)) :Peg<LQ, RQ>;

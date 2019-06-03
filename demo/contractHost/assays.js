@@ -136,7 +136,7 @@ harden(makeNatAssay);
 function makeUniAssayMaker /* :: <U> */(
   descriptionCoercer /* : G<U> => U */ = d => d,
 ) {
-  function makeUniAssay(label /* : G<Label<U>> */) {
+  function makeUniAssay(label /* : G<Label<U | null>> */) {
     mustBeComparable(label);
 
     const brand = new WeakSet();
@@ -144,7 +144,7 @@ function makeUniAssayMaker /* :: <U> */(
     const emptyAmount = harden({ label, quantity: null });
     brand.add(emptyAmount);
 
-    const assay /* : Assay<U> */ = harden({
+    const assay /* : Assay<U | null> */ = harden({
       getLabel() {
         return label;
       },
