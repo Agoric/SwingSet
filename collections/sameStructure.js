@@ -33,6 +33,12 @@ function ObjectFromEntries(iter) {
   return obj;
 }
 
+// ISSUE: passStyleOf could be more static-typing friendly.
+function _as /* :: <T> */(x /* : any */) /* : T */ {
+  return x;
+}
+
+
 // A *passable* is something that may be mashalled. It consists of a
 // graph of pass-by-copy data terminating in leaves of passable
 // non-pass-by-copy data. These leaves may be promises, or
@@ -67,15 +73,16 @@ function allComparable(passable) {
       return passable;
     }
     case 'promise': {
-      return passable.then(nonp => allComparable(nonp));
+      return _as/* :: <Promise<mixed>> */(passable).then(nonp => allComparable(nonp));
     }
     case 'copyArray': {
-      const valPs = passable.map(p => allComparable(p));
+      const valPs = _as/* :: <Array<mixed>> */(passable).map(p => allComparable(p));
       return Promise.all(valPs).then(vals => harden(vals));
     }
     case 'copyRecord': {
-      const names = Object.getOwnPropertyNames(passable);
-      const valPs = names.map(name => allComparable(passable[name]));
+      const passRec = _as/* :: <{ [string]: mixed }> */(passable);
+      const names /* : string[] */ = Object.getOwnPropertyNames(passRec);
+      const valPs = names.map(name => allComparable(passRec[name]));
       return Promise.all(valPs).then(vals =>
         harden(ObjectFromEntries(vals.map((val, i) => [names[i], val]))),
       );
@@ -119,8 +126,10 @@ Cannot structurally compare promises: ${right}`;
     }
     case 'copyRecord':
     case 'copyArray': {
-      const leftNames = Object.getOwnPropertyNames(left);
-      const rightNames = Object.getOwnPropertyNames(right);
+      const leftObj = _as/* :: <{[string]: mixed}> */(left);
+      const rightObj = _as/* :: <{[string]: mixed}> */(right);
+      const leftNames = Object.getOwnPropertyNames(leftObj);
+      const rightNames = Object.getOwnPropertyNames(rightObj);
       if (leftNames.length !== rightNames.length) {
         return false;
       }
@@ -130,14 +139,16 @@ Cannot structurally compare promises: ${right}`;
           return false;
         }
         // TODO: Make cycle tolerant
-        if (!sameStructure(left[name], right[name])) {
+        if (!sameStructure(leftObj[name], rightObj[name])) {
           return false;
         }
       }
       return true;
     }
     case 'copyError': {
-      return left.name === right.name && left.message === right.message;
+      const leftErr = _as/* :: <PassByCopyError> */(left);
+      const rightErr = _as/* :: <PassByCopyError> */(right);
+      return leftErr.name === rightErr.name && leftErr.message === rightErr.message;
     }
     default: {
       throw new TypeError(`unrecognized passStyle ${leftStyle}`);
@@ -202,8 +213,10 @@ function mustBeSameStructureInternal(left, right, message, path) {
     }
     case 'copyRecord':
     case 'copyArray': {
-      const leftNames = Object.getOwnPropertyNames(left);
-      const rightNames = Object.getOwnPropertyNames(right);
+      const leftObj = _as/* :: <{[string]: mixed}> */(left);
+      const rightObj = _as/* :: <{[string]: mixed}> */(right);
+      const leftNames = Object.getOwnPropertyNames(leftObj);
+      const rightNames = Object.getOwnPropertyNames(rightObj);
       if (leftNames.length !== rightNames.length) {
         complain(`${leftNames.length} vs ${rightNames.length} own properties`);
       }
@@ -213,7 +226,7 @@ function mustBeSameStructureInternal(left, right, message, path) {
           complain(`${name} not found on right`);
         }
         // TODO: Make cycle tolerant
-        mustBeSameStructureInternal(left[name], right[name], message, [
+        mustBeSameStructureInternal(leftObj[name], rightObj[name], message, [
           path,
           name,
         ]);
@@ -221,12 +234,14 @@ function mustBeSameStructureInternal(left, right, message, path) {
       break;
     }
     case 'copyError': {
-      if (left.name !== right.name) {
-        complain(`different error name: ${left.name} vs ${right.name}`);
+      const leftErr = _as/* :: <PassByCopyError> */(left);
+      const rightErr = _as/* :: <PassByCopyError> */(right);
+      if (leftErr.name !== rightErr.name) {
+        complain(`different error name: ${leftErr.name} vs ${rightErr.name}`);
       }
-      if (left.message !== right.message) {
+      if (leftErr.message !== rightErr.message) {
         complain(
-          `different error message: ${left.message} vs ${right.message}`,
+          `different error message: ${leftErr.message} vs ${rightErr.message}`,
         );
       }
       break;

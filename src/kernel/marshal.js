@@ -225,6 +225,12 @@ export function passStyleOf(val) {
   }
 }
 
+// ISSUE: passStyleOf could be more static-typing friendly.
+function _as /* :: <T> */(x /* : any */) /* : T */ {
+  return x;
+}
+
+
 // The ibid logic relies on
 //    * JSON.stringify on an array visiting array indexes from 0 to
 //      arr.length -1 in order, and not visiting anything else.
@@ -370,10 +376,11 @@ export function makeMarshal(serializeSlot, unserializeSlot) {
               // summary. If we do that, we could allocate some random
               // identifier and include it in the message, to help
               // with the correlation.
+              const ceval = _as/* :: <PassByCopyError> */(val);
               return harden({
                 [QCLASS]: 'error',
-                name: `${val.name}`,
-                message: `${val.message}`,
+                name: `${_s(ceval.name)}`,
+                message: `${_s(ceval.message)}`,
               });
             }
             case 'presence':
