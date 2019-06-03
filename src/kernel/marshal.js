@@ -51,6 +51,8 @@ export interface PassByCopyError {
   message: string,
 };
 
+declare function BigInt(x: mixed): mixed;
+
 */
 function isPassByCopyError(val /* : mixed */) {
   // TODO: Need a better test than instanceof
@@ -223,11 +225,12 @@ export function passStyleOf(val /* : mixed */) {
     case 'function': {
       throw new Error(`bare functions like ${ss(val)} are disabled for now`);
     }
+    // $FlowFixMe
+    case 'bigint':
     case 'undefined':
     case 'string':
     case 'boolean':
-    case 'number':
-    case 'bigint': {
+    case 'number': {
       return typestr;
     }
     case 'symbol': {
