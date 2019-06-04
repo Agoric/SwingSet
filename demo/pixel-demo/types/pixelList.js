@@ -50,9 +50,13 @@ function insistIncludesPixelList(leftPixelList, rightPixelList) {
 }
 
 function withPixelList(leftPixelList, rightPixelList) {
-  const combinedList = leftPixelList.concat(rightPixelList);
-  const combinedSet = new Set(combinedList); // dedupe
-  return Array.from(combinedSet);
+  const combinedList = Array.from(leftPixelList);
+  for (const rightPixel of rightPixelList) {
+    if (!includesPixel(leftPixelList, rightPixel)) {
+      combinedList.push(rightPixel);
+    }
+  }
+  return combinedList;
 }
 
 // Covering set subtraction of erights.
@@ -61,11 +65,26 @@ function withPixelList(leftPixelList, rightPixelList) {
 // by `rightAmount`.
 function withoutPixelList(leftPixelList, rightPixelList) {
   insistIncludesPixelList(leftPixelList, rightPixelList);
-  const leftMinusRight = new Set(leftPixelList);
-  for (const rightPixel of rightPixelList) {
-    leftMinusRight.delete(rightPixel);
+  const leftMinusRight = [];
+  for (const leftPixel of leftPixelList) {
+    if (!includesPixel(rightPixelList, leftPixel)) {
+      leftMinusRight.push(leftPixel);
+    }
   }
-  return Array.from(leftMinusRight);
+  return leftMinusRight;
+}
+
+function makeWholePixelList(NUM_PIXELS) {
+  const pixelList = [];
+  for (let x = 0; x < NUM_PIXELS; x += 1) {
+    for (let y = 0; y < NUM_PIXELS; y += 1) {
+      pixelList.push({
+        x,
+        y,
+      });
+    }
+  }
+  return pixelList;
 }
 
 export {
@@ -75,4 +94,5 @@ export {
   includesPixelList,
   withPixelList,
   withoutPixelList,
+  makeWholePixelList,
 };

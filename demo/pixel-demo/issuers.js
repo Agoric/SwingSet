@@ -42,7 +42,7 @@ Payment expected: ${src}`;
     }
     const srcOldXferAmount = xferRights.get(src);
     // eslint-disable-next-line no-use-before-define
-    const srcNewXferAmount = assay.without(srcOldXferAmount, amount);
+    let srcNewXferAmount = assay.without(srcOldXferAmount, amount);
 
     // ///////////////// commit point //////////////////
     // All queries above passed with no side effects.
@@ -58,6 +58,8 @@ Payment expected: ${src}`;
         return xferRights.get(payment);
       },
     });
+    // eslint-disable-next-line no-use-before-define
+    srcNewXferAmount = assay.coerce(srcNewXferAmount);
     xferRights.set(src, srcNewXferAmount);
     xferRights.init(payment, amount);
     const homePurse = isPurse ? src : homePurses.get(src);

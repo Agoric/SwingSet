@@ -14,12 +14,12 @@ function makeBobMaker(E, host, log) {
       coveredCallInstallationP,
       timerP,
       myMoneyPurseP,
-      myStockPurseP,
+      myPixelPurseP,
     ) {
       const moneyIssuerP = E(myMoneyPurseP).getIssuer();
       const moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
 
-      const stockIssuerP = E(myStockPurseP).getIssuer();
+      const stockIssuerP = E(myPixelPurseP).getIssuer();
       const stockNeededP = E(E(stockIssuerP).getAssay()).make(7);
 
       const bob = harden({
@@ -29,25 +29,17 @@ function makeBobMaker(E, host, log) {
          * Bob, and therefore a request that Bob sell something. OO naming
          * is a bit confusing here.
          */
-        buy(desc, paymentP) {
-          /* eslint-disable-next-line no-unused-vars */
-          let amount;
-          let good;
-          desc = `${desc}`;
-          switch (desc) {
-            case 'shoe': {
-              amount = 10;
-              good = 'If it fits, ware it.';
-              break;
-            }
-            default: {
-              throw new Error(`unknown desc: ${desc}`);
-            }
-          }
-
-          return E(myMoneyPurseP)
-            .deposit(amount, paymentP)
-            .then(_ => good);
+        async buy(pixelAmount, paymentAmount, paymentP) {
+          const depositResultP = E(myMoneyPurseP).deposit(
+            paymentAmount,
+            paymentP,
+          );
+          const withdrawalResultP = await E(myPixelPurseP).withdraw(
+            pixelAmount,
+          );
+          return Promise.all([depositResultP, withdrawalResultP]).then(
+            _ => 'exchange successful',
+          );
         },
 
         tradeWell(alice) {

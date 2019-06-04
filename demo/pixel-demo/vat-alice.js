@@ -24,7 +24,7 @@ function makeAliceMaker(E, host, log) {
       coveredCallInstallationP,
       timerP,
       myMoneyPurseP,
-      myStockPurseP,
+      myPixelListPurseP,
       myOptFinPurseP = undefined,
       optFredP = undefined,
     ) {
@@ -34,14 +34,24 @@ function makeAliceMaker(E, host, log) {
         description: 'contract host',
       });
       const moneyIssuerP = E(myMoneyPurseP).getIssuer();
-      const stockIssuerP = E(myStockPurseP).getIssuer();
+      const pixelListIssuerP = E(myPixelListPurseP).getIssuer();
+      const pixelListIssuerLabel = harden({
+        issuer: pixelListIssuerP,
+        description: 'pixelList',
+      });
       const optFinIssuerP = myOptFinPurseP && E(myOptFinPurseP).getIssuer();
 
       const alice = harden({
-        payBobWell(bob) {
+        buyBobsPixelList(bob) {
           log('++ alice.payBobWell starting');
           const paymentP = E(myMoneyPurseP).withdraw(10);
-          return E(bob).buy('shoe', paymentP);
+          // pixelAmount, paymentAmount, paymentP
+          const pixelAmount = {
+            label: pixelListIssuerLabel,
+            pixelList: [{ x: 1, y: 0 }],
+          };
+
+          return E(bob).buy(pixelAmount, 10, paymentP);
         },
 
         acceptInvite(allegedInvitePaymentP) {
@@ -63,7 +73,7 @@ function makeAliceMaker(E, host, log) {
               });
               const fudco7 = harden({
                 label: {
-                  issuer: stockIssuerP,
+                  issuer: pixelListIssuerP,
                   description: 'fudco',
                 },
                 quantity: 7,
@@ -97,7 +107,12 @@ function makeAliceMaker(E, host, log) {
             const seatP = E(host).redeem(verifiedInviteP);
             const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
             E(seatP).offer(moneyPaymentP);
-            return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice escrow');
+            return collect(
+              seatP,
+              myPixelListPurseP,
+              myMoneyPurseP,
+              'alice escrow',
+            );
           });
         },
 
@@ -127,7 +142,7 @@ function makeAliceMaker(E, host, log) {
               });
               const yoyodyne7 = harden({
                 label: {
-                  issuer: stockIssuerP,
+                  issuer: pixelListIssuerP,
                   description: 'yoyodyne',
                 },
                 quantity: 7,
@@ -161,7 +176,12 @@ function makeAliceMaker(E, host, log) {
             const seatP = E(host).redeem(verifiedInvitePaymentP);
             const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
             E(seatP).offer(moneyPaymentP);
-            return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice option');
+            return collect(
+              seatP,
+              myPixelListPurseP,
+              myMoneyPurseP,
+              'alice option',
+            );
           });
         },
 

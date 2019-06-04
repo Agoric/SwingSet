@@ -260,88 +260,99 @@ harden(makeUniAssayMaker);
 // our PixelLists should have the same issuer and the same description
 // the description is "pixelList"
 
-function makePixelListAssay(label, NUM_PIXELS) {
-  mustBeComparable(label);
+function makePixelListAssayMaker(canvasSize) {
+  function makePixelListAssay(label) {
+    mustBeComparable(label);
 
-  const brand = new WeakSet();
+    const brand = new WeakSet();
 
-  // our empty pixelList is an empty array
-  const emptyAmount = harden({ label, pixelList: [] });
-  brand.add(emptyAmount);
+    // our empty pixelList is an empty array
+    const emptyAmount = harden({ label, pixelList: [] });
+    brand.add(emptyAmount);
 
-  const assay = harden({
-    getLabel() {
-      return label;
-    },
+    const assay = harden({
+      getLabel() {
+        return label;
+      },
 
-    make(pixelList) {
-      insistPixelList(pixelList, NUM_PIXELS);
+      make(pixelList) {
+        insistPixelList(pixelList, canvasSize);
 
-      if (pixelList.length === 0) {
+        if (pixelList.length === 0) {
+          return emptyAmount;
+        }
+
+        const amount = harden({ label, pixelList });
+        brand.add(amount);
+        return amount;
+      },
+
+      vouch(amount) {
+        insist(brand.has(amount))`\
+  Unrecognized amount: ${amount}`;
+        return amount;
+      },
+
+      coerce(allegedPixelListAmount) {
+        if (brand.has(allegedPixelListAmount)) {
+          return allegedPixelListAmount;
+        }
+        const { label: allegedLabel, pixelList } = allegedPixelListAmount;
+        mustBeSameStructure(label, allegedLabel, 'Unrecognized label');
+        return assay.make(pixelList);
+      },
+
+      pixelList(amount) {
+        return assay.vouch(amount).pixelList;
+      },
+
+      empty() {
         return emptyAmount;
-      }
+      },
 
-      const amount = harden({ label, pixelList });
-      brand.add(amount);
-      return amount;
-    },
+      isEmpty(amount) {
+        return assay.pixelList(amount) === [];
+      },
 
-    vouch(amount) {
-      insist(brand.has(amount))`\
-Unrecognized amount: ${amount}`;
-      return amount;
-    },
+      // does left include right?
+      includes(leftAmount, rightAmount) {
+        const leftPixelList = assay.pixelList(leftAmount);
+        const rightPixelList = assay.pixelList(rightAmount);
 
-    coerce(allegedPixelListAmount) {
-      if (brand.has(allegedPixelListAmount)) {
-        return allegedPixelListAmount;
-      }
-      const { label: allegedLabel, pixelList } = allegedPixelListAmount;
-      mustBeSameStructure(label, allegedLabel, 'Unrecognized label');
-      return assay.make(pixelList);
-    },
+        return includesPixelList(leftPixelList, rightPixelList);
+      },
 
-    pixelList(amount) {
-      return assay.vouch(amount).pixelList;
-    },
+      // set union
+      with(leftAmount, rightAmount) {
+        const leftPixelList = assay.pixelList(leftAmount);
+        const rightPixelList = assay.pixelList(rightAmount);
 
-    empty() {
-      return emptyAmount;
-    },
+        return {
+          label,
+          pixelList: withPixelList(leftPixelList, rightPixelList),
+        };
+      },
 
-    isEmpty(amount) {
-      return assay.pixelList(amount) === [];
-    },
+      // Covering set subtraction of erights.
+      // If leftAmount does not include rightAmount, error.
+      // Describe the erights described by `leftAmount` and not described
+      // by `rightAmount`.
+      without(leftAmount, rightAmount) {
+        const leftPixelList = assay.pixelList(leftAmount);
+        const rightPixelList = assay.pixelList(rightAmount);
 
-    // does left include right?
-    includes(leftAmount, rightAmount) {
-      const leftPixelList = assay.pixelList(leftAmount);
-      const rightPixelList = assay.pixelList(rightAmount);
+        const pixelList = withoutPixelList(leftPixelList, rightPixelList);
 
-      return includesPixelList(leftPixelList, rightPixelList);
-    },
-
-    // set union
-    with(leftAmount, rightAmount) {
-      const leftPixelList = assay.pixelList(leftAmount);
-      const rightPixelList = assay.pixelList(rightAmount);
-
-      return withPixelList(leftPixelList, rightPixelList);
-    },
-
-    // Covering set subtraction of erights.
-    // If leftAmount does not include rightAmount, error.
-    // Describe the erights described by `leftAmount` and not described
-    // by `rightAmount`.
-    without(leftAmount, rightAmount) {
-      const leftPixelList = assay.pixelList(leftAmount);
-      const rightPixelList = assay.pixelList(rightAmount);
-
-      return withoutPixelList(leftPixelList, rightPixelList);
-    },
-  });
-  return assay;
+        return {
+          label,
+          pixelList,
+        };
+      },
+    });
+    return assay;
+  }
+  return harden(makePixelListAssay);
 }
-harden(makePixelListAssay);
+harden(makePixelListAssayMaker);
 
-export { makeNatAssay, makeUniAssayMaker, makePixelListAssay };
+export { makeNatAssay, makeUniAssayMaker, makePixelListAssayMaker };

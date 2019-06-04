@@ -11,20 +11,41 @@ async function main(withSES, basedir, argv) {
   return controller.dump();
 }
 
-const contractMintGolden = [
+const successfulWithdraw = [
   '=> setup called',
-  'starting mintTestAssay',
-  'starting mintTestNumber',
-  'alice xfer balance {"label":{"issuer":{},"description":"quatloos"},"quantity":950}',
-  'alice use balance {"label":{"issuer":{},"description":"quatloos"},"quantity":1000}',
-  'payment xfer balance {"label":{"issuer":{},"description":"quatloos"},"quantity":50}',
-  'alice xfer balance {"label":{"issuer":{},"description":"bucks"},"quantity":950}',
-  'alice use balance {"label":{"issuer":{},"description":"bucks"},"quantity":1000}',
-  'payment xfer balance {"label":{"issuer":{},"description":"bucks"},"quantity":50}',
+  'starting mintTestPixelListAssay',
+  'alice xfer balance {"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":0,"y":1},{"x":1,"y":0},{"x":1,"y":1}]}',
+  'alice use balance {"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":0,"y":0},{"x":0,"y":1},{"x":1,"y":0},{"x":1,"y":1}]}',
+  'payment xfer balance {"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":0,"y":0}]}',
 ];
 
-test.only('run Pixel Demo --mint with SES', async t => {
+test('run Pixel Demo mint and withdraw with SES', async t => {
+  const dump = await main(true, 'demo/pixel-demo', ['mint']);
+  t.deepEquals(dump.log, successfulWithdraw);
+  t.end();
+});
+
+test('run Pixel Demo mint and withdraw without SES', async t => {
   const dump = await main(false, 'demo/pixel-demo', ['mint']);
-  t.deepEquals(dump.log, contractMintGolden);
+  t.deepEquals(dump.log, successfulWithdraw);
+  t.end();
+});
+
+const contractAliceFirstGolden = [
+  '=> setup called',
+  '++ alice.payBobWell starting',
+  '++ ifItFitsP done:If it fits, ware it.',
+  '++ DONE',
+];
+
+test('run Pixel Demo --alice-first with SES', async t => {
+  const dump = await main(true, 'demo/pixel-demo', ['alice-first']);
+  t.deepEquals(dump.log, contractAliceFirstGolden);
+  t.end();
+});
+
+test.only('run Pixel Demo --alice-first without SES', async t => {
+  const dump = await main(false, 'demo/pixel-demo', ['alice-first']);
+  t.deepEquals(dump.log, contractAliceFirstGolden);
   t.end();
 });

@@ -7,6 +7,7 @@ import {
   includesPixelList,
   withPixelList,
   withoutPixelList,
+  makeWholePixelList,
 } from '../../../demo/pixel-demo/types/pixelList';
 
 test('pixelList insistPixelList', t => {
@@ -97,6 +98,43 @@ test('pixelList withoutPixelList', t => {
   t.deepEqual(withoutPixelList([startPixel], [startPixel]), []);
   t.deepEqual(withoutPixelList([startPixel, secondPixel], [secondPixel]), [
     startPixel,
+  ]);
+  t.deepEqual(
+    withoutPixelList(
+      [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 0 }, { x: 1, y: 1 }],
+      [{ x: 0, y: 0 }, { x: 0, y: 1 }],
+    ),
+    [{ x: 1, y: 0 }, { x: 1, y: 1 }],
+  );
+
+  t.end();
+});
+
+test('pixelList makeWholePixelList', t => {
+  t.deepEqual(makeWholePixelList(0), []);
+  t.deepEqual(makeWholePixelList(1), [
+    {
+      x: 0,
+      y: 0,
+    },
+  ]);
+  t.deepEqual(makeWholePixelList(2), [
+    {
+      x: 0,
+      y: 0,
+    },
+    {
+      x: 0,
+      y: 1,
+    },
+    {
+      x: 1,
+      y: 0,
+    },
+    {
+      x: 1,
+      y: 1,
+    },
   ]);
   t.end();
 });

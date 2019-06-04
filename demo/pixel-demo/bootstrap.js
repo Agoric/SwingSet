@@ -4,8 +4,7 @@ import harden from '@agoric/harden';
 
 import { escrowExchangeSrc } from './escrow';
 import { coveredCallSrc } from './coveredCall';
-
-
+import { makeWholePixelList } from './types/pixelList';
 
 function build(E, log) {
   // TODO BUG: All callers should wait until settled before doing
@@ -51,7 +50,15 @@ function build(E, log) {
   // with 3 seconds.
   function mintTestPixelListAssay(mint) {
     log('starting mintTestPixelListAssay');
-    const mMintP = E(mint).makePixelListMint();
+
+    // assume canvasSize is 2, a 2x2 grid
+    // 0, 0
+    // 0, 1
+    // 1, 0
+    // 1, 1
+    const canvasSize = 2;
+
+    const mMintP = E(mint).makePixelListMint(canvasSize);
     const mIssuerP = E(mMintP).getIssuer();
     E.resolve(mIssuerP).then(issuer => {
       // By using an unforgeable issuer presence and a pass-by-copy
@@ -59,12 +66,6 @@ function build(E, log) {
       // agree. The veracity of the description is, however, only as
       // good as the issuer doing the check.
       const label = harden({ issuer, description: 'pixelList' });
-
-      // assume NUM_PIXELS is 2, a 2x2 grid
-      // 0, 0
-      // 0, 1
-      // 1, 0
-      // 1, 1
 
       const allPixels = harden({
         label,
@@ -86,40 +87,6 @@ function build(E, log) {
     });
   }
 
-
-  function trivialContractTest(host) {
-    log('starting trivialContractTest');
-
-    function trivContract(terms, inviteMaker) {
-      return inviteMaker.make('foo', 8);
-    }
-    const contractSrc = `${trivContract}`;
-
-    const installationP = E(host).install(contractSrc);
-
-    return E(host)
-      .getInstallationSourceCode(installationP)
-      .then(src => {
-        log('Does source ', src, ' match? ', src === contractSrc);
-
-        const fooInviteP = E(installationP).spawn('foo terms');
-
-        return E.resolve(showPaymentBalance('foo', fooInviteP)).then(_ => {
-          const eightP = E(host).redeem(fooInviteP);
-
-          eightP.then(res => {
-            showPaymentBalance('foo', fooInviteP);
-            log('++ eightP resolved to ', res, ' (should be 8)');
-            if (res !== 8) {
-              throw new Error(`eightP resolved to ${res}, not 8`);
-            }
-            log('++ DONE');
-          });
-          return eightP;
-        });
-      });
-  }
-
   function betterContractTestAliceFirst(host, mint, aliceMaker, bobMaker) {
     const escrowExchangeInstallationP = E(host).install(escrowExchangeSrc);
     const coveredCallInstallationP = E(host).install(coveredCallSrc);
@@ -128,34 +95,63 @@ function build(E, log) {
     const aliceMoneyPurseP = E(moneyMintP).mint(1000);
     const bobMoneyPurseP = E(moneyMintP).mint(1001);
 
-    const stockMintP = E(mint).makeMint('Tyrell');
-    const aliceStockPurseP = E(stockMintP).mint(2002);
-    const bobStockPurseP = E(stockMintP).mint(2003);
+    // assume canvasSize is 2, a 2x2 grid
+    // 0, 0
+    // 0, 1
+    // 1, 0
+    // 1, 1
+    const canvasSize = 2;
 
-    const aliceP = E(aliceMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      fakeNeverTimer,
-      aliceMoneyPurseP,
-      aliceStockPurseP,
-    );
-    const bobP = E(bobMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      fakeNeverTimer,
-      bobMoneyPurseP,
-      bobStockPurseP,
-    );
-    return Promise.all([aliceP, bobP]).then(_ => {
-      const ifItFitsP = E(aliceP).payBobWell(bobP);
-      ifItFitsP.then(
-        res => {
-          log('++ ifItFitsP done:', res);
-          log('++ DONE');
-        },
-        rej => log('++ ifItFitsP failed', rej),
+    const pixelMintP = E(mint).makePixelListMint(canvasSize);
+    const pixelIssuerP = E(pixelMintP).getIssuer();
+
+    E.resolve(pixelIssuerP).then(issuer => {
+      const label = harden({ issuer, description: 'pixelList' });
+      const allPixelsList = makeWholePixelList(canvasSize);
+      const allPixelsAmount = {
+        label,
+        pixelList: allPixelsList,
+      };
+      const allPixelsPurseP = E(pixelMintP).mint(allPixelsAmount);
+
+      const aliceInitialAmount = {
+        label,
+        pixelList: [{ x: 0, y: 0 }, { x: 0, y: 1 }],
+      };
+      const alicePixelPurseP = E(allPixelsPurseP).withdraw(aliceInitialAmount);
+
+      const bobInitialAmount = {
+        label,
+        pixelList: [{ x: 1, y: 0 }, { x: 1, y: 1 }],
+      };
+      const bobPixelPurseP = E(allPixelsPurseP).withdraw(bobInitialAmount);
+
+      const aliceP = E(aliceMaker).make(
+        escrowExchangeInstallationP,
+        coveredCallInstallationP,
+        fakeNeverTimer,
+        aliceMoneyPurseP,
+        alicePixelPurseP,
       );
-      return ifItFitsP;
+      const bobP = E(bobMaker).make(
+        escrowExchangeInstallationP,
+        coveredCallInstallationP,
+        fakeNeverTimer,
+        bobMoneyPurseP,
+        bobPixelPurseP,
+      );
+      return Promise.all([aliceP, bobP]).then(_ => {
+        const resultP = E(aliceP).buyBobsPixelList(bobP);
+
+        resultP.then(
+          res => {
+            log('++ exchange done:', res);
+            log('++ DONE');
+          },
+          rej => log('++ exchange failed', rej),
+        );
+        return resultP;
+      });
     });
   }
 
@@ -322,10 +318,6 @@ function build(E, log) {
       switch (argv[0]) {
         case 'mint': {
           return mintTestPixelListAssay(vats.mint);
-        }
-        case 'trivial': {
-          const host = await E(vats.host).makeHost();
-          return trivialContractTest(host);
         }
         case 'alice-first': {
           const host = await E(vats.host).makeHost();
