@@ -33,8 +33,11 @@ test('run Pixel Demo mint and withdraw without SES', async t => {
 
 const contractAliceFirstGolden = [
   '=> setup called',
-  '++ alice.payBobWell starting',
-  '++ ifItFitsP done:If it fits, ware it.',
+  '++ alice.buyBobsPixelList starting',
+  '++ bob.buy starting',
+  '++ deposit',
+  '++ withdrawal',
+  '++ exchange done:exchange successful',
   '++ DONE',
 ];
 
@@ -44,8 +47,75 @@ test('run Pixel Demo --alice-first with SES', async t => {
   t.end();
 });
 
-test.only('run Pixel Demo --alice-first without SES', async t => {
+test('run Pixel Demo --alice-first without SES', async t => {
   const dump = await main(false, 'demo/pixel-demo', ['alice-first']);
   t.deepEquals(dump.log, contractAliceFirstGolden);
+  t.end();
+});
+
+const contractBobFirstGolden = [
+  '=> setup called',
+  '++ bob.tradeWell starting',
+  '++ alice.acceptInvite starting',
+  'alice invite xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"clams"},"quantity":10},{"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":1,"y":1}]}],"seatIdentity":{},"seatDesc":"left"}}',
+  'verified invite xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"clams"},"quantity":10},{"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":1,"y":1}]}],"seatIdentity":{},"seatDesc":"left"}}',
+  'bob escrow wins: {"label":{"issuer":{},"description":"clams"},"quantity":10} refs: null',
+  'alice escrow wins: {"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":1,"y":1}]} refs: null',
+  '++ bob.tradeWell done',
+  '++ bobP.tradeWell done:[[{"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":1,"y":1}]},null],[{"label":{"issuer":{},"description":"clams"},"quantity":10},null]]',
+  '++ DONE',
+  'alice money xfer balance {"label":{"issuer":{},"description":"clams"},"quantity":990}',
+  'alice money use balance {"label":{"issuer":{},"description":"clams"},"quantity":990}',
+  'alice pixels xfer balance {"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":0,"y":0},{"x":0,"y":1},{"x":1,"y":1}]}',
+  'alice pixels use balance {"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":0,"y":0},{"x":0,"y":1},{"x":1,"y":1}]}',
+  'bob money xfer balance {"label":{"issuer":{},"description":"clams"},"quantity":1011}',
+  'bob money use balance {"label":{"issuer":{},"description":"clams"},"quantity":1011}',
+  'bob pixels xfer balance {"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":1,"y":0}]}',
+  'bob pixels use balance {"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":1,"y":0}]}',
+];
+
+test('run Pixel Demo --bob-first with SES', async t => {
+  const dump = await main(true, 'demo/pixel-demo', ['bob-first']);
+  t.deepEquals(dump.log, contractBobFirstGolden);
+  t.end();
+});
+
+test('run Pixel Demo --bob-first without SES', async t => {
+  const dump = await main(false, 'demo/pixel-demo', ['bob-first']);
+  t.deepEquals(dump.log, contractBobFirstGolden);
+  t.end();
+});
+
+const contractCoveredCallGolden = [
+  '=> setup called',
+  '++ bob.offerAliceOption starting',
+  '++ alice.acceptOptionDirectly starting',
+  'Pretend singularity never happens',
+  'alice invite xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":1,"y":1}]},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
+  'verified invite xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":1,"y":1}]},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
+  'alice option wins: {"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":1,"y":1}]} refs: null',
+  'bob option wins: {"label":{"issuer":{},"description":"smackers"},"quantity":10} refs: null',
+  '++ bob.offerAliceOption done',
+  '++ bobP.offerAliceOption done:[[{"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":1,"y":1}]},null],[{"label":{"issuer":{},"description":"smackers"},"quantity":10},null]]',
+  '++ DONE',
+  'alice money xfer balance {"label":{"issuer":{},"description":"smackers"},"quantity":990}',
+  'alice money use balance {"label":{"issuer":{},"description":"smackers"},"quantity":990}',
+  'alice pixel xfer balance {"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":0,"y":0},{"x":0,"y":1},{"x":1,"y":1}]}',
+  'alice pixel use balance {"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":0,"y":0},{"x":0,"y":1},{"x":1,"y":1}]}',
+  'bob money xfer balance {"label":{"issuer":{},"description":"smackers"},"quantity":1011}',
+  'bob money use balance {"label":{"issuer":{},"description":"smackers"},"quantity":1011}',
+  'bob pixel xfer balance {"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":1,"y":0}]}',
+  'bob pixel use balance {"label":{"issuer":{},"description":"pixelList"},"pixelList":[{"x":1,"y":0}]}',
+];
+
+test('run Pixel Demo --covered-call with SES', async t => {
+  const dump = await main(true, 'demo/pixel-demo', ['covered-call']);
+  t.deepEquals(dump.log, contractCoveredCallGolden);
+  t.end();
+});
+
+test('run Pixel Demo --covered-call without SES', async t => {
+  const dump = await main(false, 'demo/pixel-demo', ['covered-call']);
+  t.deepEquals(dump.log, contractCoveredCallGolden);
   t.end();
 });

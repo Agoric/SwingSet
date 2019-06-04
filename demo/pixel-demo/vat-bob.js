@@ -14,13 +14,15 @@ function makeBobMaker(E, host, log) {
       coveredCallInstallationP,
       timerP,
       myMoneyPurseP,
-      myPixelPurseP,
+      myPixelListPurseP,
     ) {
       const moneyIssuerP = E(myMoneyPurseP).getIssuer();
       const moneyNeededP = E(E(moneyIssuerP).getAssay()).make(10);
 
-      const stockIssuerP = E(myPixelPurseP).getIssuer();
-      const stockNeededP = E(E(stockIssuerP).getAssay()).make(7);
+      const pixelListIssuerP = E(myPixelListPurseP).getIssuer();
+      const pixelsNeededP = E(E(pixelListIssuerP).getAssay()).make([
+        { x: 1, y: 1 },
+      ]);
 
       const bob = harden({
         /**
@@ -29,22 +31,38 @@ function makeBobMaker(E, host, log) {
          * Bob, and therefore a request that Bob sell something. OO naming
          * is a bit confusing here.
          */
-        async buy(pixelAmount, paymentAmount, paymentP) {
-          const depositResultP = E(myMoneyPurseP).deposit(
-            paymentAmount,
-            paymentP,
-          );
-          const withdrawalResultP = await E(myPixelPurseP).withdraw(
-            pixelAmount,
-          );
-          return Promise.all([depositResultP, withdrawalResultP]).then(
-            _ => 'exchange successful',
-          );
+        async buy(pixelList, paymentAmount, paymentP) {
+          log('++ bob.buy starting');
+          return E.resolve(pixelListIssuerP).then(issuer => {
+            const depositResultP = E(myMoneyPurseP).deposit(
+              paymentAmount,
+              paymentP,
+            );
+            log('++ deposit');
+            const pixelAmount = {
+              label: {
+                issuer,
+                description: 'pixelList',
+              },
+              pixelList,
+            };
+            const withdrawalResultP = E(myPixelListPurseP).withdraw(
+              pixelAmount,
+            );
+            log('++ withdrawal');
+            return Promise.all([depositResultP, withdrawalResultP]).then(
+              _ => 'exchange successful',
+            );
+          });
         },
 
         tradeWell(alice) {
           log('++ bob.tradeWell starting');
-          const terms = harden([moneyNeededP, stockNeededP]);
+          // Alice has 0, 0; 0, 1
+          // bob has 1, 0; 1, 1
+
+          // bob will be offering a pixel for money
+          const terms = harden([moneyNeededP, pixelsNeededP]);
           const invitesP = E(escrowExchangeInstallationP).spawn(terms);
           const aliceInviteP = invitesP.then(invites => invites[0]);
           const bobInviteP = invitesP.then(invites => invites[1]);
@@ -61,32 +79,43 @@ function makeBobMaker(E, host, log) {
 
         acceptInvite(inviteP) {
           const seatP = E(host).redeem(inviteP);
-          const stockPaymentP = E(myStockPurseP).withdraw(7);
-          E(seatP).offer(stockPaymentP);
-          return collect(seatP, myMoneyPurseP, myStockPurseP, 'bob escrow');
+          return E.resolve(pixelsNeededP).then(pixelsNeeded => {
+            const pixelPaymentP = E(myPixelListPurseP).withdraw(pixelsNeeded);
+            E(seatP).offer(pixelPaymentP);
+            return collect(
+              seatP,
+              myMoneyPurseP,
+              myPixelListPurseP,
+              'bob escrow',
+            );
+          });
         },
 
         offerAliceOption(alice) {
           log('++ bob.offerAliceOption starting');
+         
           const terms = harden([
             moneyNeededP,
-            stockNeededP,
+            pixelsNeededP,
             timerP,
             'singularity',
           ]);
           const bobInviteP = E(coveredCallInstallationP).spawn(terms);
           const bobSeatP = E(host).redeem(bobInviteP);
-          const stockPaymentP = E(myStockPurseP).withdraw(7);
-          const aliceInviteP = E(bobSeatP).offer(stockPaymentP);
-          const doneP = Promise.all([
-            E(alice).acceptOption(aliceInviteP),
-            collect(bobSeatP, myMoneyPurseP, myStockPurseP, 'bob option'),
-          ]);
-          doneP.then(
-            _res => log('++ bob.offerAliceOption done'),
-            rej => log('++ bob.offerAliceOption reject: ', rej),
-          );
-          return doneP;
+          return E.resolve(pixelsNeededP).then(pixelsNeeded => {
+            console.log('got pixelsNeeded');
+            const pixelPaymentP = E(myPixelListPurseP).withdraw(pixelsNeeded);
+            const aliceInviteP = E(bobSeatP).offer(pixelPaymentP);
+            const doneP = Promise.all([
+              E(alice).acceptOption(aliceInviteP),
+              collect(bobSeatP, myMoneyPurseP, myPixelListPurseP, 'bob option'),
+            ]);
+            doneP.then(
+              _res => log('++ bob.offerAliceOption done'),
+              rej => log('++ bob.offerAliceOption reject: ', rej),
+            );
+            return doneP;
+          });
         },
       });
       return bob;

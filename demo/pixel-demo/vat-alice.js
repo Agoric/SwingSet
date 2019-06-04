@@ -35,23 +35,13 @@ function makeAliceMaker(E, host, log) {
       });
       const moneyIssuerP = E(myMoneyPurseP).getIssuer();
       const pixelListIssuerP = E(myPixelListPurseP).getIssuer();
-      const pixelListIssuerLabel = harden({
-        issuer: pixelListIssuerP,
-        description: 'pixelList',
-      });
       const optFinIssuerP = myOptFinPurseP && E(myOptFinPurseP).getIssuer();
 
       const alice = harden({
         buyBobsPixelList(bob) {
-          log('++ alice.payBobWell starting');
+          log('++ alice.buyBobsPixelList starting');
           const paymentP = E(myMoneyPurseP).withdraw(10);
-          // pixelAmount, paymentAmount, paymentP
-          const pixelAmount = {
-            label: pixelListIssuerLabel,
-            pixelList: [{ x: 1, y: 0 }],
-          };
-
-          return E(bob).buy(pixelAmount, 10, paymentP);
+          return E(bob).buy([{ x: 1, y: 0 }], 10, paymentP);
         },
 
         acceptInvite(allegedInvitePaymentP) {
@@ -71,12 +61,12 @@ function makeAliceMaker(E, host, log) {
                 },
                 quantity: 10,
               });
-              const fudco7 = harden({
+              const pixel1x1 = harden({
                 label: {
                   issuer: pixelListIssuerP,
-                  description: 'fudco',
+                  description: 'pixelList',
                 },
-                quantity: 7,
+                pixelList: [{ x: 1, y: 1 }],
               });
 
               const inviteAmountP = allComparable(
@@ -84,7 +74,7 @@ function makeAliceMaker(E, host, log) {
                   label: inviteIssuerLabel,
                   quantity: {
                     installation: escrowExchangeInstallationP,
-                    terms: [clams10, fudco7],
+                    terms: [clams10, pixel1x1],
                     seatIdentity: allegedInviteAmount.quantity.seatIdentity,
                     seatDesc: 'left',
                   },
@@ -140,12 +130,12 @@ function makeAliceMaker(E, host, log) {
                 },
                 quantity: 10,
               });
-              const yoyodyne7 = harden({
+              const pixel1x1 = harden({
                 label: {
                   issuer: pixelListIssuerP,
-                  description: 'yoyodyne',
+                  description: 'pixelList',
                 },
-                quantity: 7,
+                pixelList: [{ x: 1, y: 1 }],
               });
 
               const inviteAmountP = allComparable(
@@ -153,7 +143,7 @@ function makeAliceMaker(E, host, log) {
                   label: inviteIssuerLabel,
                   quantity: {
                     installation: coveredCallInstallationP,
-                    terms: [smackers10, yoyodyne7, timerP, 'singularity'],
+                    terms: [smackers10, pixel1x1, timerP, 'singularity'],
                     seatIdentity: allegedInviteAmount.quantity.seatIdentity,
                     seatDesc: 'holder',
                   },

@@ -87,7 +87,12 @@ function build(E, log) {
     });
   }
 
-  function betterContractTestAliceFirst(host, mint, aliceMaker, bobMaker) {
+  async function betterContractTestAliceFirst(
+    host,
+    mint,
+    aliceMaker,
+    bobMaker,
+  ) {
     const escrowExchangeInstallationP = E(host).install(escrowExchangeSrc);
     const coveredCallInstallationP = E(host).install(coveredCallSrc);
 
@@ -108,23 +113,25 @@ function build(E, log) {
     E.resolve(pixelIssuerP).then(issuer => {
       const label = harden({ issuer, description: 'pixelList' });
       const allPixelsList = makeWholePixelList(canvasSize);
-      const allPixelsAmount = {
-        label,
-        pixelList: allPixelsList,
-      };
-      const allPixelsPurseP = E(pixelMintP).mint(allPixelsAmount);
 
-      const aliceInitialAmount = {
-        label,
-        pixelList: [{ x: 0, y: 0 }, { x: 0, y: 1 }],
-      };
-      const alicePixelPurseP = E(allPixelsPurseP).withdraw(aliceInitialAmount);
+      const alicePixels = allPixelsList.slice(0, allPixelsList.length / 2);
+      const bobPixels = allPixelsList.slice(
+        allPixelsList.length / 2,
+        allPixelsList.length,
+      );
 
-      const bobInitialAmount = {
+      const alicePixelsAmount = {
         label,
-        pixelList: [{ x: 1, y: 0 }, { x: 1, y: 1 }],
+        pixelList: alicePixels,
       };
-      const bobPixelPurseP = E(allPixelsPurseP).withdraw(bobInitialAmount);
+
+      const bobPixelsAmount = {
+        label,
+        pixelList: bobPixels,
+      };
+
+      const alicePixelPurseP = E(pixelMintP).mint(alicePixelsAmount);
+      const bobPixelPurseP = E(pixelMintP).mint(bobPixelsAmount);
 
       const aliceP = E(aliceMaker).make(
         escrowExchangeInstallationP,
@@ -163,40 +170,68 @@ function build(E, log) {
     const aliceMoneyPurseP = E(moneyMintP).mint(1000, 'aliceMainMoney');
     const bobMoneyPurseP = E(moneyMintP).mint(1001, 'bobMainMoney');
 
-    const stockMintP = E(mint).makeMint('fudco');
-    const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
-    const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
+    const canvasSize = 2;
 
-    const aliceP = E(aliceMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      fakeNeverTimer,
-      aliceMoneyPurseP,
-      aliceStockPurseP,
-    );
-    const bobP = E(bobMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      fakeNeverTimer,
-      bobMoneyPurseP,
-      bobStockPurseP,
-    );
-    return Promise.all([aliceP, bobP]).then(_ => {
-      E(bobP)
-        .tradeWell(aliceP, false)
-        .then(
-          res => {
-            showPurseBalances('alice money', aliceMoneyPurseP);
-            showPurseBalances('alice stock', aliceStockPurseP);
-            showPurseBalances('bob money', bobMoneyPurseP);
-            showPurseBalances('bob stock', bobStockPurseP);
-            log('++ bobP.tradeWell done:', res);
-            log('++ DONE');
-          },
-          rej => {
-            log('++ bobP.tradeWell error:', rej);
-          },
-        );
+    const pixelMintP = E(mint).makePixelListMint(canvasSize);
+    const pixelIssuerP = E(pixelMintP).getIssuer();
+
+    E.resolve(pixelIssuerP).then(issuer => {
+      const label = harden({ issuer, description: 'pixelList' });
+      const allPixelsList = makeWholePixelList(canvasSize);
+
+      const alicePixels = allPixelsList.slice(0, allPixelsList.length / 2);
+      const bobPixels = allPixelsList.slice(
+        allPixelsList.length / 2,
+        allPixelsList.length,
+      );
+
+      const alicePixelsAmount = {
+        label,
+        pixelList: alicePixels,
+      };
+
+      const bobPixelsAmount = {
+        label,
+        pixelList: bobPixels,
+      };
+
+      // Alice has 0, 0; 0, 1
+      // bob has 1, 0; 1, 1
+
+      const alicePixelPurseP = E(pixelMintP).mint(alicePixelsAmount);
+      const bobPixelPurseP = E(pixelMintP).mint(bobPixelsAmount);
+
+      const aliceP = E(aliceMaker).make(
+        escrowExchangeInstallationP,
+        coveredCallInstallationP,
+        fakeNeverTimer,
+        aliceMoneyPurseP,
+        alicePixelPurseP,
+      );
+      const bobP = E(bobMaker).make(
+        escrowExchangeInstallationP,
+        coveredCallInstallationP,
+        fakeNeverTimer,
+        bobMoneyPurseP,
+        bobPixelPurseP,
+      );
+      return Promise.all([aliceP, bobP]).then(_ => {
+        E(bobP)
+          .tradeWell(aliceP, false)
+          .then(
+            res => {
+              showPurseBalances('alice money', aliceMoneyPurseP);
+              showPurseBalances('alice pixels', alicePixelPurseP);
+              showPurseBalances('bob money', bobMoneyPurseP);
+              showPurseBalances('bob pixels', bobPixelPurseP);
+              log('++ bobP.tradeWell done:', res);
+              log('++ DONE');
+            },
+            rej => {
+              log('++ bobP.tradeWell error:', rej);
+            },
+          );
+      });
     });
   }
 
@@ -208,40 +243,68 @@ function build(E, log) {
     const aliceMoneyPurseP = E(moneyMintP).mint(1000, 'aliceMainMoney');
     const bobMoneyPurseP = E(moneyMintP).mint(1001, 'bobMainMoney');
 
-    const stockMintP = E(mint).makeMint('yoyodyne');
-    const aliceStockPurseP = E(stockMintP).mint(2002, 'aliceMainStock');
-    const bobStockPurseP = E(stockMintP).mint(2003, 'bobMainStock');
+    const canvasSize = 2;
 
-    const aliceP = E(aliceMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      fakeNeverTimer,
-      aliceMoneyPurseP,
-      aliceStockPurseP,
-    );
-    const bobP = E(bobMaker).make(
-      escrowExchangeInstallationP,
-      coveredCallInstallationP,
-      fakeNeverTimer,
-      bobMoneyPurseP,
-      bobStockPurseP,
-    );
-    return Promise.all([aliceP, bobP]).then(_ => {
-      E(bobP)
-        .offerAliceOption(aliceP, false)
-        .then(
-          res => {
-            showPurseBalances('alice money', aliceMoneyPurseP);
-            showPurseBalances('alice stock', aliceStockPurseP);
-            showPurseBalances('bob money', bobMoneyPurseP);
-            showPurseBalances('bob stock', bobStockPurseP);
-            log('++ bobP.offerAliceOption done:', res);
-            log('++ DONE');
-          },
-          rej => {
-            log('++ bobP.offerAliceOption error:', rej);
-          },
-        );
+    const pixelMintP = E(mint).makePixelListMint(canvasSize);
+    const pixelIssuerP = E(pixelMintP).getIssuer();
+
+    E.resolve(pixelIssuerP).then(issuer => {
+      const label = harden({ issuer, description: 'pixelList' });
+      const allPixelsList = makeWholePixelList(canvasSize);
+
+      const alicePixels = allPixelsList.slice(0, allPixelsList.length / 2);
+      const bobPixels = allPixelsList.slice(
+        allPixelsList.length / 2,
+        allPixelsList.length,
+      );
+
+      const alicePixelsAmount = {
+        label,
+        pixelList: alicePixels,
+      };
+
+      const bobPixelsAmount = {
+        label,
+        pixelList: bobPixels,
+      };
+
+      // Alice has 0, 0; 0, 1
+      // bob has 1, 0; 1, 1
+
+      const alicePixelPurseP = E(pixelMintP).mint(alicePixelsAmount);
+      const bobPixelPurseP = E(pixelMintP).mint(bobPixelsAmount);
+
+      const aliceP = E(aliceMaker).make(
+        escrowExchangeInstallationP,
+        coveredCallInstallationP,
+        fakeNeverTimer,
+        aliceMoneyPurseP,
+        alicePixelPurseP,
+      );
+      const bobP = E(bobMaker).make(
+        escrowExchangeInstallationP,
+        coveredCallInstallationP,
+        fakeNeverTimer,
+        bobMoneyPurseP,
+        bobPixelPurseP,
+      );
+      return Promise.all([aliceP, bobP]).then(_ => {
+        E(bobP)
+          .offerAliceOption(aliceP, false)
+          .then(
+            res => {
+              showPurseBalances('alice money', aliceMoneyPurseP);
+              showPurseBalances('alice pixel', alicePixelPurseP);
+              showPurseBalances('bob money', bobMoneyPurseP);
+              showPurseBalances('bob pixel', bobPixelPurseP);
+              log('++ bobP.offerAliceOption done:', res);
+              log('++ DONE');
+            },
+            rej => {
+              log('++ bobP.offerAliceOption error:', rej);
+            },
+          );
+      });
     });
   }
 
