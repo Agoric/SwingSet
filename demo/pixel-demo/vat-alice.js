@@ -41,7 +41,7 @@ function makeAliceMaker(E, host, log) {
         buyBobsPixelList(bob) {
           log('++ alice.buyBobsPixelList starting');
           const paymentP = E(myMoneyPurseP).withdraw(10);
-          return E(bob).buy([{ x: 1, y: 0 }], 10, paymentP);
+          return E(bob).buy(harden([{ x: 1, y: 0 }]), 10, paymentP);
         },
 
         acceptInvite(allegedInvitePaymentP) {

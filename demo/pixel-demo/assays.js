@@ -276,6 +276,7 @@ function makePixelListAssayMaker(canvasSize) {
       },
 
       make(pixelList) {
+        mustBeComparable(pixelList);
         insistPixelList(pixelList, canvasSize);
 
         if (pixelList.length === 0) {
@@ -330,10 +331,10 @@ function makePixelListAssayMaker(canvasSize) {
         const leftPixelList = assay.quantity(leftAmount);
         const rightPixelList = assay.quantity(rightAmount);
 
-        return {
+        return harden({
           label,
           quantity: withPixelList(leftPixelList, rightPixelList),
-        };
+        });
       },
 
       // Covering set subtraction of erights.
@@ -346,10 +347,10 @@ function makePixelListAssayMaker(canvasSize) {
 
         const pixelList = withoutPixelList(leftPixelList, rightPixelList);
 
-        return {
+        return harden({
           label,
           quantity: pixelList,
-        };
+        });
       },
     });
     return assay;
