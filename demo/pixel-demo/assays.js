@@ -15,7 +15,7 @@ import {
   includesPixelList,
   withPixelList,
   withoutPixelList,
-} from '../types/pixelList';
+} from './types/pixelList';
 
 // This assays.js module treats labels as black boxes. It is not aware
 // of issuers, and so can handle labels whose issuers are merely
@@ -260,13 +260,13 @@ harden(makeUniAssayMaker);
 // our PixelLists should have the same issuer and the same description
 // the description is "pixelList"
 
-function makePixelListAssay(label) {
+function makePixelListAssay(label, NUM_PIXELS) {
   mustBeComparable(label);
 
   const brand = new WeakSet();
 
   // our empty pixelList is an empty array
-  const emptyAmount = harden({ label, quantity: [] });
+  const emptyAmount = harden({ label, pixelList: [] });
   brand.add(emptyAmount);
 
   const assay = harden({
@@ -274,14 +274,14 @@ function makePixelListAssay(label) {
       return label;
     },
 
-    make(pixelListRequest) {
-      insistPixelList(pixelListRequest);
+    make(pixelList) {
+      insistPixelList(pixelList, NUM_PIXELS);
 
-      if (pixelListRequest.length === 0) {
+      if (pixelList.length === 0) {
         return emptyAmount;
       }
 
-      const amount = harden({ label, quantity: pixelListRequest });
+      const amount = harden({ label, pixelList });
       brand.add(amount);
       return amount;
     },
@@ -296,13 +296,13 @@ Unrecognized amount: ${amount}`;
       if (brand.has(allegedPixelListAmount)) {
         return allegedPixelListAmount;
       }
-      const { label: allegedLabel, quantity } = allegedPixelListAmount;
+      const { label: allegedLabel, pixelList } = allegedPixelListAmount;
       mustBeSameStructure(label, allegedLabel, 'Unrecognized label');
-      return assay.make(quantity);
+      return assay.make(pixelList);
     },
 
-    quantity(amount) {
-      return assay.vouch(amount).quantity;
+    pixelList(amount) {
+      return assay.vouch(amount).pixelList;
     },
 
     empty() {
@@ -310,21 +310,21 @@ Unrecognized amount: ${amount}`;
     },
 
     isEmpty(amount) {
-      return assay.quantity(amount) === [];
+      return assay.pixelList(amount) === [];
     },
 
     // does left include right?
     includes(leftAmount, rightAmount) {
-      const leftPixelList = assay.quantity(leftAmount);
-      const rightPixelList = assay.quantity(rightAmount);
+      const leftPixelList = assay.pixelList(leftAmount);
+      const rightPixelList = assay.pixelList(rightAmount);
 
       return includesPixelList(leftPixelList, rightPixelList);
     },
 
     // set union
     with(leftAmount, rightAmount) {
-      const leftPixelList = assay.quantity(leftAmount);
-      const rightPixelList = assay.quantity(rightAmount);
+      const leftPixelList = assay.pixelList(leftAmount);
+      const rightPixelList = assay.pixelList(rightAmount);
 
       return withPixelList(leftPixelList, rightPixelList);
     },
@@ -334,8 +334,9 @@ Unrecognized amount: ${amount}`;
     // Describe the erights described by `leftAmount` and not described
     // by `rightAmount`.
     without(leftAmount, rightAmount) {
-      const leftPixelList = assay.quantity(leftAmount);
-      const rightPixelList = assay.quantity(rightAmount);
+      const leftPixelList = assay.pixelList(leftAmount);
+      const rightPixelList = assay.pixelList(rightAmount);
+
       return withoutPixelList(leftPixelList, rightPixelList);
     },
   });

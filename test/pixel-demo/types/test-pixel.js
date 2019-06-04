@@ -5,7 +5,7 @@ import {
   insistPixel,
   isEqual,
   isLessThanOrEqual,
-} from '../../demo/pixelFarm/types/pixel';
+} from '../../../demo/pixel-demo/types/pixel';
 
 test('pixel insistWithinBounds', t => {
   t.doesNotThrow(() => insistWithinBounds(0, 1));

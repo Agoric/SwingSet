@@ -5,6 +5,8 @@ import harden from '@agoric/harden';
 import { escrowExchangeSrc } from './escrow';
 import { coveredCallSrc } from './coveredCall';
 
+
+
 function build(E, log) {
   // TODO BUG: All callers should wait until settled before doing
   // anything that would change the balance before show*Balance* reads
@@ -47,21 +49,36 @@ function build(E, log) {
   // objects are never used in lieu of full amount objects. This has
   // the virtue of unit typing, where 3 dollars cannot be confused
   // with 3 seconds.
-  function mintTestAssay(mint) {
-    log('starting mintTestAssay');
-    const mMintP = E(mint).makeMint('bucks');
+  function mintTestPixelListAssay(mint) {
+    log('starting mintTestPixelListAssay');
+    const mMintP = E(mint).makePixelListMint();
     const mIssuerP = E(mMintP).getIssuer();
     E.resolve(mIssuerP).then(issuer => {
       // By using an unforgeable issuer presence and a pass-by-copy
       // description together as a unit label, we check that both
       // agree. The veracity of the description is, however, only as
       // good as the issuer doing the check.
-      const label = harden({ issuer, description: 'bucks' });
-      const bucks1000 = harden({ label, quantity: 1000 });
-      const bucks50 = harden({ label, quantity: 50 });
+      const label = harden({ issuer, description: 'pixelList' });
 
-      const alicePurseP = E(mMintP).mint(bucks1000, 'alice');
-      const paymentP = E(alicePurseP).withdraw(bucks50);
+      // assume NUM_PIXELS is 2, a 2x2 grid
+      // 0, 0
+      // 0, 1
+      // 1, 0
+      // 1, 1
+
+      const allPixels = harden({
+        label,
+        pixelList: [
+          { x: 0, y: 0 },
+          { x: 0, y: 1 },
+          { x: 1, y: 0 },
+          { x: 1, y: 1 },
+        ],
+      });
+      const startingPixel = harden({ label, pixelList: [{ x: 0, y: 0 }] });
+
+      const alicePurseP = E(mMintP).mint(allPixels, 'alice');
+      const paymentP = E(alicePurseP).withdraw(startingPixel);
       E.resolve(paymentP).then(_ => {
         showPurseBalances('alice', alicePurseP);
         showPaymentBalance('payment', paymentP);
@@ -69,20 +86,6 @@ function build(E, log) {
     });
   }
 
-  // Uses raw numbers rather than amounts. Until we have support for
-  // pass-by-presence, the full assay style shown in mintTestAssay is
-  // too awkward.
-  function mintTestNumber(mint) {
-    log('starting mintTestNumber');
-    const mMintP = E(mint).makeMint('quatloos');
-
-    const alicePurseP = E(mMintP).mint(1000, 'alice');
-    const paymentP = E(alicePurseP).withdraw(50);
-    E.resolve(paymentP).then(_ => {
-      showPurseBalances('alice', alicePurseP);
-      showPaymentBalance('payment', paymentP);
-    });
-  }
 
   function trivialContractTest(host) {
     log('starting trivialContractTest');
@@ -318,8 +321,7 @@ function build(E, log) {
     async bootstrap(argv, vats) {
       switch (argv[0]) {
         case 'mint': {
-          mintTestAssay(vats.mint);
-          return mintTestNumber(vats.mint);
+          return mintTestPixelListAssay(vats.mint);
         }
         case 'trivial': {
           const host = await E(vats.host).makeHost();

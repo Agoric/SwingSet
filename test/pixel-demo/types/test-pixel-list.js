@@ -7,7 +7,7 @@ import {
   includesPixelList,
   withPixelList,
   withoutPixelList,
-} from '../../demo/pixelFarm/types/pixelList';
+} from '../../../demo/pixel-demo/types/pixelList';
 
 test('pixelList insistPixelList', t => {
   const startPixel = { x: 0, y: 0 };
