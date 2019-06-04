@@ -82,7 +82,7 @@ test('area includes', t => {
 });
 
 test('area makeArea', t => {
-  // makeArea(allegedArea, pixelList, NUM_PIXELS)
+  // makeArea(allegedArea, pixelList, canvasSize)
   const start = { x: 2, y: 2 };
   const end = { x: 4, y: 4 };
   const pixelList = [

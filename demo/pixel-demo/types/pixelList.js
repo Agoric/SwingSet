@@ -4,10 +4,10 @@ import { insist } from '../../../collections/insist';
 
 // pixelList is the most naive bundling of pixels
 // it is just an array of pixels
-function insistPixelList(pixelList, NUM_PIXELS) {
+function insistPixelList(pixelList, canvasSize) {
   insist(Array.isArray(pixelList))`pixelList must be an array`;
   for (let i = 0; i < pixelList.length; i += 1) {
-    insistPixel(pixelList[i], NUM_PIXELS);
+    insistPixel(pixelList[i], canvasSize);
   }
 }
 
@@ -74,10 +74,10 @@ function withoutPixelList(leftPixelList, rightPixelList) {
   return leftMinusRight;
 }
 
-function makeWholePixelList(NUM_PIXELS) {
+function makeWholePixelList(canvasSize) {
   const pixelList = [];
-  for (let x = 0; x < NUM_PIXELS; x += 1) {
-    for (let y = 0; y < NUM_PIXELS; y += 1) {
+  for (let x = 0; x < canvasSize; x += 1) {
+    for (let y = 0; y < canvasSize; y += 1) {
       pixelList.push({
         x,
         y,

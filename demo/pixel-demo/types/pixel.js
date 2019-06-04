@@ -2,21 +2,21 @@ import Nat from '@agoric/nat';
 
 import { insist } from '../../../collections/insist';
 
-function insistWithinBounds(num, NUM_PIXELS) {
+function insistWithinBounds(num, canvasSize) {
   Nat(num);
-  Nat(NUM_PIXELS);
-  // 0 to NUM_PIXELS - 1
-  insist(num >= 0 && num < NUM_PIXELS)`\
+  Nat(canvasSize);
+  // 0 to canvasSize - 1
+  insist(num >= 0 && num < canvasSize)`\
   pixel position must be within bounds`;
 }
 
-function insistPixel(pixel, NUM_PIXELS) {
+function insistPixel(pixel, canvasSize) {
   const properties = Object.getOwnPropertyNames(pixel);
   insist(properties.length === 2)`\
   pixels must have x, y properties only`;
 
-  insistWithinBounds(pixel.x, NUM_PIXELS);
-  insistWithinBounds(pixel.y, NUM_PIXELS);
+  insistWithinBounds(pixel.x, canvasSize);
+  insistWithinBounds(pixel.y, canvasSize);
 }
 
 // should only be used with valid pixels - no checks

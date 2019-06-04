@@ -8,13 +8,13 @@ function insistLessThanOrEqual(start, end) {
   the starting pixel must be "less than or equal" to the ending pixel`;
 }
 
-function insistArea(area, NUM_PIXELS) {
+function insistArea(area, canvasSize) {
   const properties = Object.getOwnPropertyNames(area);
   insist(properties.length === 2)`\
   areas must have start, end properties only`;
 
-  insistPixel(area.start, NUM_PIXELS);
-  insistPixel(area.end, NUM_PIXELS);
+  insistPixel(area.start, canvasSize);
+  insistPixel(area.end, canvasSize);
 
   insistLessThanOrEqual(area.start, area.end);
 
@@ -40,9 +40,9 @@ function includes(area, pixel) {
 
 // actually this isn't enough, we need to confirm that all the pixels
 // are there, and then burn them to create the area.
-function makeArea(allegedArea, pixelList, NUM_PIXELS) {
+function makeArea(allegedArea, pixelList, canvasSize) {
   const { start, end } = allegedArea;
-  const area = insistArea(allegedArea, NUM_PIXELS);
+  const area = insistArea(allegedArea, canvasSize);
 
   for (let { x } = start; x <= end.x; x += 1) {
     for (let { y } = start; y <= end.y; y += 1) {
