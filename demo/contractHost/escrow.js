@@ -5,12 +5,28 @@
 import harden from '@agoric/harden';
 
 /* ::
-import type { G, Amount, Assay, Label } from './issuers.flow';
+import type { G, Amount, Assay, Label, Payment } from './issuers.flow';
 
 import type { InviteMaker } from './issuers.flow';
 
 // ISSUE: where do E, makePromise belong? how do they come into scope?
-import { E, makePromise } from './issuers.flow';
+import { E, makePromise, PromiseParts } from './issuers.flow';
+
+export interface EscrowSeat<Money, Stock> {
+  offer(Payment<Money>): void;
+  cancel(reason: mixed): void;
+  getWinnings(): Promise<Payment<Stock>>;
+  getRefund(): Promise<Payment<Money> | null>;
+};
+
+interface Transfer<Q> {
+  phase1(): Promise<Payment<Q>>;
+  phase2(): void;
+  abort(reason: mixed): void;
+  getWinnings(): Promise<Payment<Q>>;
+  getRefund(): Promise<Payment<Q> | null>;
+}
+
 */
 
 // For clarity, the code below internally speaks of a scenario is
@@ -28,12 +44,13 @@ function escrowExchange /* :: <Money, Stock> */(
 
   function makeTransfer /* :: <Q> */(
     amount /* : Amount<Q> */,
-    srcPaymentP /* Payment<Q> */,
-  ) {
+    srcPaymentP /* : Promise<Payment<Q>> */,
+  ) /* : Transfer<Q> */ {
     const { issuer } = amount.label;
-    const escrowP = E(issuer).getExclusive(amount, srcPaymentP, 'escrow');
-    const winnings = makePromise();
-    const refund = makePromise();
+    const ep = x => Promise.resolve(x);
+    const escrowP = E(ep(issuer)).getExclusive(amount, srcPaymentP, 'escrow');
+    const winnings /* : PromiseParts<Payment<Q>> */ = makePromise();
+    const refund /* : PromiseParts<Payment<Q> | null> */ = makePromise();
     return harden({
       phase1() {
         return escrowP;
@@ -57,11 +74,17 @@ function escrowExchange /* :: <Money, Stock> */(
 
   // Promise wiring
 
-  const moneyPayment = makePromise();
-  const moneyTransfer = makeTransfer(moneyNeeded, moneyPayment.p);
+  const moneyPayment /* : PromiseParts<Payment<Money>> */ = makePromise();
+  const moneyTransfer /* : Transfer<Money> */ = makeTransfer(
+    moneyNeeded,
+    moneyPayment.p,
+  );
 
-  const stockPayment = makePromise();
-  const stockTransfer = makeTransfer(stockNeeded, stockPayment.p);
+  const stockPayment /* : PromiseParts<Payment<Stock>> */ = makePromise();
+  const stockTransfer /* : Transfer<Stock> */ = makeTransfer(
+    stockNeeded,
+    stockPayment.p,
+  );
 
   // TODO Use cancellation tokens instead.
   const aliceCancel = makePromise();
@@ -79,7 +102,7 @@ function escrowExchange /* :: <Money, Stock> */(
       moneyTransfer.phase2();
       stockTransfer.phase2();
     },
-    reason => {
+    (reason /* : mixed */) => {
       moneyTransfer.abort(reason);
       stockTransfer.abort(reason);
     },
@@ -87,14 +110,14 @@ function escrowExchange /* :: <Money, Stock> */(
 
   // Seats
 
-  const aliceSeat = harden({
+  const aliceSeat /* : EscrowSeat<Money, Stock> */ = harden({
     offer: moneyPayment.res,
     cancel: aliceCancel.reject,
     getWinnings: stockTransfer.getWinnings,
     getRefund: moneyTransfer.getRefund,
   });
 
-  const bobSeat = harden({
+  const bobSeat /* : EscrowSeat<Stock, Money> */ = harden({
     offer: stockPayment.res,
     cancel: bobCancel.reject,
     getWinnings: moneyTransfer.getWinnings,
