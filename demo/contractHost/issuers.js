@@ -1,4 +1,5 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
+// @flow
 
 import harden from '@agoric/harden';
 
@@ -6,7 +7,20 @@ import { makePrivateName } from '../../collections/PrivateName';
 import { insist } from '../../collections/insist';
 import { makeNatAssay } from './assays';
 
-function makeMint(description, makeAssay = makeNatAssay) {
+/* ::
+import type { G, Label, Amount, Assay, Issuer, Mint, Purse, Peg } from './issuers.flow';
+import { E } from './issuers.flow';
+*/
+
+// boring: "This type cannot be coerced to string" in template literals
+// https://github.com/facebook/flow/issues/2814
+const ss = x => String(x);
+
+function makeMint /* :: <Q> */(
+  description /* : mixed */,
+  // $FlowFixMe the makeNatAssay default doesn't seem type-safe
+  makeAssay /* : (Label<Q> => Assay<Q>) */ = makeNatAssay,
+) /* : Mint<Q> */ {
   insist(description)`\
 Description must be truthy: ${description}`;
 
@@ -32,7 +46,7 @@ Description must be truthy: ${description}`;
   function takePayment(amount, isPurse, src, _name) {
     // eslint-disable-next-line no-use-before-define
     amount = assay.coerce(amount);
-    _name = `${_name}`;
+    _name = `${ss(_name)}`;
     if (isPurse) {
       insist(useRights.has(src))`\
 Purse expected: ${src}`;
@@ -65,7 +79,7 @@ Payment expected: ${src}`;
     return payment;
   }
 
-  const issuer = harden({
+  const issuer /* : Issuer<Q> */ = harden({
     getLabel() {
       // eslint-disable-next-line no-use-before-define
       return assay.getLabel();
@@ -76,7 +90,7 @@ Payment expected: ${src}`;
       return assay;
     },
 
-    makeEmptyPurse(name = 'a purse') {
+    makeEmptyPurse(name = 'a purse') /* : Purse<Q> */ {
       // eslint-disable-next-line no-use-before-define
       return mint.mint(assay.empty(), name); // mint and issuer call each other
     },
@@ -138,11 +152,11 @@ Payment expected: ${src}`;
     return amount;
   }
 
-  const mint = harden({
+  const mint /* : Mint<Q> */ = harden({
     getIssuer() {
       return issuer;
     },
-    mint(initialBalance, _name = 'a purse') {
+    mint(initialBalance /* : G<Amount<Q>> */, _name = 'a purse') {
       initialBalance = assay.coerce(initialBalance);
       _name = `${_name}`;
 
@@ -186,7 +200,12 @@ harden(makeMint);
 // currency. Returns a promise for a peg object that asynchonously
 // converts between the two. The local currency is synchronously
 // transferable locally.
-function makePeg(E, remoteIssuerP, makeAssay = makeNatAssay) {
+function makePeg /* :: <Q> */(
+  E /* : typeof E */,
+  remoteIssuerP /* : G<Promise<Issuer<Q>>> */,
+  // $FlowFixMe the makeNatAssay default doesn't seem type-safe
+  makeAssay /* :(Label<Q> => Assay<Q>) */ = makeNatAssay,
+) /* :Promise<Peg<Q>> */ {
   const remoteLabelP = E(remoteIssuerP).getLabel();
 
   // The remoteLabel is a local copy of the remote pass-by-copy
@@ -195,7 +214,8 @@ function makePeg(E, remoteIssuerP, makeAssay = makeNatAssay) {
   return Promise.resolve(remoteLabelP).then(remoteLabel => {
     // Retaining remote currency deposits it in here.
     // Redeeming local currency withdraws remote from here.
-    const backingPurseP = E(remoteIssuerP).makeEmptyPurse('backing');
+    const ep = x => Promise.resolve(x); // ISSUE: E(x).m() gives Promise<MRet>
+    const backingPurseP = ep(E(remoteIssuerP).makeEmptyPurse('backing'));
 
     const { description } = remoteLabel;
     const localMint = makeMint(description, makeAssay);
