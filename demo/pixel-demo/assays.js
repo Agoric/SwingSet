@@ -282,7 +282,7 @@ function makePixelListAssayMaker(canvasSize) {
           return emptyAmount;
         }
 
-        const amount = harden({ label, pixelList });
+        const amount = harden({ label, quantity: pixelList });
         brand.add(amount);
         return amount;
       },
@@ -297,13 +297,16 @@ function makePixelListAssayMaker(canvasSize) {
         if (brand.has(allegedPixelListAmount)) {
           return allegedPixelListAmount;
         }
-        const { label: allegedLabel, pixelList } = allegedPixelListAmount;
+        const {
+          label: allegedLabel,
+          quantity: pixelList,
+        } = allegedPixelListAmount;
         mustBeSameStructure(label, allegedLabel, 'Unrecognized label');
         return assay.make(pixelList);
       },
 
-      pixelList(amount) {
-        return assay.vouch(amount).pixelList;
+      quantity(amount) {
+        return assay.vouch(amount).quantity;
       },
 
       empty() {
@@ -311,25 +314,25 @@ function makePixelListAssayMaker(canvasSize) {
       },
 
       isEmpty(amount) {
-        return assay.pixelList(amount) === [];
+        return assay.quantity(amount) === [];
       },
 
       // does left include right?
       includes(leftAmount, rightAmount) {
-        const leftPixelList = assay.pixelList(leftAmount);
-        const rightPixelList = assay.pixelList(rightAmount);
+        const leftPixelList = assay.quantity(leftAmount);
+        const rightPixelList = assay.quantity(rightAmount);
 
         return includesPixelList(leftPixelList, rightPixelList);
       },
 
       // set union
       with(leftAmount, rightAmount) {
-        const leftPixelList = assay.pixelList(leftAmount);
-        const rightPixelList = assay.pixelList(rightAmount);
+        const leftPixelList = assay.quantity(leftAmount);
+        const rightPixelList = assay.quantity(rightAmount);
 
         return {
           label,
-          pixelList: withPixelList(leftPixelList, rightPixelList),
+          quantity: withPixelList(leftPixelList, rightPixelList),
         };
       },
 
@@ -338,14 +341,14 @@ function makePixelListAssayMaker(canvasSize) {
       // Describe the erights described by `leftAmount` and not described
       // by `rightAmount`.
       without(leftAmount, rightAmount) {
-        const leftPixelList = assay.pixelList(leftAmount);
-        const rightPixelList = assay.pixelList(rightAmount);
+        const leftPixelList = assay.quantity(leftAmount);
+        const rightPixelList = assay.quantity(rightAmount);
 
         const pixelList = withoutPixelList(leftPixelList, rightPixelList);
 
         return {
           label,
-          pixelList,
+          quantity: pixelList,
         };
       },
     });

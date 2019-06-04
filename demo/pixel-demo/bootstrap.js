@@ -69,14 +69,14 @@ function build(E, log) {
 
       const allPixels = harden({
         label,
-        pixelList: [
+        quantity: [
           { x: 0, y: 0 },
           { x: 0, y: 1 },
           { x: 1, y: 0 },
           { x: 1, y: 1 },
         ],
       });
-      const startingPixel = harden({ label, pixelList: [{ x: 0, y: 0 }] });
+      const startingPixel = harden({ label, quantity: [{ x: 0, y: 0 }] });
 
       const alicePurseP = E(mMintP).mint(allPixels, 'alice');
       const paymentP = E(alicePurseP).withdraw(startingPixel);
@@ -122,12 +122,12 @@ function build(E, log) {
 
       const alicePixelsAmount = {
         label,
-        pixelList: alicePixels,
+        quantity: alicePixels,
       };
 
       const bobPixelsAmount = {
         label,
-        pixelList: bobPixels,
+        quantity: bobPixels,
       };
 
       const alicePixelPurseP = E(pixelMintP).mint(alicePixelsAmount);
@@ -187,12 +187,12 @@ function build(E, log) {
 
       const alicePixelsAmount = {
         label,
-        pixelList: alicePixels,
+        quantity: alicePixels,
       };
 
       const bobPixelsAmount = {
         label,
-        pixelList: bobPixels,
+        quantity: bobPixels,
       };
 
       // Alice has 0, 0; 0, 1
@@ -260,12 +260,12 @@ function build(E, log) {
 
       const alicePixelsAmount = {
         label,
-        pixelList: alicePixels,
+        quantity: alicePixels,
       };
 
       const bobPixelsAmount = {
         label,
-        pixelList: bobPixels,
+        quantity: bobPixels,
       };
 
       // Alice has 0, 0; 0, 1

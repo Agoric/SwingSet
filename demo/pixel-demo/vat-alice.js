@@ -66,7 +66,7 @@ function makeAliceMaker(E, host, log) {
                   issuer: pixelListIssuerP,
                   description: 'pixelList',
                 },
-                pixelList: [{ x: 1, y: 1 }],
+                quantity: [{ x: 1, y: 1 }],
               });
 
               const inviteAmountP = allComparable(
@@ -135,7 +135,7 @@ function makeAliceMaker(E, host, log) {
                   issuer: pixelListIssuerP,
                   description: 'pixelList',
                 },
-                pixelList: [{ x: 1, y: 1 }],
+                quantity: [{ x: 1, y: 1 }],
               });
 
               const inviteAmountP = allComparable(

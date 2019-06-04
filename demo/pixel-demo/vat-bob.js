@@ -44,7 +44,7 @@ function makeBobMaker(E, host, log) {
                 issuer,
                 description: 'pixelList',
               },
-              pixelList,
+              quantity: pixelList,
             };
             const withdrawalResultP = E(myPixelListPurseP).withdraw(
               pixelAmount,
