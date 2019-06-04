@@ -1,11 +1,12 @@
 import { insistPixel, isEqual } from './pixel';
+import { passStyleOf } from '../../../src/kernel/marshal';
 
 import { insist } from '../../../collections/insist';
 
 // pixelList is the most naive bundling of pixels
 // it is just an array of pixels
 function insistPixelList(pixelList, canvasSize) {
-  insist(Array.isArray(pixelList))`pixelList must be an array`;
+  insist(passStyleOf(pixelList) === 'copyArray')`pixelList must be an array`;
   for (let i = 0; i < pixelList.length; i += 1) {
     insistPixel(pixelList[i], canvasSize);
   }
