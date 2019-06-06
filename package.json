@@ -37,7 +37,6 @@
     "tape-promise": "^4.0.0"
   },
   "dependencies": {
-    "@agoric/ertp": "0.0.2",
     "@agoric/evaluate": "file:./agoric-evaluate/agoric-evaluate-0.0.1.tgz",
     "@agoric/harden": "^0.0.4",
     "@agoric/marshal": "0.0.1",
