@@ -3,8 +3,8 @@
 
 import harden from '@agoric/harden';
 
-import { allComparable } from '../../collections/sameStructure';
-import { makeCollect } from './contractHost';
+import { allComparable } from '@agoric/ertp/util/sameStructure';
+import { makeCollect } from '@agoric/ertp/core/contractHost';
 
 function makeAliceMaker(E, host, log) {
   const collect = makeCollect(E, log);
@@ -143,7 +143,13 @@ function makeAliceMaker(E, host, log) {
                   label: inviteIssuerLabel,
                   quantity: {
                     installation: coveredCallInstallationP,
-                    terms: [smackers10, pixel1x1, timerP, 'singularity'],
+                    terms: [
+                      escrowExchangeInstallationP,
+                      smackers10,
+                      pixel1x1,
+                      timerP,
+                      'singularity',
+                    ],
                     seatIdentity: allegedInviteAmount.quantity.seatIdentity,
                     seatDesc: 'holder',
                   },

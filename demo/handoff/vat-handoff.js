@@ -2,7 +2,7 @@
 
 import harden from '@agoric/harden';
 
-import { makeHandoffService } from './handoff';
+import { makeHandoffService } from '@agoric/ertp/more/handoff/handoff';
 
 function build(_E, _log) {
   return harden({ makeHandoffService });

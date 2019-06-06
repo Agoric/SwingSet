@@ -2,10 +2,10 @@
 
 import harden from '@agoric/harden';
 
-import { makeCorkboardAssayMaker } from './corkboard-assay';
-import { makeCorkboard } from './corkboard';
-import { sameStructure } from '../../collections/sameStructure';
-import { makeHandoffService } from './handoff';
+import { makeCorkboardAssayMaker } from '@agoric/ertp/more/handoff/corkboardAssay';
+import { makeCorkboard } from '@agoric/ertp/more/handoff/corkboard';
+import { sameStructure } from '@agoric/ertp/util/sameStructure';
+import { makeHandoffService } from '@agoric/ertp/more/handoff/handoff';
 
 function build(E, log) {
   function testCorkboardAssay() {

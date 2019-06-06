@@ -2,8 +2,8 @@
 
 import harden from '@agoric/harden';
 
-import { makeMint } from './issuers';
-import { makePixelListAssayMaker } from './assays';
+import { makeMint } from '@agoric/ertp/core/issuers';
+import { makePixelListAssayMaker } from '@agoric/ertp/more/pixels/pixelListAssay';
 
 function build(_E, _log) {
   function makePixelListMint(canvasSize) {
