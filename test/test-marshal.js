@@ -2,7 +2,7 @@
 
 import { test } from 'tape-promise/tape';
 import harden from '@agoric/harden';
-import { makeMarshal } from '../src/kernel/marshal';
+import { makeMarshal, mustPassByPresence } from '../src/kernel/marshal';
 import { makeMarshaller } from '../src/kernel/liveSlots';
 import makePromise from '../src/kernel/makePromise';
 
@@ -291,5 +291,17 @@ test('unserialize promise', t => {
   t.deepEqual(log, ['subscribe-1']);
   t.ok(p instanceof Promise);
 
+  t.end();
+});
+
+test('null cannot be pass-by-presence', t => {
+  t.throws(() => mustPassByPresence(null), /null cannot be pass-by-presence/);
+  t.end();
+});
+
+test('mal-formed @qclass', t => {
+  const m = makeMarshal();
+  const uns = val => m.unserialize(val, []);
+  t.throws(() => uns('{"@qclass": 0}'), /invalid qclass/);
   t.end();
 });

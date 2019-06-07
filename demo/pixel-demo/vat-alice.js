@@ -24,7 +24,7 @@ function makeAliceMaker(E, host, log) {
       coveredCallInstallationP,
       timerP,
       myMoneyPurseP,
-      myStockPurseP,
+      myPixelListPurseP,
       myOptFinPurseP = undefined,
       optFredP = undefined,
     ) {
@@ -34,14 +34,14 @@ function makeAliceMaker(E, host, log) {
         description: 'contract host',
       });
       const moneyIssuerP = E(myMoneyPurseP).getIssuer();
-      const stockIssuerP = E(myStockPurseP).getIssuer();
+      const pixelListIssuerP = E(myPixelListPurseP).getIssuer();
       const optFinIssuerP = myOptFinPurseP && E(myOptFinPurseP).getIssuer();
 
       const alice = harden({
-        payBobWell(bob) {
-          log('++ alice.payBobWell starting');
+        buyBobsPixelList(bob) {
+          log('++ alice.buyBobsPixelList starting');
           const paymentP = E(myMoneyPurseP).withdraw(10);
-          return E(bob).buy('shoe', paymentP);
+          return E(bob).buy(harden([{ x: 1, y: 0 }]), 10, paymentP);
         },
 
         acceptInvite(allegedInvitePaymentP) {
@@ -61,12 +61,12 @@ function makeAliceMaker(E, host, log) {
                 },
                 quantity: 10,
               });
-              const fudco7 = harden({
+              const pixel1x1 = harden({
                 label: {
-                  issuer: stockIssuerP,
-                  description: 'fudco',
+                  issuer: pixelListIssuerP,
+                  description: 'pixelList',
                 },
-                quantity: 7,
+                quantity: [{ x: 1, y: 1 }],
               });
 
               const inviteAmountP = allComparable(
@@ -74,7 +74,7 @@ function makeAliceMaker(E, host, log) {
                   label: inviteIssuerLabel,
                   quantity: {
                     installation: escrowExchangeInstallationP,
-                    terms: [clams10, fudco7],
+                    terms: [clams10, pixel1x1],
                     seatIdentity: allegedInviteAmount.quantity.seatIdentity,
                     seatDesc: 'left',
                   },
@@ -97,7 +97,12 @@ function makeAliceMaker(E, host, log) {
             const seatP = E(host).redeem(verifiedInviteP);
             const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
             E(seatP).offer(moneyPaymentP);
-            return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice escrow');
+            return collect(
+              seatP,
+              myPixelListPurseP,
+              myMoneyPurseP,
+              'alice escrow',
+            );
           });
         },
 
@@ -125,12 +130,12 @@ function makeAliceMaker(E, host, log) {
                 },
                 quantity: 10,
               });
-              const yoyodyne7 = harden({
+              const pixel1x1 = harden({
                 label: {
-                  issuer: stockIssuerP,
-                  description: 'yoyodyne',
+                  issuer: pixelListIssuerP,
+                  description: 'pixelList',
                 },
-                quantity: 7,
+                quantity: [{ x: 1, y: 1 }],
               });
 
               const inviteAmountP = allComparable(
@@ -138,13 +143,7 @@ function makeAliceMaker(E, host, log) {
                   label: inviteIssuerLabel,
                   quantity: {
                     installation: coveredCallInstallationP,
-                    terms: [
-                      escrowExchangeInstallationP,
-                      smackers10,
-                      yoyodyne7,
-                      timerP,
-                      'singularity',
-                    ],
+                    terms: [smackers10, pixel1x1, timerP, 'singularity'],
                     seatIdentity: allegedInviteAmount.quantity.seatIdentity,
                     seatDesc: 'holder',
                   },
@@ -167,7 +166,12 @@ function makeAliceMaker(E, host, log) {
             const seatP = E(host).redeem(verifiedInvitePaymentP);
             const moneyPaymentP = E(myMoneyPurseP).withdraw(10);
             E(seatP).offer(moneyPaymentP);
-            return collect(seatP, myStockPurseP, myMoneyPurseP, 'alice option');
+            return collect(
+              seatP,
+              myPixelListPurseP,
+              myMoneyPurseP,
+              'alice option',
+            );
           });
         },
 

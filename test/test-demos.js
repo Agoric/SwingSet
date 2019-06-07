@@ -156,8 +156,8 @@ const contractCoveredCallGolden = [
   '++ bob.offerAliceOption starting',
   '++ alice.acceptOptionDirectly starting',
   'Pretend singularity never happens',
-  'alice invite xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
-  'verified invite xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
+  'alice invite xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
+  'verified invite xfer balance {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"smackers"},"quantity":10},{"label":{"issuer":{},"description":"yoyodyne"},"quantity":7},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}}',
   'alice option wins: {"label":{"issuer":{},"description":"yoyodyne"},"quantity":7} refs: null',
   'bob option wins: {"label":{"issuer":{},"description":"smackers"},"quantity":10} refs: null',
   '++ bob.offerAliceOption done',
@@ -193,7 +193,7 @@ const contractCoveredCallSaleGolden = [
   '++ fred.acceptOptionOffer starting',
   'Pretend singularity never happens',
   'alice options sale wins: {"label":{"issuer":{},"description":"fins"},"quantity":55} refs: null',
-  'fred buys escrowed option wins: {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{"label":{"issuer":{},"description":"dough"},"quantity":10},{"label":{"issuer":{},"description":"wonka"},"quantity":7},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}} refs: null',
+  'fred buys escrowed option wins: {"label":{"issuer":{},"description":"contract host"},"quantity":{"installation":{},"terms":[{},{"label":{"issuer":{},"description":"dough"},"quantity":10},{"label":{"issuer":{},"description":"wonka"},"quantity":7},{},"singularity"],"seatIdentity":{},"seatDesc":"holder"}} refs: null',
   'fred exercises option, buying stock wins: {"label":{"issuer":{},"description":"wonka"},"quantity":7} refs: null',
   'bob option wins: {"label":{"issuer":{},"description":"dough"},"quantity":10} refs: null',
   '++ alice.acceptOptionForFred done',
@@ -227,5 +227,76 @@ test('run contractHost Demo --covered-call-sale with SES', async t => {
 test('run contractHost Demo --covered-call-sale without SES', async t => {
   const dump = await main(false, 'demo/contractHost', ['covered-call-sale']);
   t.deepEquals(dump.log, contractCoveredCallSaleGolden);
+  t.end();
+});
+
+const corkboardAssaysGolden = [
+  '=> setup called',
+  'starting testCorkboardAssay',
+  'starting testCorkboardAssayQuantities',
+];
+
+test('run handoff Demo --corkboard assays', async t => {
+  const dump = await main(false, 'demo/handoff', ['corkboardAssay']);
+  t.deepEquals(dump.log, corkboardAssaysGolden);
+  t.end();
+});
+
+test('run handoff Demo --corkboard assays', async t => {
+  const dump = await main(true, 'demo/handoff', ['corkboardAssay']);
+  t.deepEquals(dump.log, corkboardAssaysGolden);
+  t.end();
+});
+
+const corkboardContentsGolden = [
+  '=> setup called',
+  'starting testCorkboardStorage',
+];
+
+test('run handoff Demo --corkboard contents', async t => {
+  const dump = await main(false, 'demo/handoff', ['corkboard']);
+  t.deepEquals(dump.log, corkboardContentsGolden);
+  t.end();
+});
+
+test('run handoff Demo --corkboard contents', async t => {
+  const dump = await main(true, 'demo/handoff', ['corkboard']);
+  t.deepEquals(dump.log, corkboardContentsGolden);
+  t.end();
+});
+
+const handoffTestGolden = [
+  '=> setup called',
+  'starting testHandoffStorage',
+  'expected validate to throw',
+];
+
+test('run handoff Demo --handoff service', async t => {
+  const dump = await main(false, 'demo/handoff', ['handoff']);
+  t.deepEquals(dump.log, handoffTestGolden);
+  t.end();
+});
+
+test('run handoff Demo --handoff service', async t => {
+  const dump = await main(true, 'demo/handoff', ['handoff']);
+  t.deepEquals(dump.log, handoffTestGolden);
+  t.end();
+});
+
+const twoPartyHandoffGolden = [
+  '=> setup called',
+  'starting testHandoffStorage',
+  'expecting coordination on 42.',
+];
+
+test('run handoff Demo --Two Party handoff', async t => {
+  const dump = await main(false, 'demo/handoff', ['twoVatHandoff']);
+  t.deepEquals(dump.log, twoPartyHandoffGolden);
+  t.end();
+});
+
+test('run handoff Demo --Two Party handoff', async t => {
+  const dump = await main(true, 'demo/handoff', ['twoVatHandoff']);
+  t.deepEquals(dump.log, twoPartyHandoffGolden);
   t.end();
 });

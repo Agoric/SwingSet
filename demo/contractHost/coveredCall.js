@@ -4,8 +4,6 @@
 
 import harden from '@agoric/harden';
 
-import { escrowExchange } from './escrow';
-
 /* ::
 import type { Amount, Payment } from './issuers.flow';
 import type { InviteMaker, Timer } from './issuers.flow';
@@ -23,23 +21,30 @@ export interface CoveredCallSeat<Money, Stock> {
 */
 
 function coveredCall /* :: <Money, Stock> */(
-  terms /* : [Amount<Money>, Amount<Stock>, Promise<Timer>, number] */,
+  terms /* : [any, Amount<Money>, Amount<Stock>, Promise<Timer>, number] */,
   inviteMaker /* : InviteMaker */,
 ) {
-  const [moneyNeeded, stockNeeded, timerP, deadline] = terms;
+  const [
+    escrowExchangeInstallationP,
+    moneyNeeded,
+    stockNeeded,
+    timerP,
+    deadline,
+  ] = terms;
 
-  const [aliceInvite, bobInvite] = escrowExchange(
-    [moneyNeeded, stockNeeded],
-    inviteMaker,
+  const pairP = E(escrowExchangeInstallationP).spawn(
+    harden([moneyNeeded, stockNeeded]),
   );
 
   // ISSUE: type of redeem() is by inspection of contract source; we use any.
-  const aliceEscrowSeatP /* : Promise<EscrowSeat<Money, Stock>> */ = inviteMaker.redeem(
-    aliceInvite,
-  );
-  const bobEscrowSeatP /* : Promise<EscrowSeat<Stock, Money>> */ = inviteMaker.redeem(
-    bobInvite,
-  );
+  // $FlowFixMe  E.resolve ... missing in statics of function type
+  const aliceEscrowSeatP /* : Promise<EscrowSeat<Money, Stock>> */ = E.resolve(
+    pairP,
+  ).then(pair => inviteMaker.redeem(pair[0]));
+  // $FlowFixMe  E.resolve ... missing in statics of function type
+  const bobEscrowSeatP /* : Promise<EscrowSeat<Stock, Money>> */ = E.resolve(
+    pairP,
+  ).then(pair => inviteMaker.redeem(pair[1]));
 
   // Seats
 
@@ -73,6 +78,6 @@ function coveredCall /* :: <Money, Stock> */(
 }
 
 // $FlowFixMe flow thinks "function [1] should not be coerced"
-const coveredCallSrc = `(function() { ${escrowExchange}; return (${coveredCall}); }())`;
+const coveredCallSrc = `(${coveredCall})`;
 
 export { coveredCall, coveredCallSrc };
