@@ -109,7 +109,7 @@ export default function handleCommsController(
 
   switch (method) {
     case 'init':
-      if (args[0]['@qclass'] !== 'slot' || args[0].index !== 0) {
+      if (!args[0] || args[0]['@qclass'] !== 'slot' || args[0].index !== 0) {
         throw new Error(`unexpected args for init(): ${argsbytes}`);
       }
       args[0] = slots[args[0].index];
