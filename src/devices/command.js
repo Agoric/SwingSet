@@ -21,7 +21,7 @@ export default function buildCommand() {
     try {
       inboundCallback(count, JSON.stringify(obj));
     } catch (e) {
-      console.log(`error running inboundCallback: ${e} ${e.message}`);
+      console.log(`error running inboundCallback: ${e}`, obj);
     }
     return p;
   }

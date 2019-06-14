@@ -1,17 +1,9 @@
-import {
-  loadBasedir,
-  useStorageInBasedir,
-  buildVatController,
-} from './controller';
-import { buildMailboxStateMap, buildMailbox } from './devices/mailbox';
-
 export {
   loadBasedir,
-  useStorageInBasedir,
   buildVatController,
-  buildMailboxStateMap,
-  buildMailbox,
-};
+  useStorageInBasedir,
+} from './controller';
+export { buildMailboxStateMap, buildMailbox } from './devices/mailbox';
 
 export function getVatTPSourcePath() {
   return require.resolve('./vat-tp/vattp');
