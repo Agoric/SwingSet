@@ -16,16 +16,36 @@ function build(syscall, _state, makeRoot, forVatID) {
     }
   }
 
+  // Separate debugging flag
+  const enableLSTracking = false;
+  const byIdTracker = new WeakMap();
+
   function makePresence(id) {
-    return harden({
-      [`_importID_${id}`]() {},
-    });
+    const result = harden(
+      Object.create(Object.prototype, {
+        [`_importID_${id}`]: {
+          value: () => {},
+        },
+      }),
+    );
+    if (enableLSTracking) {
+      byIdTracker.set(result, id);
+    }
+    return result;
   }
 
   function makeDeviceNode(id) {
-    return harden({
-      [`_deviceID_${id}`]() {},
-    });
+    const result = harden(
+      Object.create(Object.prototype, {
+        [`_deviceID_${id}`]: {
+          value: () => {},
+        },
+      }),
+    );
+    if (enableLSTracking) {
+      byIdTracker.set(result, id);
+    }
+    return result;
   }
 
   const outstandingProxies = new WeakSet();
