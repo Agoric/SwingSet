@@ -2,6 +2,7 @@ import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { QCLASS, mustPassByPresence, makeMarshal } from '@agoric/marshal';
 import makePromise from './makePromise';
+import { logSend, logReceive } from './deepStacks';
 
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
 // of local objects which have been exported. These cannot be persisted
@@ -251,6 +252,12 @@ function build(syscall, _state, makeRoot, forVatID) {
         }
         return (...args) => {
           const pr = makePromise();
+          const sendKey = logSend(undefined, [
+            targetPromise,
+            prop,
+            args,
+            pr.res,
+          ]);
           function resolved(x) {
             if (outstandingProxies.has(x)) {
               throw Error('E(Vow.resolve(E(x))) is invalid');
@@ -262,7 +269,7 @@ function build(syscall, _state, makeRoot, forVatID) {
             if (slot && slot.type === 'import') {
               return queueMessage(slot, prop, args);
             }
-            return x[prop](...args);
+            return logReceive(sendKey, () => x[prop](...args));
           }
           targetPromise.then(resolved).then(pr.res, pr.rej);
           return pr.p;
