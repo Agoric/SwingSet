@@ -251,13 +251,7 @@ function build(syscall, _state, makeRoot, forVatID) {
           return undefined;
         }
         return (...args) => {
-          const pr = makePromise();
-          const sendKey = logSend(undefined, [
-            targetPromise,
-            prop,
-            args,
-            pr.res,
-          ]);
+          const sendKey = logSend(undefined, [targetPromise, prop, args]);
           function resolved(x) {
             if (outstandingProxies.has(x)) {
               throw Error('E(Vow.resolve(E(x))) is invalid');
@@ -271,8 +265,7 @@ function build(syscall, _state, makeRoot, forVatID) {
             }
             return logReceive(sendKey, () => x[prop](...args));
           }
-          targetPromise.then(resolved).then(pr.res, pr.rej);
-          return pr.p;
+          return targetPromise.then(resolved);
         };
       },
       has(_target, _prop) {
