@@ -263,9 +263,11 @@ function build(syscall, _state, makeRoot, forVatID) {
             if (slot && slot.type === 'import') {
               return queueMessage(slot, prop, args);
             }
-            return logReceive(sendKey, () => x[prop](...args));
+            return x[prop](...args);
           }
-          return targetPromise.then(resolved);
+          return targetPromise.then(x =>
+            logReceive(sendKey, () => resolved(x), x),
+          );
         };
       },
       has(_target, _prop) {
