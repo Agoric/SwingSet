@@ -166,7 +166,7 @@ export default function makeVatManager(
   // syscall handlers: these are wrapped by the 'syscall' object and made
   // available to userspace
 
-  function doSend(targetSlot, method, argsString, vatSlots, sendKey) {
+  function doSend(targetSlot, method, argsString, vatSlots, _sendKey) {
     if (targetSlot.type === undefined) {
       throw new Error(
         `targetSlot isn't really a slot ${JSON.stringify(targetSlot)}`,
@@ -210,7 +210,7 @@ export default function makeVatManager(
       argsString,
       slots,
       kernelResolverID: kernelPromiseID,
-      sendKey,
+      // sendKey,
     };
     send(target, msg);
     const p = mapKernelSlotToVatSlot({
@@ -504,7 +504,7 @@ export default function makeVatManager(
           msg.argsString,
           inputSlots,
           resolverID,
-          msg.sendKey,
+          // msg.sendKey,
         ],
         `vat[${vatID}][${target.id}].${msg.method} dispatch failed`,
       );

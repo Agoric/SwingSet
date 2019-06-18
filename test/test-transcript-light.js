@@ -93,7 +93,7 @@ async function testLoadState(t, withSES) {
   t.end();
 }
 
-test.only('transcript-light load with SES', async t => {
+test('transcript-light load with SES', async t => {
   await testLoadState(t, true);
 });
 

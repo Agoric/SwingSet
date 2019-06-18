@@ -189,13 +189,13 @@ function build(syscall, _state, makeRoot, forVatID) {
     const done = makePromise();
     const ser = m.serialize(harden({ args }));
     lsdebug(`ls.qm send(${JSON.stringify(targetSlot)}, ${prop}`);
-    const sendKey = logSend([targetSlot, prop, args]);
+    /* const sendKey = */ logSend([targetSlot, prop, args]);
     const promiseID = syscall.send(
       targetSlot,
       prop,
       ser.argsString,
       ser.slots,
-      sendKey,
+      // sendKey,
     );
     lsdebug(` ls.qm got promiseID ${promiseID}`);
 
