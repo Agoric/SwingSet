@@ -189,7 +189,14 @@ function build(syscall, _state, makeRoot, forVatID) {
     const done = makePromise();
     const ser = m.serialize(harden({ args }));
     lsdebug(`ls.qm send(${JSON.stringify(targetSlot)}, ${prop}`);
-    const promiseID = syscall.send(targetSlot, prop, ser.argsString, ser.slots);
+    const sendKey = logSend([targetSlot, prop, args]);
+    const promiseID = syscall.send(
+      targetSlot,
+      prop,
+      ser.argsString,
+      ser.slots,
+      sendKey,
+    );
     lsdebug(` ls.qm got promiseID ${promiseID}`);
 
     // prepare for notifyFulfillToData/etc
@@ -251,7 +258,7 @@ function build(syscall, _state, makeRoot, forVatID) {
           return undefined;
         }
         return (...args) => {
-          const sendKey = logSend(undefined, [targetPromise, prop, args]);
+          const sendKey = logSend([targetPromise, prop, args]);
           function resolved(x) {
             if (outstandingProxies.has(x)) {
               throw Error('E(Vow.resolve(E(x))) is invalid');
@@ -266,7 +273,7 @@ function build(syscall, _state, makeRoot, forVatID) {
             return x[prop](...args);
           }
           return targetPromise.then(x =>
-            logReceive(sendKey, () => resolved(x), x),
+            logReceive(sendKey, x, () => resolved(x)),
           );
         };
       },
@@ -357,29 +364,33 @@ function build(syscall, _state, makeRoot, forVatID) {
     return pr;
   }
 
-  function deliver(facetid, method, argsbytes, caps, resolverID) {
+  function deliver(facetid, method, argsbytes, caps, resolverID, sendKey) {
     lsdebug(
       `ls[${forVatID}].dispatch.deliver ${facetid}.${method} -> ${resolverID}`,
     );
     const t = getTarget(facetid);
     const args = m.unserialize(argsbytes, caps);
-    const p = Promise.resolve().then(_ => {
-      if (!(method in t)) {
-        throw new TypeError(
-          `target[${method}] does not exist, has ${Object.getOwnPropertyNames(
-            t,
-          )}`,
-        );
-      }
-      if (!(t[method] instanceof Function)) {
-        throw new TypeError(
-          `target[${method}] is not a function, typeof is ${typeof t[
-            method
-          ]}, has ${Object.getOwnPropertyNames(t)}`,
-        );
-      }
-      return t[method](...args.args);
-    });
+
+    const p = Promise.resolve().then(_ =>
+      logReceive(sendKey, [t, method, args.args], () => {
+        if (!(method in t)) {
+          throw new TypeError(
+            `target[${method}] does not exist, has ${Object.getOwnPropertyNames(
+              t,
+            )}`,
+          );
+        }
+        if (!(t[method] instanceof Function)) {
+          throw new TypeError(
+            `target[${method}] is not a function, typeof is ${typeof t[
+              method
+            ]}, has ${Object.getOwnPropertyNames(t)}`,
+          );
+        }
+        return t[method](...args.args);
+      }),
+    );
+
     if (resolverID !== undefined && resolverID !== null) {
       lsdebug(` ls.deliver attaching then ->${resolverID}`);
       // eslint-disable-next-line no-use-before-define

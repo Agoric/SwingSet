@@ -22,6 +22,7 @@ import Nat from '@agoric/nat';
 // should be approximately twice the number of shallow stacks needed.
 let deepStackDepth = Infinity;
 
+// TODO BUG This should only be settable from test or privileged code
 export function setDeepStackDepth(depth) {
   if (depth !== Infinity) {
     depth = Nat(depth);
@@ -34,49 +35,36 @@ export function setDeepStackDepth(depth) {
 // linked list of single-turn stack records.
 const stacksInFlight = new Map();
 
-// TODO BUG This should only be settable from test or privileged code
-export function dumpStacksInFlight() {
-  for (const stack of stacksInFlight.values()) {
-    console.log('DEEP STACK: ', stack);
-  }
-}
-
 // This is a global mutable variable whose value is set only during
 // the call to the thunk in logReceive. This is a form of dynamic or
 // fluid scoping, and is normally a bad practice.
 let currentStack;
 
+export function dumpStacksInFlight() {
+  // This enumeration is the reason we use a Map rather than a WeakMap
+  for (const stack of stacksInFlight.values()) {
+    console.log('DEEP STACK: ', stack);
+  }
+}
+
+export function dumpCurrentStack() {
+  console.log('CURRENT DEEP STACK: ', currentStack);
+}
+
 // More mutable globals.
 let turnCount = 0;
 let sendInTurnCount = 0;
 
-function validateKey(sendKey) {
-  if (Object(sendKey) === sendKey) {
-    throw new Error('sendKey must be primitive data');
-  }
-  if (sendKey === undefined || sendKey === null) {
-    throw new Error('sendKey must not be null or undefined');
-  }
-}
-
-// Call at the point where this turn causes another turn. Provide a
-// sendKey as primitive data so that we can correlate sends and receives.
-// If no sendKey is provided, one will be generated. In either case, the
-// sendKey is returned.
-export function logSend(sendKey = undefined, payload = undefined) {
+// Call at the point where this turn causes another turn. Returns the
+// sendKey to pass to through to the corresponding logReceive.
+export function logSend(payload) {
   if (deepStackDepth === 0) {
     // TODO BUG Returning undefined leaks that deepStack is zero.
     return undefined;
   }
   sendInTurnCount += 1;
-  if (sendKey === undefined) {
-    // TODO BUG Returning this generated sendKey openly leaks these counts.
-    sendKey = `turn ${turnCount} send ${sendInTurnCount}`;
-  }
-  validateKey(sendKey);
-  if (stacksInFlight.has(sendKey)) {
-    throw new Error(`sendKey must be unique ${sendKey}`);
-  }
+  // TODO BUG Should be unique but not leak info
+  const sendKey = `${turnCount}:${sendInTurnCount}`;
 
   const stackHolder = new Error(
     `Just bookkeeping. Nothing bad happened here ${sendKey}`,
@@ -86,7 +74,6 @@ export function logSend(sendKey = undefined, payload = undefined) {
     priorStack: currentStack,
     stackHolder,
     kind: 'send',
-    sendKey,
     depth,
     turnCount,
     sendInTurnCount,
@@ -97,14 +84,13 @@ export function logSend(sendKey = undefined, payload = undefined) {
 }
 
 // Call at the top of a turn that was caused by a previously logged
-// send. Log the same sendKey as that send. Pass a thunk to be invoked as
-// the turn. It is only execution during this thunk that will be
-// associated with this sendKey.
-export function logReceive(sendKey, thunk, payload = undefined) {
+// send. Pass the sendKey returned by that previous logSend. Pass a
+// thunk to be invoked as the turn. It is only execution during this
+// thunk that will be associated with this sendKey.
+export function logReceive(sendKey, payload, thunk) {
   if (deepStackDepth === 0) {
     return thunk();
   }
-  validateKey(sendKey);
   if (currentStack !== undefined) {
     throw new Error(
       `logReceive calls must not nest: ${currentStack.sendKey} vs ${sendKey}`,
@@ -112,16 +98,22 @@ export function logReceive(sendKey, thunk, payload = undefined) {
   }
   turnCount += 1;
   sendInTurnCount = 0;
-  const priorStack = stacksInFlight.get(sendKey);
-  if (!priorStack) {
-    throw new Error(`Received sendKey was never sent: ${sendKey}`);
+  let priorStack;
+  if (sendKey === undefined) {
+    console.error(`Missing sendKey at ${turnCount}`);
+  } else {
+    priorStack = stacksInFlight.get(sendKey);
+    if (!priorStack) {
+      throw new Error(
+        `Received sendKey was never sent: ${JSON.stringify(sendKey)}`,
+      );
+    }
   }
   stacksInFlight.delete(sendKey);
-  const depth = priorStack.depth + 1;
+  const depth = priorStack ? priorStack.depth + 1 : 1;
   currentStack = {
     priorStack,
     kind: 'receive',
-    sendKey,
     depth,
     turnCount,
     payload,

@@ -165,12 +165,22 @@ function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
 
       const vatKeeper = makeVatKeeper(vatkvstore);
 
+      const transcript = vatKeeper.getTranscript();
+
+      // truncate transcript[*].d to remove sendKey for tests only
+      for (const obj of transcript) {
+        if ('d' in obj && obj.d.length === 7) {
+          obj.d.pop();
+        }
+      }
+
       // TODO: find some way to expose the liveSlots internal tables, the
       // kernel doesn't see them
       const vatTable = {
         vatID,
-        state: { transcript: vatKeeper.getTranscript() },
+        state: { transcript },
       };
+
       vatTables.push(vatTable);
       vatKeeper.dumpState(vatID).forEach(e => kernelTable.push(e));
     }
@@ -215,6 +225,13 @@ function makeKernelKeeper(kvstore, pathToRoot, makeExternalKVStore, external) {
     });
 
     const runQueue = kvstore.get('runQueue');
+
+    // remove runQueue[*].msg.sendKey for tests only
+    for (const obj of runQueue) {
+      if ('msg' in obj && 'sendKey' in obj.msg) {
+        delete obj.msg.sendKey;
+      }
+    }
 
     return {
       vatTables,
