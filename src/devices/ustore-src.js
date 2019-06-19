@@ -28,26 +28,25 @@ export default function setup(syscall, state, helpers, endowments) {
         return newObj;
       }
 
-      function notifyAll(store, addr, key) {
-        // console.log(`notifying ${addr} ${key}`);
+      function notifyAll(addr) {
         addr = String(addr);
-        key = String(key);
-        handlers.notify(addr, key, handlers.read(addr, key));
-        const storekey = key === '' ? 'ustore' : `ustore.${key}`;
-        const ret = store.sendMsg(
-          JSON.stringify({ method: 'keys', key: storekey }),
-        );
-        // console.log(`got keys ${addr} ${storekey}`, ret);
-        const keys = JSON.parse(ret);
-        for (const child of keys) {
-          const subKey = key === '' ? child : `${key}.${child}`;
-          notifyAll(store, addr, subKey);
+        const store = stores[addr];
+        if (!store) {
+          throw Error(`No store to notify for ${addr}`);
+        }
+
+        if (!watchers[addr]) {
+          return;
+        }
+
+        for (const key of Object.keys(watchers[addr])) {
+          handlers.notify(addr, key, handlers.read(addr, key));
         }
       }
 
-      bridge.afterSetStore = function afterSetStore(addr, store) {
+      bridge.afterSetStore = function afterSetStore(addr) {
         // Work through the watchers and send notifications that changed.
-        notifyAll(store, addr, '');
+        notifyAll(addr);
 
         // Perform any buffered requests.
         const bufs = buffered[addr];
@@ -63,6 +62,10 @@ export default function setup(syscall, state, helpers, endowments) {
       handlers = harden({
         notify(addr, key, data) {
           // console.log(`actually notifying ${addr} ${key} ${data}`);
+          if (data === undefined || data === null) {
+            // No data to notify.
+            return;
+          }
           const wlist = watchers[addr];
           if (!wlist) {
             // console.log(`No watchers for ${addr}`);
