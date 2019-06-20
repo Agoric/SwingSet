@@ -64,6 +64,7 @@ function buildSESKernel(externalStorage) {
   const s = SES.makeSESRootRealm({
     consoleMode: 'allow',
     errorStackMode: 'allow',
+    infixBangResolver: 'E',
   });
   const r = s.makeRequire({
     '@agoric/evaluate': {
