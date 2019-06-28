@@ -11,7 +11,7 @@ function parseJSON(data) {
 }
 
 export default function makeInboundHandler(state, syscall) {
-  const enableSIDebug = true;
+  const enableSIDebug = false;
   function sidebug(...args) {
     if (enableSIDebug) {
       console.log(...args);

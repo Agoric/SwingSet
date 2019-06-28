@@ -576,8 +576,14 @@ export default function buildKernel(kernelEndowments, externalStorage) {
       // process all messages, until syscall.pause() is invoked
       running = true;
       while (running && !kernelKeeper.isRunQueueEmpty()) {
+        const next = kernelKeeper.getNextMsg();
+        // if (next.vatID === 'gallery' || next.vatID === 'alice') {
+        //   console.log(next);
+        // }
+        // console.log(next);
+
         // eslint-disable-next-line no-await-in-loop
-        await processQueueMessage(kernelKeeper.getNextMsg());
+        await processQueueMessage(next);
       }
     },
 

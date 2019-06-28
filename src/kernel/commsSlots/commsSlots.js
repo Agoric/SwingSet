@@ -40,7 +40,7 @@ export default function makeCommsSlots(syscall, _state, helpers) {
     deliver(facetid, method, argsStr, kernelToMeSlots, resolverID) {
       const kernelToMeSlotTarget = { type: 'export', id: facetid };
       csdebug(
-        `cs[${vatID}].dispatch.deliver ${facetid}.${method} -> ${resolverID}`,
+        `cs[${vatID}].dispatch.deliver ${facetid}.${method}(${argsStr}, ${JSON.stringify(kernelToMeSlots)} ) -> ${resolverID}`,
       );
 
       // CASE 1: we are hitting the initial object (0)
@@ -135,7 +135,7 @@ export default function makeCommsSlots(syscall, _state, helpers) {
     // TODO: change promiseID to a slot instead of wrapping it
     notifyFulfillToData(promiseID, dataStr, kernelToMeSlots) {
       csdebug(
-        `cs.dispatch.notifyFulfillToData(${promiseID}, ${dataStr}, ${kernelToMeSlots})`,
+        `cs[${vatID}].dispatch.notifyFulfillToData(${promiseID}, ${dataStr}, ${JSON.stringify(kernelToMeSlots)})`,
       );
 
       const outgoingWireMessageList = mapOutboundTarget({
@@ -168,7 +168,9 @@ export default function makeCommsSlots(syscall, _state, helpers) {
 
     // TODO: use a slot with type promise instead of a promiseID
     notifyFulfillToPresence(promiseID, slot) {
-      csdebug(`cs.dispatch.notifyFulfillToPresence(${promiseID}, ${slot})`);
+      csdebug(
+        `cs[${vatID}].dispatch.notifyFulfillToPresence(${promiseID}, ${slot})`,
+      );
 
       const outgoingWireMessageList = mapOutboundTarget({
         type: 'promise',
@@ -191,7 +193,9 @@ export default function makeCommsSlots(syscall, _state, helpers) {
 
     // TODO: use promise slot rather than promiseID
     notifyReject(promiseID, data, slots) {
-      csdebug(`cs.dispatch.notifyReject(${promiseID}, ${data}, ${slots})`);
+      csdebug(
+        `cs[${vatID}].dispatch.notifyReject(${promiseID}, ${data}, ${slots})`,
+      );
 
       const outgoingWireMessageList = mapOutboundTarget({
         type: 'promise',

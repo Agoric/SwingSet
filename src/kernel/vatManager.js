@@ -142,7 +142,12 @@ export default function makeVatManager(
       }
     }
 
-    return vatKeeper.mapKernelSlotToVatSlot(kernelSlot);
+    const vatSlot = vatKeeper.mapKernelSlotToVatSlot(kernelSlot);
+    if (vatID === 'gallery' || vatID === 'alice') {
+      console.log(`map[${vatID}] ks ${JSON.stringify(kernelSlot)} -> vs ${JSON.stringify(vatSlot)}`);
+    }
+    
+    return vatSlot;
   }
 
   let inReplay = false;
@@ -469,7 +474,7 @@ export default function makeVatManager(
     return process(
       () => dispatch[d[0]](...d.slice(1)),
       () => transcriptFinishDispatch(),
-      err => console.log(`doProcess: ${errmsg}: ${err}`, err),
+      err => console.error(`doProcess: ${errmsg}: ${err}`, err),
     );
   }
 
