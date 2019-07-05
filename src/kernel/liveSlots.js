@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { QCLASS, mustPassByPresence, makeMarshal } from '@agoric/marshal';
-import util from 'util';
+// import util from 'util';
 import makePromise from './makePromise';
 
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
@@ -10,9 +10,10 @@ import makePromise from './makePromise';
 // going to work for our in-chain hosts.
 
 function build(syscall, _state, makeRoot, forVatID) {
-  const enableLSDebug = forVatID === 'alice' || forVatID === 'gallery';
+  const enableLSDebug = false;
   function inspect(obj) {
-    return util.inspect(obj, false, null, false);
+    // return util.inspect(obj, false, null, false);
+    return obj;
   }
   function lsdebug(...args) {
     if (enableLSDebug) {
@@ -338,7 +339,7 @@ function build(syscall, _state, makeRoot, forVatID) {
     return pr;
   }
 
-  function deliver(facetid, method, argsbytes, caps, resolverID) {
+  function deliver(facetid, method, argsbytes, caps, { resolverID }) {
     lsdebug(
       `ls[${forVatID}].dispatch.deliver ${facetid}.${method} (${inspect(
         argsbytes,

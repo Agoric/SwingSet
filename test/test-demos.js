@@ -58,8 +58,13 @@ const splitTapFaucetAcrossMachinesLog = [
   '=> setup called',
   'addEgress called with sender alice, index 0, valslot [object Object]',
   'addIngress called with machineName gallery, index 0',
-  "=> the promise given by the call to alice.splitTapFaucet resolved to 'undefined'",
+  "=> the promise given by the call to alice.transformToTransferAndUseTapFaucet resolved to 'undefined'",
   'useRight balance {"label":{"issuer":{},"description":"pixelUseRights"},"quantity":[{"x":1,"y":4}]}',
+  'useRight balance {"label":{"issuer":{},"description":"pixelUseRights"},"quantity":[{"x":2,"y":2}]}',
+  'useRight balance {"label":{"issuer":{},"description":"pixelUseRights"},"quantity":[{"x":3,"y":0}]}',
+  'useRight balance {"label":{"issuer":{},"description":"pixelUseRights"},"quantity":[{"x":3,"y":8}]}',
+  'useRight balance {"label":{"issuer":{},"description":"pixelUseRights"},"quantity":[{"x":4,"y":6}]}',
+  'useRight balance {"label":{"issuer":{},"description":"pixelUseRights"},"quantity":[{"x":5,"y":4}]}',
 ];
 
 test('split the returned value of tapFaucet across machines with SES', async t => {
@@ -68,7 +73,7 @@ test('split the returned value of tapFaucet across machines with SES', async t =
   t.end();
 });
 
-test.only('split the returned value of tapFaucet across machines without SES', async t => {
+test('split the returned value of tapFaucet across machines without SES', async t => {
   const dump = await main(false, 'demo/galleryComms', ['splitTapFaucet']);
   t.deepEquals(dump.log, splitTapFaucetAcrossMachinesLog);
   t.end();

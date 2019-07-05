@@ -1,4 +1,5 @@
 import harden from '@agoric/harden';
+// import util from 'util';
 
 // state
 import makeState from './state/index';
@@ -13,6 +14,12 @@ import makeInboundHandler from './inbound/inboundHandler';
 export default function makeCommsSlots(syscall, _state, helpers) {
   const enableCSDebug = false;
   const { vatID } = helpers;
+
+  function inspect(obj) {
+    // return util.inspect(obj, false, null, false);
+    return obj;
+  }
+
   function csdebug(...args) {
     if (enableCSDebug) {
       console.log(...args);
@@ -32,15 +39,24 @@ export default function makeCommsSlots(syscall, _state, helpers) {
     }
     const args = { args: [toMachineName, data] };
     // TODO: this should be sendOnly, once vatManager provides that
+    csdebug('MSG', inspect(args));
     syscall.send(vt, 'send', JSON.stringify(args), []);
   }
 
   const dispatch = harden({
     // eslint-disable-next-line consistent-return
-    deliver(facetid, method, argsStr, kernelToMeSlots, resolverID) {
+    deliver(
+      facetid,
+      method,
+      argsStr,
+      kernelToMeSlots,
+      { promiseID, resolverID },
+    ) {
       const kernelToMeSlotTarget = { type: 'export', id: facetid };
       csdebug(
-        `cs[${vatID}].dispatch.deliver ${facetid}.${method}(${argsStr}, ${JSON.stringify(kernelToMeSlots)} ) -> ${resolverID}`,
+        `cs[${vatID}].dispatch.deliver ${facetid}.${method}(${argsStr}, ${JSON.stringify(
+          kernelToMeSlots,
+        )} ) -> ${resolverID}`,
       );
 
       // CASE 1: we are hitting the initial object (0)
@@ -114,10 +130,14 @@ export default function makeCommsSlots(syscall, _state, helpers) {
 
         // TODO: resolverID might be empty if the local vat did
         // syscall.sendOnly, in which case we should leave resultSlot empty too
-        const resultSlot = mapOutbound(otherMachineName, {
-          type: 'resolver',
-          id: resolverID,
-        });
+        const resultSlot = mapOutbound(
+          otherMachineName,
+          {
+            type: 'resolver',
+            id: resolverID,
+          },
+          promiseID,
+        );
 
         const message = JSON.stringify({
           target: meToYouTargetSlot,
@@ -135,7 +155,9 @@ export default function makeCommsSlots(syscall, _state, helpers) {
     // TODO: change promiseID to a slot instead of wrapping it
     notifyFulfillToData(promiseID, dataStr, kernelToMeSlots) {
       csdebug(
-        `cs[${vatID}].dispatch.notifyFulfillToData(${promiseID}, ${dataStr}, ${JSON.stringify(kernelToMeSlots)})`,
+        `cs[${vatID}].dispatch.notifyFulfillToData(${promiseID}, ${dataStr}, ${JSON.stringify(
+          kernelToMeSlots,
+        )})`,
       );
 
       const outgoingWireMessageList = mapOutboundTarget({

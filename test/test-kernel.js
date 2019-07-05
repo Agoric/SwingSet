@@ -280,6 +280,7 @@ test('outbound call', async t => {
     ['vat1', 'import', v1tovat25.id, 'export', 'vat2', 5],
     ['vat1', 'promise', 20, 40],
     ['vat2', 'import', 10, 'export', 'vat1', 7],
+    ['vat2', 'promise', 20, 40],
     ['vat2', 'resolver', 30, 40],
   ]);
 
@@ -418,6 +419,7 @@ test('three-party', async t => {
     ['vatA', 'promise', 20, 41],
     ['vatB', 'import', 10, 'export', 'vatC', 6],
     ['vatB', 'promise', bp.promiseID, 40],
+    ['vatB', 'promise', 21, 41],
     ['vatB', 'resolver', 30, 40],
     ['vatB', 'resolver', 31, 41],
   ]);
@@ -584,6 +586,7 @@ test('transfer promise', async t => {
     ['vatA', 'resolver', 31, 41], // pr2
     ['vatB', 'import', 10, 'export', 'vatA', 6],
     ['vatB', 'promise', 20, 41],
+    ['vatB', 'promise', 21, 42],
     ['vatB', 'resolver', 30, 42], // resolver for answer of foo1()
   ]);
 
@@ -604,6 +607,8 @@ test('transfer promise', async t => {
     ['vatA', 'resolver', 31, 41], // pr2
     ['vatB', 'import', 10, 'export', 'vatA', 6],
     ['vatB', 'promise', 20, 41],
+    ['vatB', 'promise', 21, 42],
+    ['vatB', 'promise', 22, 43],
     ['vatB', 'resolver', 30, 42], // resolver for answer of foo1()
     ['vatB', 'resolver', 31, 43], // resolver for answer of foo2()
   ]);
@@ -657,12 +662,15 @@ test('transfer promise', async t => {
     ['vatA', 'promise', 21, 41], // pr2
     ['vatA', 'promise', 22, 42], // promise for answer of foo1()
     ['vatA', 'promise', 23, 43], // promise for answer of foo2()
+    ['vatA', 'promise', 24, 44],
     ['vatA', 'resolver', 30, 40], // pr1
     ['vatA', 'resolver', 31, 41], // pr2
     ['vatA', 'resolver', 32, 44], // resolver for answer of foo3()
     ['vatB', 'import', 10, 'export', 'vatA', 6],
     ['vatB', 'promise', 20, 41],
-    ['vatB', 'promise', 21, 44], // promise for answer of foo3()
+    ['vatB', 'promise', 21, 42], // promise for answer of foo3()
+    ['vatB', 'promise', 22, 43],
+    ['vatB', 'promise', 23, 44],
     ['vatB', 'resolver', 30, 42], // resolver for answer of foo1()
     ['vatB', 'resolver', 31, 43], // resolver for answer of foo2()
   ]);
@@ -731,14 +739,18 @@ test('transfer promise', async t => {
     ['vatA', 'promise', 21, 41], // pr2
     ['vatA', 'promise', 22, 42], // promise for answer of foo1()
     ['vatA', 'promise', 23, 43], // promise for answer of foo2()
+    ['vatA', 'promise', 24, 44],
+    ['vatA', 'promise', 25, 45],
     ['vatA', 'resolver', 30, 40], // pr1
     ['vatA', 'resolver', 31, 41], // pr2
     ['vatA', 'resolver', 32, 44], // resolver for answer of foo3()
     ['vatA', 'resolver', 33, 45], // resolver for answer of foo4()
     ['vatB', 'import', 10, 'export', 'vatA', 6],
     ['vatB', 'promise', 20, 41],
-    ['vatB', 'promise', 21, 44], // promise for answer of foo3()
-    ['vatB', 'promise', 22, 45], // promise for answer of foo4()
+    ['vatB', 'promise', 21, 42],
+    ['vatB', 'promise', 22, 43],
+    ['vatB', 'promise', 23, 44], // promise for answer of foo3()
+    ['vatB', 'promise', 24, 45], // promise for answer of foo4()
     ['vatB', 'resolver', 30, 42], // resolver for answer of foo1()
     ['vatB', 'resolver', 31, 43], // resolver for answer of foo2()
   ]);
@@ -1102,7 +1114,7 @@ test('transcript', async t => {
       'store',
       'args string',
       [{ id: 1, type: 'export' }, { id: 10, type: 'import' }],
-      null,
+      { promiseID: null, resolverID: null },
     ],
     syscalls: [
       {

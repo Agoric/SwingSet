@@ -143,10 +143,7 @@ export default function makeVatManager(
     }
 
     const vatSlot = vatKeeper.mapKernelSlotToVatSlot(kernelSlot);
-    if (vatID === 'gallery' || vatID === 'alice') {
-      console.log(`map[${vatID}] ks ${JSON.stringify(kernelSlot)} -> vs ${JSON.stringify(vatSlot)}`);
-    }
-    
+
     return vatSlot;
   }
 
@@ -500,6 +497,10 @@ export default function makeVatManager(
         msg.kernelResolverID &&
         mapKernelSlotToVatSlot({ type: 'resolver', id: msg.kernelResolverID })
           .id;
+      const promiseID =
+        msg.kernelResolverID &&
+        mapKernelSlotToVatSlot({ type: 'promise', id: msg.kernelResolverID })
+          .id;
       return doProcess(
         [
           'deliver',
@@ -507,7 +508,7 @@ export default function makeVatManager(
           msg.method,
           msg.argsString,
           inputSlots,
-          resolverID,
+          harden({ promiseID, resolverID }),
         ],
         `vat[${vatID}][${target.id}].${msg.method} dispatch failed`,
       );

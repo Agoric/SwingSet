@@ -17,19 +17,11 @@ function makeAliceMaker(E, log) {
           for (let i = 0; i < 6; i += 1) {
             E(gallery)
               .transformToTransferAndUse(E(gallery).tapFaucet())
-              .then(result => {
-                log(`i is ${i}`);
-                log(result);
+              .then(({ useRightPayment }) => {
+                showPaymentBalance('useRight', useRightPayment);
+                E(gallery).changeColor(useRightPayment, 'black');
               });
           }
-          // for (let i = 0; i < 6; i += 1) {
-          //   E(gallery)
-          //     .transformToTransferAndUse(E(gallery).tapFaucet())
-          //     .then(({ useRightPayment }) => {
-          //       showPaymentBalance('useRight', useRightPayment);
-          //       E(gallery).changeColor(useRightPayment, 'black');
-          //     });
-          // }
         },
       });
       return alice;
