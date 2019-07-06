@@ -1,5 +1,5 @@
 function makeMapOutbound(syscall, state) {
-  function mapOutbound(otherMachineName, kernelToMeSlot) {
+  function mapOutbound(otherMachineName, kernelToMeSlot, promiseID) {
     const outgoingWireMessageObj = state.clists.mapKernelSlotToOutgoingWireMessage(
       kernelToMeSlot,
       otherMachineName,
@@ -73,20 +73,15 @@ function makeMapOutbound(syscall, state) {
             id,
           };
 
-          // kernelToMeSlot can't be type resolver
-          // overwrite it for now
-          const kernelToMeSlotID = kernelToMeSlot.id;
-          const promise = {
-            type: 'promise',
-            id: kernelToMeSlotID,
-          };
-          const resolver = {
-            type: 'resolver',
-            id: kernelToMeSlotID,
-          };
-          kernelToMeSlot = promise;
+          const promise = { type: 'promise', id: promiseID };
+          const resolver = { type: 'resolver', id: kernelToMeSlot.id };
 
           state.promiseResolverPairs.add(promise, resolver);
+
+          // set kernelToMeSlot to the promise
+          // TODO: why is this required?
+
+          kernelToMeSlot = promise;
 
           break;
         }

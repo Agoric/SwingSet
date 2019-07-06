@@ -171,7 +171,8 @@ async function bootstrapExport(t, withSES) {
     ['_bootstrap', 'import', 11, 'export', 'right', 0],
     ['_bootstrap', 'promise', 20, 40],
     ['left', 'import', 10, 'export', 'right', 0],
-    ['left', 'promise', 20, 41],
+    ['left', 'promise', 20, 40],
+    ['left', 'promise', 21, 41],
     ['left', 'resolver', 30, 40],
   ]);
   t.deepEqual(c.dump().runQueue, [
@@ -209,8 +210,10 @@ async function bootstrapExport(t, withSES) {
     ['_bootstrap', 'import', 11, 'export', 'right', 0],
     ['_bootstrap', 'promise', 20, 40],
     ['left', 'import', 10, 'export', 'right', 0],
-    ['left', 'promise', 20, 41],
+    ['left', 'promise', 20, 40],
+    ['left', 'promise', 21, 41],
     ['left', 'resolver', 30, 40],
+    ['right', 'promise', 20, 41],
     ['right', 'resolver', 30, 41],
   ]);
   t.deepEqual(c.dump().runQueue, [
@@ -234,8 +237,10 @@ async function bootstrapExport(t, withSES) {
     ['_bootstrap', 'import', 11, 'export', 'right', 0],
     ['_bootstrap', 'promise', 20, 40],
     ['left', 'import', 10, 'export', 'right', 0],
-    ['left', 'promise', 20, 41],
+    ['left', 'promise', 20, 40],
+    ['left', 'promise', 21, 41],
     ['left', 'resolver', 30, 40],
+    ['right', 'promise', 20, 41],
     ['right', 'resolver', 30, 41],
   ]);
   t.deepEqual(c.dump().runQueue, [
@@ -258,8 +263,10 @@ async function bootstrapExport(t, withSES) {
     ['_bootstrap', 'import', 11, 'export', 'right', 0],
     ['_bootstrap', 'promise', 20, 40],
     ['left', 'import', 10, 'export', 'right', 0],
-    ['left', 'promise', 20, 41],
+    ['left', 'promise', 20, 40],
+    ['left', 'promise', 21, 41],
     ['left', 'resolver', 30, 40],
+    ['right', 'promise', 20, 41],
     ['right', 'resolver', 30, 41],
   ]);
   t.deepEqual(c.dump().runQueue, []);

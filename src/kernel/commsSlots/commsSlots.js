@@ -37,7 +37,13 @@ export default function makeCommsSlots(syscall, _state, helpers) {
 
   const dispatch = harden({
     // eslint-disable-next-line consistent-return
-    deliver(facetid, method, argsStr, kernelToMeSlots, resolverID) {
+    deliver(
+      facetid,
+      method,
+      argsStr,
+      kernelToMeSlots,
+      { promiseID, resolverID },
+    ) {
       const kernelToMeSlotTarget = { type: 'export', id: facetid };
       csdebug(
         `cs[${vatID}].dispatch.deliver ${facetid}.${method} -> ${resolverID}`,
@@ -114,10 +120,14 @@ export default function makeCommsSlots(syscall, _state, helpers) {
 
         // TODO: resolverID might be empty if the local vat did
         // syscall.sendOnly, in which case we should leave resultSlot empty too
-        const resultSlot = mapOutbound(otherMachineName, {
-          type: 'resolver',
-          id: resolverID,
-        });
+        const resultSlot = mapOutbound(
+          otherMachineName,
+          {
+            type: 'resolver',
+            id: resolverID,
+          },
+          promiseID,
+        );
 
         const message = JSON.stringify({
           target: meToYouTargetSlot,

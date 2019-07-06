@@ -28,7 +28,7 @@ test('makeCommsSlots deliver to commsController (facetid 0)', t => {
     'init',
     '{"args":[{"@qclass":"slot","index":0}]}',
     [vatTP],
-    30,
+    { resolverID: 30, promiseID: 20 },
   );
 
   t.deepEqual(calls[0], [
@@ -81,7 +81,7 @@ test('makeCommsSlots deliver to egress', t => {
     'init',
     '{"args":[{"@qclass":"slot","index":0}]}',
     [vatTP],
-    30,
+    { resolverID: 30, promiseID: 20 },
   );
   t.equal(calls[0][0], 'send');
   calls.shift();
@@ -102,7 +102,7 @@ test('makeCommsSlots deliver to egress', t => {
     'addEgress',
     '{"args":["bot", 70, {"@qclass":"slot","index":0}]}',
     [{ type: 'import', id: 55 }],
-    31,
+    { resolverID: 31, promiseID: 21 },
   );
   t.deepEqual(calls, [['fulfillToData', [31, UNDEFINED, []]]]);
   calls.shift();
@@ -123,7 +123,7 @@ test('makeCommsSlots deliver to egress', t => {
     'inbound',
     JSON.stringify(inboundArgs),
     [],
-    undefined,
+    { resolverID: undefined, promiseID: undefined },
   );
   // that ought to cause a syscall.send to import:55
   t.deepEqual(calls[0], [
@@ -164,7 +164,10 @@ test('makeCommsSlots deliver facetid is unexpected', t => {
   const commsSlots = makeCommsSlots(mockSyscall, {}, helpers);
 
   t.throws(() => {
-    commsSlots.deliver(99, 'init', '{"args":["bot","botSigningKey"]}', [], 30);
+    commsSlots.deliver(99, 'init', '{"args":["bot","botSigningKey"]}', [], {
+      resolverID: 30,
+      promiseID: 20,
+    });
   }, "{[Error: unknown facetid] message: 'unknown facetid' }");
   t.equal(calls.length, 0);
   // TODO: init() really ought to notifyReject() upon error, not leave the
@@ -203,7 +206,7 @@ test('makeCommsSlots deliver to ingress', t => {
     'init',
     '{"args":[{"@qclass":"slot","index":0}]}',
     [vatTP],
-    30,
+    { resolverID: 30, promiseID: 20 },
   );
   t.equal(calls[0][0], 'send');
   calls.shift();
@@ -216,12 +219,15 @@ test('makeCommsSlots deliver to ingress', t => {
     'addIngress',
     '{"args":["bot", {"@qclass":"slot","index":0}]}',
     [{ type: 'your-ingress', id: 0 }],
-    31,
+    { resolverID: 31, promiseID: 21 },
   );
   t.deepEqual(calls[0], ['fulfillToPresence', [31, { type: 'export', id: 2 }]]);
   calls.shift();
 
-  commsSlots.deliver(2, 'encourageMe', '{"args":["me"]}', [], 32);
+  commsSlots.deliver(2, 'encourageMe', '{"args":["me"]}', [], {
+    resolverID: 32,
+    promiseID: 22,
+  });
   t.equal(calls[0][0], 'send');
   const args = calls[0][1];
   calls.shift();

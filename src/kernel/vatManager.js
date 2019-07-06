@@ -495,6 +495,10 @@ export default function makeVatManager(
         msg.kernelResolverID &&
         mapKernelSlotToVatSlot({ type: 'resolver', id: msg.kernelResolverID })
           .id;
+      const promiseID =
+        msg.kernelResolverID &&
+        mapKernelSlotToVatSlot({ type: 'promise', id: msg.kernelResolverID })
+          .id;
       return doProcess(
         [
           'deliver',
@@ -502,7 +506,7 @@ export default function makeVatManager(
           msg.method,
           msg.argsString,
           inputSlots,
-          resolverID,
+          harden({ promiseID, resolverID }),
         ],
         `vat[${vatID}][${target.id}].${msg.method} dispatch failed`,
       );
