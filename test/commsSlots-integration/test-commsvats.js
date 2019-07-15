@@ -104,7 +104,7 @@ runTest('left does: E(right.0).method() => right.promise => reject');
  * DESCRIPTION: The left vat invokes a method on the right vat's root
  * object with a promise that the left machine knows about
  */
-runTest('left does: E(right.0).method(left.promise) => returnData');
+runTestOnly('left does: E(right.0).method(left.promise) => returnData');
 
 /* TEST: left does: E(right.0).method(right.promise) => returnData
  * DESCRIPTION: The left vat invokes a method on the right vat's root

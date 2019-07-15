@@ -40,11 +40,7 @@ function makeMapInbound(syscall, state, senderID) {
           // we use the resolver when we tell the kernel to resolve
           // the promise (reject, fulfill, ...)
 
-          kernelToMeSlot = { type: 'promise', id: pr.promiseID };
-          state.promiseResolverPairs.add(
-            { type: 'promise', id: pr.promiseID },
-            { type: 'resolver', id: pr.resolverID },
-          );
+          kernelToMeSlot = { type: 'resolver', id: pr.resolverID };
 
           // do not subscribe to the promise since all settlement
           // messages should be coming in from other machines
@@ -78,7 +74,9 @@ function makeMapInbound(syscall, state, senderID) {
     if (kernelToMeSlot.type === 'resolver') {
       return kernelToMeSlot;
     }
-    return state.promiseResolverPairs.getResolver(kernelToMeSlot);
+    throw new Error(
+      `kernelToMeSlot type is not resolver: ${JSON.stringify(kernelToMeSlot)}`,
+    );
   }
 
   return {
