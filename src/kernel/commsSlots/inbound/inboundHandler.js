@@ -78,6 +78,14 @@ export default function makeInboundHandler(state, syscall) {
 
           const kernelToMeSlots = data.slots.map(mapInboundSlot);
 
+          sidebug(
+            `si[?].send ${JSON.stringify(
+              kernelToMeTarget,
+            )}.${methodName}(${JSON.stringify({
+              args: data.args,
+            })}, ${JSON.stringify(kernelToMeSlots)})`,
+          );
+
           // put the target.methodName(args, slots) call on the runQueue to
           // be delivered
           const promiseID = syscall.send(

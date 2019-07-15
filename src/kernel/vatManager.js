@@ -469,7 +469,7 @@ export default function makeVatManager(
     return process(
       () => dispatch[d[0]](...d.slice(1)),
       () => transcriptFinishDispatch(),
-      err => console.log(`doProcess: ${errmsg}: ${err}`, err),
+      err => console.error(`doProcess: ${errmsg}: ${err}`, err),
     );
   }
 

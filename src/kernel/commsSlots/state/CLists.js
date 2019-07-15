@@ -110,6 +110,15 @@ export function makeCLists() {
   // 2) to translate something that we get over the wire (youToMeSlot)
   //    into a kernelToMeSlot.
   function add(otherMachineName, kernelToMeSlot, youToMeSlot, meToYouSlot) {
+    if (kernelToMeSlot.type === 'resolver') {
+      console.log(
+        `kernelToMeSlot ${JSON.stringify(
+          kernelToMeSlot,
+        )} is a resolver. othermachine: ${otherMachineName}, youToMeSlot: ${JSON.stringify(
+          youToMeSlot,
+        )}`,
+      );
+    }
     const incomingWireMessageKey = createIncomingWireMessageKey(
       otherMachineName,
       youToMeSlot,

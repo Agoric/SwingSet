@@ -1,6 +1,7 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { QCLASS, mustPassByPresence, makeMarshal } from '@agoric/marshal';
+// import util from 'util';
 import makePromise from './makePromise';
 
 // 'makeLiveSlots' is a dispatcher which uses javascript Maps to keep track
@@ -9,7 +10,11 @@ import makePromise from './makePromise';
 // going to work for our in-chain hosts.
 
 function build(syscall, _state, makeRoot, forVatID) {
-  const enableLSDebug = false;
+  const enableLSDebug = true;
+  function inspect(obj) {
+    // return util.inspect(obj, false, null, false);
+    return JSON.stringify(obj);
+  }
   function lsdebug(...args) {
     if (enableLSDebug) {
       console.log(...args);
@@ -195,9 +200,12 @@ function build(syscall, _state, makeRoot, forVatID) {
   function queueMessage(targetSlot, prop, args) {
     const done = makePromise();
     const ser = m.serialize(harden({ args }));
-    lsdebug(`ls.qm send(${JSON.stringify(targetSlot)}, ${prop}`);
     const promiseID = syscall.send(targetSlot, prop, ser.argsString, ser.slots);
-    lsdebug(` ls.qm got promiseID ${promiseID}`);
+    lsdebug(
+      `ls[${forVatID}].qm send(${inspect(targetSlot)}, ${prop}, ${inspect(
+        ser.argsString,
+      )} ${inspect(ser.slots)} -> ${promiseID}`,
+    );
 
     // prepare for notifyFulfillToData/etc
     importedPromisesByPromiseID.set(promiseID, done);
@@ -321,7 +329,9 @@ function build(syscall, _state, makeRoot, forVatID) {
 
   function deliver(facetid, method, argsbytes, caps, { id: resolverID }) {
     lsdebug(
-      `ls[${forVatID}].dispatch.deliver ${facetid}.${method} -> ${resolverID}`,
+      `ls[${forVatID}].dispatch.deliver ${facetid}.${method} (${inspect(
+        argsbytes,
+      )}, ${inspect(caps)}) -> ${resolverID}`,
     );
     const t = getTarget(facetid);
     const args = m.unserialize(argsbytes, caps);
@@ -353,12 +363,12 @@ function build(syscall, _state, makeRoot, forVatID) {
   function thenResolve(resolverID) {
     return res => {
       harden(res);
-      lsdebug(`ls.thenResolve fired`, res);
+      lsdebug(`ls[${forVatID}].thenResolve fired`, resolverID, res);
       // We need to know if this is resolving to an imported/exported
       // presence, because then the kernel can deliver queued messages. We
       // could build a simpler way of doing this.
       const ser = m.serialize(res);
-      lsdebug(` ser ${ser.argsString} ${JSON.stringify(ser.slots)}`);
+      lsdebug(` ser ${ser.argsString} ${inspect(ser.slots)}`);
       const unser = JSON.parse(ser.argsString);
       if (
         Object(unser) === unser &&
@@ -380,7 +390,7 @@ function build(syscall, _state, makeRoot, forVatID) {
   function thenReject(resolverID) {
     return rej => {
       harden(rej);
-      lsdebug(`ls thenReject fired`, rej);
+      lsdebug(`ls[${forVatID}].thenReject fired`, resolverID, rej);
       const ser = m.serialize(rej);
       syscall.reject(resolverID, ser.argsString, ser.slots);
     };
@@ -397,7 +407,11 @@ function build(syscall, _state, makeRoot, forVatID) {
   } */
 
   function notifyFulfillToData(promiseID, data, slots) {
-    lsdebug(`ls.dispatch.notifyFulfillToData(${promiseID}, ${data}, ${slots})`);
+    lsdebug(
+      `ls[${forVatID}].dispatch.notifyFulfillToData(${promiseID}, ${data}, ${inspect(
+        slots,
+      )})`,
+    );
     if (!importedPromisesByPromiseID.has(promiseID)) {
       throw new Error(`unknown promiseID '${promiseID}'`);
     }
@@ -406,7 +420,11 @@ function build(syscall, _state, makeRoot, forVatID) {
   }
 
   function notifyFulfillToPresence(promiseID, slot) {
-    lsdebug(`ls.dispatch.notifyFulfillToPresence(${promiseID}, ${slot})`);
+    lsdebug(
+      `ls[${forVatID}].dispatch.notifyFulfillToPresence(${promiseID}, ${inspect(
+        slot,
+      )})`,
+    );
     if (!importedPromisesByPromiseID.has(promiseID)) {
       throw new Error(`unknown promiseID '${promiseID}'`);
     }
