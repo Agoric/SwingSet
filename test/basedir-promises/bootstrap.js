@@ -71,6 +71,18 @@ function build(E, log) {
         const p2 = E(p1).foo();
         p2.then(x => log(`b.resolved ${x}`));
         log(`b.call-promise1.finish`);
+      } else if (mode === 'harden-promise-1') {
+        const { p: p1 } = makePromise();
+        harden(p1);
+        // in bug #95, this first call returns a (correctly) frozen Promise:
+        const p2 = E(vats.left).checkHarden(p1);
+        // but this one does not:
+        const p3 = E(p2).checkHarden(p1, p2);
+        log(`p2 frozen ${Object.isFrozen(p2)}`);
+        log(`p3 frozen ${Object.isFrozen(p3)}`); // this fails
+        Promise.all([p2, p3]).then(_ => {
+          log(`b.harden-promise-1.finish`);
+        });
       } else {
         throw Error(`unknown mode ${mode}`);
       }

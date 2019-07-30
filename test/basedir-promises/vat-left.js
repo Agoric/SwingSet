@@ -42,6 +42,12 @@ function build(E, log) {
         }),
       );
     },
+
+    checkHarden(o1) {
+      log(`o1 frozen ${Object.isFrozen(o1)}`);
+      log(`P(o1) frozen ${Object.isFrozen(Promise.resolve(o1))}`);
+      return harden(obj0);
+    },
   };
   return harden(obj0);
 }

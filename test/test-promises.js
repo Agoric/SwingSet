@@ -165,3 +165,29 @@ test('send-promise-resolve-to-local with SES', async t => {
 test('send-promise-resolve-to-local without SES', async t => {
   await testSendPromise1(t, false);
 });
+
+async function testHardenPromise1(t, withSES) {
+  const config = await loadBasedir(path.resolve(__dirname, 'basedir-promises'));
+  const c = await buildVatController(config, withSES, ['harden-promise-1']);
+
+  await c.run();
+  t.deepEqual(c.dump().log, [
+    'bootstrap called',
+    'p2 frozen true',
+    'p3 frozen true',
+    'o1 frozen true',
+    'P(o1) frozen true',
+    'o1 frozen true',
+    'P(o1) frozen true',
+    'b.harden-promise-1.finish',
+  ]);
+  t.end();
+}
+
+test('send-harden-promise-1 with SES', async t => {
+  await testHardenPromise1(t, true);
+});
+
+test('send-harden-promise-1 without SES', async t => {
+  await testHardenPromise1(t, false);
+});

@@ -229,7 +229,7 @@ function build(syscall, _state, makeRoot, forVatID) {
         if (`${p}` !== p) {
           return undefined;
         }
-        return (...args) => ep.post(p, args);
+        return (...args) => harden(ep.post(p, args));
       },
       deleteProperty(_target, p) {
         return ep.delete(p);
