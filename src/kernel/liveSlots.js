@@ -193,7 +193,8 @@ function build(syscall, _state, makeRoot, forVatID) {
   const m = makeMarshal(serializeSlot, unserializeSlot);
 
   function queueMessage(targetSlot, prop, args) {
-    const done = makePromise();
+    // TODO: this harden() is insufficient to make p=x!foo() frozen
+    const done = harden(makePromise());
     const ser = m.serialize(harden({ args }));
     lsdebug(`ls.qm send(${JSON.stringify(targetSlot)}, ${prop}`);
     const promiseID = syscall.send(targetSlot, prop, ser.argsString, ser.slots);

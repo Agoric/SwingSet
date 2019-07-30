@@ -79,8 +79,12 @@ function build(E, log) {
         // but this one does not:
         const p3 = E(p2).checkHarden(p1, p2);
         log(`p2 frozen ${Object.isFrozen(p2)}`);
-        log(`p3 frozen ${Object.isFrozen(p3)}`); // this fails
-        Promise.all([p2, p3]).then(_ => {
+        // p3 is frozen by liveslots EPromiseHandler.get
+        log(`p3 frozen ${Object.isFrozen(p3)}`);
+        // p4 is frozen by liveslots makeQueued.POST, maybe
+        const p4 = p2!checkHarden(p1, p2);
+        log(`p4 frozen ${Object.isFrozen(p4)}`); // this fails
+        Promise.all([p2, p3, p4]).then(_ => {
           log(`b.harden-promise-1.finish`);
         });
       } else {
