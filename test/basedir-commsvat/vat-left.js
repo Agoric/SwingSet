@@ -47,8 +47,7 @@ export default function setup(syscall, state, helpers) {
 
           case 'left does: E(right.0).method(left.1) => returnData': {
             const rightRootPresence = args[0];
-            const leftRootPresence = args[1];
-            const leftNewObjPresence = await E(leftRootPresence).createNewObj();
+            const leftNewObjPresence = createNewObj();
             E(rightRootPresence)
               .methodWithPresence(leftNewObjPresence)
               .then(r => log(`=> left vat receives the returnedData: ${r}`));
@@ -57,8 +56,7 @@ export default function setup(syscall, state, helpers) {
 
           case 'left does: E(right.0).method(left.1) => returnData twice': {
             const rightRootPresence = args[0];
-            const leftRootPresence = args[1];
-            const leftNewObjPresence = await E(leftRootPresence).createNewObj();
+            const leftNewObjPresence = createNewObj();
 
             // first time
             E(rightRootPresence)
@@ -225,7 +223,6 @@ export default function setup(syscall, state, helpers) {
 
       return harden({
         startTest,
-        createNewObj,
       });
     },
     helpers.vatID,
