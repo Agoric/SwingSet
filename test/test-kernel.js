@@ -147,13 +147,14 @@ test('outbound call', async t => {
   const kernel = buildKernel({ setImmediate });
   const log = [];
   let v1tovat25;
+  const p7 = 'p+7';
 
   function setup1(syscall) {
     function deliver(facetID, method, argsString, slots) {
       // console.log(`d1/${facetID} called`);
       log.push(['d1', facetID, method, argsString, slots]);
       const pid = syscall.createPromise();
-      syscall.send(v1tovat25, 'bar', 'bargs', [v1tovat25, 'o+7'], pid);
+      syscall.send(v1tovat25, 'bar', 'bargs', [v1tovat25, 'o+7', p7], pid);
       log.push(['d1', 'promiseid', pid]);
     }
     return { deliver };
@@ -220,7 +221,7 @@ test('outbound call', async t => {
       msg: {
         method: 'bar',
         argsString: 'bargs',
-        slots: [vat2Obj5, 'ko22'],
+        slots: [vat2Obj5, 'ko22', 'kp41'],
         result: 'kp40',
       },
     },
@@ -233,15 +234,24 @@ test('outbound call', async t => {
       subscribers: [],
       queue: [],
     },
+    {
+      id: 'kp41',
+      state: 'unresolved',
+      decider: 'vat1',
+      subscribers: [],
+      queue: [],
+    },
   ]);
+
   kt.push(['ko22', 'vat1', 'o+7']);
   kt.push(['kp40', 'vat1', 'p-60']);
+  kt.push(['kp41', 'vat1', p7]);
   checkKT(t, kernel, kt);
 
   await kernel.step();
   // this checks that the decider was set to vat2 while bar() was delivered
   t.deepEqual(log, [
-    ['d2', 'o+5', 'bar', 'bargs', ['o+5', 'o-50']],
+    ['d2', 'o+5', 'bar', 'bargs', ['o+5', 'o-50', 'p-60']],
     [
       'd2 promises',
       [
@@ -252,12 +262,40 @@ test('outbound call', async t => {
           subscribers: [],
           queue: [],
         },
+        {
+          id: 'kp41',
+          state: 'unresolved',
+          decider: 'vat1',
+          subscribers: [],
+          queue: [],
+        },
       ],
     ],
   ]);
-  kt.push(['kp40', 'vat2', 'p-60']);
   kt.push(['ko22', 'vat2', 'o-50']);
+  kt.push(['kp41', 'vat2', 'p-60']);
+  kt.push(['kp40', 'vat2', 'p-61']);
   checkKT(t, kernel, kt);
+  t.deepEqual(kernel.dump().promises, [
+    {
+      id: 'kp40',
+      state: 'unresolved',
+      decider: 'vat2',
+      subscribers: [],
+      queue: [],
+    },
+    {
+      id: 'kp41',
+      state: 'unresolved',
+      decider: 'vat1',
+      // Sending a promise from vat1 to vat2 doesn't cause vat2 to be
+      // subscribed unless they want it. Liveslots will always subscribe,
+      // because we don't have enough hooks into Promises to detect a
+      // .then(), but non-liveslots vats don't have to.
+      subscribers: [],
+      queue: [],
+    },
+  ]);
 
   t.end();
 });
