@@ -7,6 +7,8 @@ import { makeMarshal, mustPassByPresence } from '@agoric/marshal';
 import { makeMarshaller } from '../src/kernel/liveSlots';
 import makePromise from '../src/kernel/makePromise';
 
+export default function runTests() {
+
 test('serialize static data', t => {
   const m = makeMarshal();
   const ser = val => m.serialize(val);
@@ -306,3 +308,9 @@ test('mal-formed @qclass', t => {
   t.throws(() => uns('{"@qclass": 0}'), /invalid qclass/);
   t.end();
 });
+
+}
+
+if (typeof require !== 'undefined' && typeof module !== 'undefined') {
+  runTests();
+}
