@@ -3,6 +3,8 @@
 import { test } from 'tape-promise/tape';
 import buildKernel from '../src/kernel/index';
 
+export default function runTests() {
+
 test('build kernel', async t => {
   const kernel = buildKernel({ setImmediate });
   await kernel.start(); // empty queue
@@ -1097,3 +1099,9 @@ test('transcript', async t => {
 
   t.end();
 });
+
+}
+
+if (typeof require !== 'undefined' && typeof module !== 'undefined') {
+  runTests();
+}
