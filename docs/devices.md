@@ -108,13 +108,13 @@ The `buildVatController()` call is supplied with a `config` object that
 describes the initial set of vats (including the bootstrap vat). We use
 `config.devices` to define the set of host devices that will be made
 available to `bootstrap()`. `config.devices` is a list (or other iterable),
-in which each value is a 3-item list. 
+in which each value is a 3-item list.
  * the device name,
  * the pathname of the attenuator source (a file which must
    export a default function whose signature is
    `function setup(syscall, state, helpers, endowments) -> dispatch`), and
  * an object containing endowments that will be passed into the setup
-   function. 
+   function.
 
 Like vats, the file will be evaluated with a `require` endowment that
 provides access to `@agoric/harden`, `@agoric/nat`, and `@agoric/evaluate`
@@ -159,7 +159,7 @@ and `dispatch` are different for devices:
 
 Devices are built with `makeDeviceSlots(syscall, state, makeRootDevice, name)`.
 `makeDeviceSlots` calls `makeRootDevice`, which should return an object with
-methods that can be called from the kernel. 
+methods that can be called from the kernel.
 
 ```js
 // exampledevice-src.js
@@ -169,7 +169,7 @@ export default function setup(syscall, state, helpers, endowments) {
   // use stuff
   function makeRootDeviceNode({ SO, getDeviceState, setDeviceState }) {
     return harden({
-     // methods using stuff and more 
+     // methods using stuff and more
     });
   }
   const dispatch =
