@@ -110,7 +110,7 @@ describes the initial set of vats (including the bootstrap vat). We use
 available to `bootstrap()`. `config.devices` is a list (or other iterable),
 in which each value is a 3-item list. The first element is the device name,
 the second is the pathname of the attenuator source (a file which must export
-a default function whose signature is `function setup(syscall, helpers,
+a default function whose signature is `function setup(syscall, state, helpers,
 endowments) -> dispatch`), and an object containing endowments that will be
 passed into the setup function. Like vats, the file will be evaluated with a
 `require` endowment that provides access to `@agoric/harden`, `@agoric/nat`,
@@ -163,7 +163,7 @@ transcript-based persistence.
 
 ### Mailbox Device
 
-Most off-machine communication takes place through an "mailbox". This is a
+Most off-machine communication takes place through a "mailbox". This is a
 special portion of the kernel state vector into which the VatTP layer can
 write message bodies destined for other machines, using the `add(recipient,
 msgnum, body)` method of the outbox device. The host loop is expected to
@@ -176,7 +176,7 @@ message delivery until the kernel state has been checkpointed, we avoid the
 VatTP code can remove messages from the outbox when it receives an
 acknowledgment of receipt, by using the `remove(recipient, msgnum)` method.
 
-Each mailbox is paired with a partnet in some other machine. To send an
+Each mailbox is paired with a partner in some other machine. To send an
 acknowledgment to that remote mailbox, VatTP can use the
 `ackInbound(recipient, msgnum)` method. This ack is written into the state
 vector next to the outbox where it can be delivered to the remote end by the
@@ -244,7 +244,7 @@ wrapper function must act as a limited Membrane between the two worlds.
 
 ## DeviceSlots helper
 
-Device code can use a helper function named `deviceSlots` to build the
+Device code can use a helper function named `makeDeviceSlots` to build the
 required `dispatch` function. This behaves much like `liveSlots` for regular
 Vat code, except:
 
@@ -259,18 +259,18 @@ Vat code, except:
 ```js
 // exampledevice-src.js
 import harden from '@agoric/harden';
-export default function setup(syscall, helpers, endowments) {
+export default function setup(syscall, state, helpers, endowments) {
   const { stuff } = endowments;
-  function getState() { return 'state'; }
+  function getState() { return state; }
   function setState(newState) { throw new Error('not implemented'); }
   return helpers.makeDeviceSlots(
     syscall,
+    state,
     SO => harden({
       devfunc1(arg, arg2) {
         SO(arg1).methname(arg3);
       },
     },
-    getState, setState,
     helpers.name,
   );
 }
