@@ -110,7 +110,7 @@ describes the initial set of vats (including the bootstrap vat). We use
 available to `bootstrap()`. `config.devices` is a list (or other iterable),
 in which each value is a 3-item list.
  * the device name,
- * the pathname of the attenuator source (a file which must
+ * the pathname of the device source (a file which must
    export a default function whose signature is
    `function setup(syscall, state, helpers, endowments) -> dispatch`), and
  * an object containing endowments that will be passed into the setup
@@ -155,7 +155,7 @@ and `dispatch` are different for devices:
 * `syscall.sendOnly(targetSlot, method, argsString, argsSlots) -> undefined`
 * `dispatch.invoke(deviceID, method, argsString, slots) -> { data, slots }`
 
-#### Device Configuration
+#### Device Construction
 
 Devices are built with `makeDeviceSlots(syscall, state, makeRootDevice, name)`.
 `makeDeviceSlots` calls `makeRootDevice`, which should return an object with
