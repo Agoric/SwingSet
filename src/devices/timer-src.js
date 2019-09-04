@@ -20,7 +20,7 @@ export default function setup(syscall, state, helpers, endowments) {
   // we keep no state in the device, it all lives elsewhere, as decided by
   // the host
 
-  function build({ SO, getDeviceState, setDeviceState }) {
+  function makeRootDevice({ SO, getDeviceState, setDeviceState }) {
     let { inboundHandler } = getDeviceState() || {};
     deliverInboundMessages = (peer, newMessages) => {
       if (!inboundHandler) {
@@ -44,6 +44,7 @@ export default function setup(syscall, state, helpers, endowments) {
       }
     };
 
+    // The Root Device Node
     return harden({
       registerInboundHandler(handler) {
         if (inboundHandler) {
@@ -53,6 +54,9 @@ export default function setup(syscall, state, helpers, endowments) {
         setDeviceState(harden({ inboundHandler }));
       },
 
+      setWakeUp(delta, callback) {
+        endowments.setTimer(delta, callback);
+      }
       add(peer, msgnum, body) {
         try {
           endowments.add(`${peer}`, Nat(msgnum), `${body}`);
@@ -63,5 +67,6 @@ export default function setup(syscall, state, helpers, endowments) {
     });
   }
 
-  return helpers.makeDeviceSlots(syscall, state, build, helpers.name);
+  // return dispatch object
+  return helpers.makeDeviceSlots(syscall, state, makeRootDevice, helpers.name);
 }
