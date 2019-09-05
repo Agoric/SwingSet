@@ -1,69 +1,43 @@
 /**
- * Setup the build() function which will be called to create the device
- * attenuator (AKA device slots) which can be handed to vats to use the Timer.
- *
- * The first step is to register a callBack
+ * Setup the build() function which will be called to create the root device
+ * which can be handed to vats that should be allowed to use the Timer.
  */
 
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
 export default function setup(syscall, state, helpers, endowments) {
-
-  let deliverInboundMessages;
-  let deliverInboundAck;
-
-  function inboundCallback(hPeer, hMessages, hAck) {
-  }
-  endowments.registerInboundCallback(inboundCallback);
-
-  // we keep no state in the device, it all lives elsewhere, as decided by
-  // the host
-
   function makeRootDevice({ SO, getDeviceState, setDeviceState }) {
-    let { inboundHandler } = getDeviceState() || {};
-    deliverInboundMessages = (peer, newMessages) => {
-      if (!inboundHandler) {
-        throw new Error(`deliverInboundMessages before registerInboundHandler`);
+    function assertCallbackHasWake(callback) {
+      if (!('wake' in callback)) {
+        throw new TypeError(
+          `callback.wake() does not exist, has ${Object.getOwnPropertyNames(
+            callback,
+          )}`,
+        );
       }
-      try {
-        SO(inboundHandler).deliverInboundMessages(peer, newMessages);
-      } catch (e) {
-        console.log(`error during deliverInboundMessages: ${e} ${e.message}`);
+      if (!(callback['wake'] instanceof Function)) {
+        throw new TypeError(
+          `callback[wake] is not a function, typeof is ${typeof callback[
+            'wake'
+            ]}, callback has ${Object.getOwnPropertyNames(callback['wake'])}`,
+        );
       }
-    };
-
-    deliverInboundAck = (peer, ack) => {
-      if (!inboundHandler) {
-        throw new Error(`deliverInboundAck before registerInboundHandler`);
-      }
-      try {
-        SO(inboundHandler).deliverInboundAck(peer, ack);
-      } catch (e) {
-        console.log(`error during deliverInboundAck: ${e} ${e.message}`);
-      }
-    };
+    }
 
     // The Root Device Node
     return harden({
-      registerInboundHandler(handler) {
-        if (inboundHandler) {
-          throw new Error(`already registered`);
-        }
-        inboundHandler = handler;
-        setDeviceState(harden({ inboundHandler }));
+      setWakeup(when, callback) {
+        assertCallbackHasWake(callback);
+        endowments.setTimer(Nat(when), callback);
       },
-
-      setWakeUp(delta, callback) {
-        endowments.setTimer(delta, callback);
+      removeWakeup(when, callback) {
+        assertCallbackHasWake(callback);
+        endowments.removeTimer(Nat(when), callback);
+      },
+      createRepeater(when, interval) {
+        return endowments.createRepeater(Nat(when), Nat(interval));
       }
-      add(peer, msgnum, body) {
-        try {
-          endowments.add(`${peer}`, Nat(msgnum), `${body}`);
-        } catch (e) {
-          throw new Error(`error in add: ${e} ${e.message}`);
-        }
-      },
     });
   }
 
