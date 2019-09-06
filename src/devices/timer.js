@@ -10,7 +10,7 @@ import { insist } from '../kernel/insist';
  * remove(), it supports removing (and returning)) all the key-value pairs with
  * keys less than or equal to some value with removeValuesUpTo().
  */
-// visible for testing
+// exported for testing
 export function buildMultiMap() {
   let numberToList = new Map();
   function add(key, value) {
@@ -27,22 +27,27 @@ export function buildMultiMap() {
     }
 
     const values = numberToList.get(key);
-    if (values.length === 1 && values[0] === value) {
-      numberToList.delete(key);
+    if (values.length === 1) {
+      if (values[0] === value) {
+        numberToList.delete(key);
+      } else {
+        return null;
+      }
     } else {
       values.splice(values.indexOf(value), 1);
     }
-    return [{ key:value }];
+    return new Map().set(key, value);
   };
 
   // Remove and return all pairs indexed by numbers up to target
   function removeValuesUpTo(target) {
-    const returnValues = [];
+    const returnValues = new Map();
     for (const [key, values] of numberToList) {
       if (key > target) {
         continue;
       }
-      returnValues.push(numberToList.delete(key));
+      returnValues.set(key, values);
+      numberToList.delete(key);
     }
     return returnValues;
   };
@@ -51,17 +56,20 @@ export function buildMultiMap() {
 }
 
 /**
- * build a representation of the state of the timer device. The timer has to
- * remember its schedule of upcoming events, and when they should trigger. It
- * also keeps a collection of repeater objects that allow holders to schedule
+ * Build a representation of the state of the timer device. The timer has to
+ * remember its schedule of upcoming events, and when they should trigger.
+ *
+ * The timer can also create Repeater objects that allow holders to schedule
  * events at regular intervals even though individual callbacks can be
- * arbitrarily delayed.
+ * arbitrarily delayed. The Repeaters have access to their startTime and
+ * interval as well as the latest time we were polled. This allows them to
+ * reschedule.
  */
 export function buildTimerStateMap() {
   // The latest time poll() was called. This might be a block height or it might
   // be a time from Date.now(). The current time is not reflected back to the
   // user.
-  const lastPolled;
+  let lastPolled = null;
   // A MultiMap from times to schedule objects, with repeaters when present
   // { time: [{callback}, {callback, repeater}, ... ], ... }
   const deadlines = buildMultiMap();
@@ -73,6 +81,7 @@ export function buildTimerStateMap() {
   function buildRecurringTimeout(startTime, interval) {
     const r = harden({
       schedule(callback) {
+        // nextTime will be the smallest startTime + N*interval after lastPolled
         const nextTime =
           lastPolled + interval - ((lastPolled - startTime) % interval);
         deadlines.add(nextTime, {callback, r});
@@ -111,7 +120,6 @@ export function buildTimerStateMap() {
     addEvent,
     removeEvent,
     addRepeater,
-    removeRepeater,
     removeEventsTo,
   })
 }
@@ -133,20 +141,21 @@ export function buildTimerEndowments(state) {
 
   // Now might be Date.now(), or it might be a block height.
   function poll(SO, now) {
-    const events = state.removeEventsTo(now);
-    for (event of events) {
+    const timeAndEvents = state.removeEventsTo(now);
+    for (const [when, events] of timeAndEvents) {
       try {
-        if (event.repeater) {
-          SO(event.callback).wake(event.repeater);
-        } else {
-          SO(event.callback).wake();
+        for (const event of events) {
+          if (event.r) {
+            SO(event.callback).wake(event.r);
+          } else {
+            SO(event.callback).wake();
+          }
         }
       } catch (e) {
-        throw new Error(`error in calling event.wake(): ${e} ${e.message}`);
+        // continue to wake other events.
       }
     }
     state.setLastPolled(now);
-    return events.length > 0;
   };
 
   // Functions made available to the host. Endowments are used by the Device
