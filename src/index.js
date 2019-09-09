@@ -1,7 +1,14 @@
 import { loadBasedir, buildVatController } from './controller';
 import { buildMailboxStateMap, buildMailbox } from './devices/mailbox';
+import { buildTimerEndowments } from './devices/timer';
 
-export { loadBasedir, buildVatController, buildMailboxStateMap, buildMailbox };
+export {
+  loadBasedir,
+  buildVatController,
+  buildMailboxStateMap,
+  buildMailbox,
+  buildTimerEndowments,
+};
 
 export function getVatTPSourcePath() {
   return require.resolve('./vats/vat-tp/vattp');

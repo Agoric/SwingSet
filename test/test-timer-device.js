@@ -1,8 +1,13 @@
 import { test } from 'tape-promise/tape';
-import { buildMultiMap, buildTimerEndowments, buildTimerStateMap } from '../src/devices/timer';
+import harden from '@agoric/harden';
+import { makeMarshal } from '@agoric/marshal';
+import { buildTimerEndowments } from '../src/devices/timer';
+import { buildTimerMap, setup } from '../src/devices/timer-src';
+import { makeLiveSlots } from '../src/kernel/liveSlots';
+import { makeDeviceSlots } from '../src/kernel/deviceSlots';
 
 test('multiMap multi store', t => {
-  const mm = buildMultiMap();
+  const mm = buildTimerMap();
   mm.add(3, 'threeA');
   mm.add(3, 'threeB');
   const threes = mm.removeValuesUpTo(4);
@@ -13,7 +18,7 @@ test('multiMap multi store', t => {
 });
 
 test('multiMap store multiple keys', t => {
-  const mm = buildMultiMap();
+  const mm = buildTimerMap();
   mm.add(3, 'threeA');
   mm.add(13, 'threeB');
   t.equal(mm.removeValuesUpTo(4).size, 1);
@@ -24,11 +29,11 @@ test('multiMap store multiple keys', t => {
 });
 
 test('multiMap remove key', t => {
-  const mm = buildMultiMap();
+  const mm = buildTimerMap();
   mm.add(3, 'threeA');
   mm.add(13, 'threeB');
-  t.equals(mm.remove(5, 'threeA'), null, "remove missing value");
-  t.equals(mm.remove(3, 'not There'), null, "remove wrong value");
+  t.equals(mm.remove(5, 'threeA'), null, 'remove missing value');
+  t.equals(mm.remove(3, 'not There'), null, 'remove wrong value');
   const threes = mm.remove(3, 'threeA');
   t.equal(threes.size, 1, threes);
   t.equal(mm.removeValuesUpTo(10).size, 0);
@@ -38,14 +43,13 @@ test('multiMap remove key', t => {
   t.end();
 });
 
-
 function fakeSO(o) {
   return {
     wake(arg = null) {
-      o.wake(arg)
-    }
-  }
-};
+      o.wake(arg);
+    },
+  };
+}
 
 function makeCallback() {
   let calls = 0;
@@ -64,9 +68,39 @@ function makeCallback() {
   };
 }
 
+const deviceState = new Map();
+const fakeDeviceKeeper = {
+  getDeviceState() {
+    return deviceState.get('dev');
+  },
+  setDeviceState(value) {
+    deviceState.set('dev', value);
+  },
+};
+
+function buildTimerRootDevice() {
+  const fakeState = harden({
+    set(args) {
+      fakeDeviceKeeper.setDeviceState(args);
+    },
+    get() {
+      return fakeDeviceKeeper.getDeviceState();
+    },
+  });
+  const helpers = harden({
+    makeLiveSlots,
+    makeDeviceSlots,
+    name: 'fake device',
+  });
+
+  const { endowments, poll } = buildTimerEndowments();
+  const device = setup(fakeSO, fakeState, helpers, endowments);
+
+  return { poll, state: fakeState, endowments, device };
+}
+
 test('Timer schedule single event', t => {
-  const state = buildTimerStateMap();
-  const { poll, endowments } = buildTimerEndowments(state);
+  const { poll, endowments } = buildTimerRootDevice();
   poll(fakeSO, 1);
   const cb = makeCallback();
   endowments.setTimer(3, cb);
@@ -76,12 +110,12 @@ test('Timer schedule single event', t => {
   t.end();
 });
 
-test('Timer schedule repeated event first', t => {
-  const state = buildTimerStateMap();
-  const { poll, endowments } = buildTimerEndowments(state);
+test.only('Timer schedule repeated event first', t => {
+  const { poll, device } = buildTimerRootDevice();
   poll(fakeSO, 1);
   const cb = makeCallback();
-  const rptr = endowments.createRepeater(2, 4);
+  const argsString = JSON.stringify({ args: [2, 4] });
+  const rptr = device.invoke('d+0', 'createRepeater', argsString, harden([]));
   rptr.schedule(cb);
   poll(fakeSO, 4);
   t.equals(cb.getCalls(), 1);
@@ -90,7 +124,7 @@ test('Timer schedule repeated event first', t => {
 });
 
 test('Timer schedule repeated event, repeatedly', t => {
-  const state = buildTimerStateMap();
+  const state = buildTimerRootDevice();
   const { poll, endowments } = buildTimerEndowments(state);
   poll(fakeSO, 1);
   const cb = makeCallback();
@@ -105,7 +139,7 @@ test('Timer schedule repeated event, repeatedly', t => {
 });
 
 test('Timer schedule multiple events', t => {
-  const state = buildTimerStateMap();
+  const state = buildTimerRootDevice();
   const { poll, endowments } = buildTimerEndowments(state);
   poll(fakeSO, 1);
   const rptrCb = makeCallback();
@@ -133,7 +167,7 @@ function makeThrowingCallback() {
     didThrow() {
       return threw;
     },
-    wake(arg) {
+    wake(_) {
       threw = true;
       throw new Error("That didn't work.");
     },
@@ -141,7 +175,7 @@ function makeThrowingCallback() {
 }
 
 test('Timer invoke other events when one throws', t => {
-  const state = buildTimerStateMap();
+  const state = buildTimerRootDevice();
   const { poll, endowments } = buildTimerEndowments(state);
   poll(fakeSO, 1);
   const rptrCb = makeCallback();
@@ -159,7 +193,7 @@ test('Timer invoke other events when one throws', t => {
 });
 
 test('Timer schedule rollback time', t => {
-  const state = buildTimerStateMap();
+  const state = buildTimerRootDevice();
   const { poll } = buildTimerEndowments(state);
   poll(fakeSO, 4);
   t.throws(() => poll(fakeSO, 1), /monotonic/);
