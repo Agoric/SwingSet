@@ -194,7 +194,7 @@ test('Timer invoke other events when one throws', t => {
   t.end();
 });
 
-test.only('Timer resets on throw', t => {
+test('Timer resets on throw', t => {
   const deviceState = buildTimerMap();
   let lastPolled = 0;
   const poll = curryPollFn(fakeSO, deviceState);
