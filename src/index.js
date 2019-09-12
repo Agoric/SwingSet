@@ -1,13 +1,13 @@
 import { loadBasedir, buildVatController } from './controller';
 import { buildMailboxStateMap, buildMailbox } from './devices/mailbox';
-import { buildTimerEndowments } from './devices/timer';
+import { buildTimer } from './devices/timer';
 
 export {
   loadBasedir,
   buildVatController,
   buildMailboxStateMap,
   buildMailbox,
-  buildTimerEndowments,
+  buildTimer,
 };
 
 export function getVatTPSourcePath() {

@@ -1,17 +1,19 @@
 /**
- * Setup the build() function which will be called to create the root device
- * which can be handed to vats that should be allowed to use the Timer.
+ * setup(...) calls makeDeviceSlots(..., makeRootDevice, ...), which calls
+ * deviceSlots' build() function to create the root device. Selected vats that
+ * need to schedule events can be given access to the device.
+ *
+ * This code runs in the inner half of the device vat. It handles kernel objects
+ * in serialized format, and uses SO to send messages to them.
  */
 
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
-import { insist } from '../kernel/insist';
-
-let assertCallbackHasWake;
+import { insist } from '../insist';
 
 /**
  * A MultiMap from times to one or more values. In addition to add() and
- * remove(), removeValuesUpTo() supports removing (and returning)) all the
+ * remove(), removeEventsThrough() supports removing (and returning)) all the
  * key-value pairs with keys (deadlines) less than or equal to some value.
  *
  * To support quiescent solo vats (which normally only run if there's an
@@ -20,63 +22,76 @@ let assertCallbackHasWake;
  */
 function buildTimerMap() {
   const numberToList = new Map();
-  function add(key, value) {
-    if (!numberToList.has(key)) {
-      numberToList.set(key, [value]);
+  function add(time, cb, r = undefined) {
+    const cbRecord = r ? { cb, r } : { cb };
+    if (!numberToList.has(time)) {
+      numberToList.set(time, [cbRecord]);
     } else {
-      numberToList.get(key).push(value);
+      numberToList.get(time).push(cbRecord);
     }
   }
 
-  function remove(key, value) {
-    if (!numberToList.has(key)) {
-      return null;
-    }
-
-    const values = numberToList.get(key);
-    if (values.length === 1) {
-      if (values[0] === value) {
-        numberToList.delete(key);
+  // We don't expect this to be called often, so we don't optimize for it.
+  function remove(cb) {
+    for (const [time, cbs] of numberToList) {
+      if (cbs.length === 1) {
+        if (cbs[0].cb === cb) {
+          numberToList.delete(time);
+          return cb;
+        }
       } else {
-        return null;
+        cbs.splice(cbs.indexOf(cb), 1);
+        return cb;
       }
-    } else {
-      values.splice(values.indexOf(value), 1);
     }
-    return new Map().set(key, value);
+    return null;
   }
 
   // Remove and return all pairs indexed by numbers up to target
-  function removeValuesUpTo(target) {
+  function removeEventsThrough(target) {
     const returnValues = new Map();
-    for (const [key, values] of numberToList) {
-      if (key <= target) {
-        returnValues.set(key, values);
-        numberToList.delete(key);
+    for (const [time, cbs] of numberToList) {
+      if (time <= target) {
+        returnValues.set(time, cbs);
+        numberToList.delete(time);
       }
     }
     return returnValues;
   }
-
-  function minimumKey() {
-    let min = Number.MAX_SAFE_INTEGER;
-    numberToList.foreach((key, _ignore) => (min = Math.min(min, key)));
-    return min;
-  }
-
-  return harden({ add, remove, removeValuesUpTo });
+  return harden({ add, remove, removeEventsThrough });
 }
 
-function setup(syscall, state, helpers, endowments) {
-  // The latest time poll() was called. This might be a block height or it might
-  // be a time from Date.now(). The current time is not reflected back to the
-  // user.
-  let lastPolled = null;
+// curryPollFn provided at top level so it can be exported and tested.
+function curryPollFn(SO, deadlines) {
+  // Now might be Date.now(), or it might be a block height.
+  function poll(now) {
+    const timeAndEvents = deadlines.removeEventsThrough(now);
+    let wokeAnything = false;
+    timeAndEvents.forEach(events => {
+      for (const event of events) {
+        try {
+          if (event.r) {
+            SO(event.cb).wake(event.r);
+          } else {
+            SO(event.cb).wake();
+          }
+          wokeAnything = true;
+        } catch (e) {
+          if (event.r) {
+            event.r.disable();
+          }
+          // continue to wake other events.
+        }
+      }
+    });
+    return harden(wokeAnything);
+  }
 
-  // A MultiMap from times to schedule objects, with repeaters when present
-  // { time: [{callback}, {callback, repeater}, ... ], ... }
-  const deadlines = buildTimerMap();
+  return poll;
+}
 
+// bind the repeater builder over deadlines so it can be exported and tested.
+function curryRepeaterBuilder(deadlines, getLastPolled) {
   // An object whose presence can be shared with Vat code to enable reliable
   // repeating schedules. There's no guarantee that the callback will happen at
   // the precise time, but the repeated calls will reliably be triggered at
@@ -94,10 +109,11 @@ function setup(syscall, state, helpers, endowments) {
         if (disabled) {
           return;
         }
+        const lastPolled = getLastPolled();
         // nextTime is the smallest startTime + N * interval after lastPolled
         const nextTime =
           lastPolled + interval - ((lastPolled - startTime) % interval);
-        deadlines.add(nextTime, { callback, r });
+        deadlines.add(nextTime, callback, r);
       },
       disable() {
         disabled = true;
@@ -106,46 +122,72 @@ function setup(syscall, state, helpers, endowments) {
     return r;
   }
 
-  const inboundStateAccessor = {
-    setLastPolled(time) {
+  return buildRecurringTimeout;
+}
+
+function setup(syscall, state, helpers, endowments) {
+  function makeRootDevice({ SO, getDeviceState, setDeviceState }) {
+    const initialDeviceState = getDeviceState();
+
+    // A MultiMap from times to schedule objects, with repeaters when present
+    // { time: [{callback}, {callback, repeater}, ... ], ... }
+    const deadlines = initialDeviceState.deadlines || buildTimerMap();
+
+    // The latest time poll() was called. This might be a block height or it
+    // might be a time from Date.now(). The current time is not reflected back
+    // to the user.
+    let lastPolled = initialDeviceState.lastPolled || 0;
+
+    function updateState(time) {
       insist(
         time > lastPolled,
         `Time is monotonic. ${time} must be greater than ${lastPolled}`,
       );
       lastPolled = time;
-    },
-
-    /** All callbacks up to TIME should be called. */
-    removeEventsTo(time) {
-      return deadlines.removeValuesUpTo(time);
-    },
-  };
-  endowments.registerInboundStateAccess(inboundStateAccessor);
-
-  function initializeState(getDeviceState, setDeviceState) {
-    if (!getDeviceState()) {
-      setDeviceState({ lastPolled, deadlines });
+      setDeviceState(harden({ lastPolled, deadlines }));
     }
-  }
 
-  function makeRootDevice({ getDeviceState, setDeviceState }) {
+    const innerPoll = curryPollFn(SO, deadlines);
+    const poll = t => {
+      updateState(t);
+      return innerPoll(t);
+    };
+    endowments.registerDevicePollFunction(poll);
+
+    const buildRepeater = curryRepeaterBuilder(deadlines, () => lastPolled);
+
+    // Verify that an alleged callback is a function and has a wake() method.
+    function assertCallbackHasWake(callback) {
+      if (!('wake' in callback)) {
+        throw new TypeError(
+          `callback.wake() does not exist, has ${Object.getOwnPropertyNames(
+            callback,
+          )}`,
+        );
+      }
+      if (!(callback.wake instanceof Function)) {
+        throw new TypeError(
+          `callback[wake] is not a function, typeof is ${typeof callback.wake}, callback has ${Object.getOwnPropertyNames(
+            callback.wake,
+          )}`,
+        );
+      }
+    }
+
     // The Root Device Node
     return harden({
-      setWakeup(when, callback) {
+      setWakeup(delaySecs, callback) {
         assertCallbackHasWake(callback);
-        initializeState(getDeviceState, setDeviceState);
-        deadlines.add(Nat(when), { callback });
-        setDeviceState({ lastPolled, deadlines });
+        deadlines.add(lastPolled + Nat(delaySecs), { callback });
+        setDeviceState(harden({ lastPolled, deadlines }));
       },
-      removeWakeup(when, callback) {
+      removeWakeup(callback) {
         assertCallbackHasWake(callback);
-        initializeState(getDeviceState, setDeviceState);
-        deadlines.remove(Nat(when), callback);
-        setDeviceState({ lastPolled, deadlines });
+        deadlines.remove(callback);
+        setDeviceState(harden({ lastPolled, deadlines }));
       },
-      createRepeater(when, interval) {
-        initializeState(getDeviceState, setDeviceState);
-        return buildRecurringTimeout(Nat(when), Nat(interval));
+      createRepeater(delaySecs, interval) {
+        return buildRepeater(lastPolled + Nat(delaySecs), Nat(interval));
       },
     });
   }
@@ -154,21 +196,4 @@ function setup(syscall, state, helpers, endowments) {
   return helpers.makeDeviceSlots(syscall, state, makeRootDevice, helpers.name);
 }
 
-assertCallbackHasWake = callback => {
-  if (!('wake' in callback)) {
-    throw new TypeError(
-      `callback.wake() does not exist, has ${Object.getOwnPropertyNames(
-        callback,
-      )}`,
-    );
-  }
-  if (!(callback.wake instanceof Function)) {
-    throw new TypeError(
-      `callback[wake] is not a function, typeof is ${typeof callback.wake}, callback has ${Object.getOwnPropertyNames(
-        callback.wake,
-      )}`,
-    );
-  }
-};
-
-export { setup, buildTimerMap };
+export { setup, buildTimerMap, curryPollFn, curryRepeaterBuilder };

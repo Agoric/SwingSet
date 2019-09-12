@@ -155,6 +155,7 @@ function build(syscall, state, makeRoot, forDeviceName) {
     const ser = m.serialize(deviceState);
     insistCapData(ser);
     state.set(ser);
+    state.set(harden({ data: ser.argsString, slots: ser.slots }));
   }
 
   // here we finally invoke the device code, and get back the root devnode
