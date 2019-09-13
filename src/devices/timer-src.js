@@ -4,7 +4,7 @@
  * need to schedule events can be given access to the device.
  *
  * This code runs in the inner half of the device vat. It handles kernel objects
- * in serialized format, and uses SO to send messages to them.
+ * in serialized format, and uses SO() to send messages to them.
  */
 
 import harden from '@agoric/harden';
@@ -14,7 +14,9 @@ import { insist } from '../insist';
 /**
  * A MultiMap from times to one or more values. In addition to add() and
  * remove(), removeEventsThrough() supports removing (and returning)) all the
- * key-value pairs with keys (deadlines) less than or equal to some value.
+ * key-value pairs with keys (deadlines) less than or equal to some value. The
+ * values are either a callback (stored as { cb }) or a callback and a repeater
+ * (stored as { cb, r }).
  *
  * To support quiescent solo vats (which normally only run if there's an
  * incoming event), we'd want to tell the host loop when we should next be
@@ -32,6 +34,9 @@ function buildTimerMap() {
   }
 
   // We don't expect this to be called often, so we don't optimize for it.
+  // There's some question as to whether it's important to invoke the callbacks
+  // in the order of their deadlines. If so, we should probably ensure that the
+  // recorded deadlines don't have finer granularity than the turns.
   function remove(cb) {
     for (const [time, cbs] of numberToList) {
       if (cbs.length === 1) {
@@ -63,7 +68,8 @@ function buildTimerMap() {
 
 // curryPollFn provided at top level so it can be exported and tested.
 function curryPollFn(SO, deadlines) {
-  // Now might be Date.now(), or it might be a block height.
+  // poll() is intended to be called by the host loop. Now might be Date.now(),
+  // or it might be a block height.
   function poll(now) {
     const timeAndEvents = deadlines.removeEventsThrough(now);
     let wokeAnything = false;
@@ -84,7 +90,7 @@ function curryPollFn(SO, deadlines) {
         }
       }
     });
-    return harden(wokeAnything);
+    return wokeAnything;
   }
 
   return poll;
@@ -131,12 +137,14 @@ function setup(syscall, state, helpers, endowments) {
 
     // A MultiMap from times to schedule objects, with repeaters when present
     // { time: [{callback}, {callback, repeater}, ... ], ... }
-    const deadlines = initialDeviceState.deadlines || buildTimerMap();
+    const deadlines = initialDeviceState
+      ? initialDeviceState.deadlines
+      : buildTimerMap();
 
     // The latest time poll() was called. This might be a block height or it
     // might be a time from Date.now(). The current time is not reflected back
     // to the user.
-    let lastPolled = initialDeviceState.lastPolled || 0;
+    let lastPolled = initialDeviceState ? initialDeviceState.lastPolled : 0;
 
     function updateState(time) {
       insist(
@@ -156,33 +164,13 @@ function setup(syscall, state, helpers, endowments) {
 
     const buildRepeater = curryRepeaterBuilder(deadlines, () => lastPolled);
 
-    // Verify that an alleged callback is a function and has a wake() method.
-    function assertCallbackHasWake(callback) {
-      if (!('wake' in callback)) {
-        throw new TypeError(
-          `callback.wake() does not exist, has ${Object.getOwnPropertyNames(
-            callback,
-          )}`,
-        );
-      }
-      if (!(callback.wake instanceof Function)) {
-        throw new TypeError(
-          `callback[wake] is not a function, typeof is ${typeof callback.wake}, callback has ${Object.getOwnPropertyNames(
-            callback.wake,
-          )}`,
-        );
-      }
-    }
-
     // The Root Device Node
     return harden({
       setWakeup(delaySecs, callback) {
-        assertCallbackHasWake(callback);
-        deadlines.add(lastPolled + Nat(delaySecs), { callback });
+        deadlines.add(lastPolled + Nat(delaySecs), callback);
         setDeviceState(harden({ lastPolled, deadlines }));
       },
       removeWakeup(callback) {
-        assertCallbackHasWake(callback);
         deadlines.remove(callback);
         setDeviceState(harden({ lastPolled, deadlines }));
       },
@@ -196,4 +184,4 @@ function setup(syscall, state, helpers, endowments) {
   return helpers.makeDeviceSlots(syscall, state, makeRootDevice, helpers.name);
 }
 
-export { setup, buildTimerMap, curryPollFn, curryRepeaterBuilder };
+export { buildTimerMap, curryPollFn, curryRepeaterBuilder, setup };
