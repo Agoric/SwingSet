@@ -74,7 +74,7 @@ async function testRepeater2(t, withSES) {
   t.end();
 }
 
-test.only('repeater2 with SES', async t => {
+test('repeater2 with SES', async t => {
   await testRepeater2(t, true);
 });
 
