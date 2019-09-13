@@ -1,7 +1,7 @@
 import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 
-export default function setup(syscall, state, helpers, endowments) {
+function setup(syscall, state, helpers, endowments) {
   const {
     registerInboundCallback,
     deliverResponse,
@@ -50,3 +50,5 @@ export default function setup(syscall, state, helpers, endowments) {
 
   return helpers.makeDeviceSlots(syscall, state, build, helpers.name);
 }
+
+export { setup };

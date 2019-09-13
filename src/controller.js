@@ -173,16 +173,16 @@ export async function buildVatController(config, withSES = true, argv = []) {
       );
     }
 
-    let setup;
+    let setupProvider;
     if (withSES) {
       let source = await bundleSource(`${sourceIndex}`);
       source = `(${source})`;
-      setup = s.evaluate(source, { require: r })();
+      setupProvider = s.evaluate(source, { require: r })();
     } else {
       // eslint-disable-next-line global-require,import/no-dynamic-require
-      setup = require(`${sourceIndex}`).default;
+      setupProvider = require(`${sourceIndex}`);
     }
-    kernel.addGenesisDevice(name, setup, endowments);
+    kernel.addGenesisDevice(name, setupProvider.setup, endowments);
   }
 
   // the kernel won't leak our objects into the Vats, we must do

@@ -1,6 +1,6 @@
 const harden = require('@agoric/harden');
 
-export default function setup(syscall, state, helpers, _endowments) {
+function setup(syscall, state, helpers, _endowments) {
   const { log } = helpers;
 
   log(state.get());
@@ -22,3 +22,5 @@ export default function setup(syscall, state, helpers, _endowments) {
     helpers.name,
   );
 }
+
+export { setup };

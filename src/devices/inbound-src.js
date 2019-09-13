@@ -1,6 +1,6 @@
 import harden from '@agoric/harden';
 
-export default function setup(syscall, state, helpers, endowments) {
+function setup(syscall, state, helpers, endowments) {
   const { bridge } = endowments;
   let { inboundHandler } = state.get() || {};
 
@@ -30,3 +30,5 @@ export default function setup(syscall, state, helpers, endowments) {
     helpers.name,
   );
 }
+
+export { setup };

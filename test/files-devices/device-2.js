@@ -1,6 +1,6 @@
 const harden = require('@agoric/harden');
 
-export default function setup(syscall, state, helpers, _endowments) {
+function setup(syscall, state, helpers, _endowments) {
   const { log } = helpers;
 
   return helpers.makeDeviceSlots(
@@ -54,3 +54,5 @@ export default function setup(syscall, state, helpers, _endowments) {
     helpers.name,
   );
 }
+
+export { setup };
