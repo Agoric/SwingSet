@@ -37,16 +37,24 @@ function buildTimerMap() {
   // There's some question as to whether it's important to invoke the callbacks
   // in the order of their deadlines. If so, we should probably ensure that the
   // recorded deadlines don't have finer granularity than the turns.
-  function remove(cb) {
+  function remove(callback) {
     for (const [time, cbs] of numberToList) {
       if (cbs.length === 1) {
-        if (cbs[0].cb === cb) {
+        if (cbs[0].cb === callback) {
           numberToList.delete(time);
-          return cb;
+          return callback;
         }
       } else {
-        cbs.splice(cbs.indexOf(cb), 1);
-        return cb;
+        // Nothing prevents a particular callback from appearing more than once
+        for (const { cb } of cbs) {
+          if (cb === callback && cbs.indexOf(cb) !== -1) {
+            cbs.splice(cbs.indexOf(cb), 1);
+          }
+        }
+        if (cbs.length === 0) {
+          numberToList.delete(time);
+        }
+        return callback;
       }
     }
     return null;
@@ -131,7 +139,7 @@ function curryRepeaterBuilder(deadlines, getLastPolled) {
   return buildRecurringTimeout;
 }
 
-function setup(syscall, state, helpers, endowments) {
+export default function setup(syscall, state, helpers, endowments) {
   function makeRootDevice({ SO, getDeviceState, setDeviceState }) {
     const initialDeviceState = getDeviceState();
 
@@ -184,4 +192,5 @@ function setup(syscall, state, helpers, endowments) {
   return helpers.makeDeviceSlots(syscall, state, makeRootDevice, helpers.name);
 }
 
-export { buildTimerMap, curryPollFn, curryRepeaterBuilder, setup };
+// exported for testing. Only the default export is intended for production use.
+export { buildTimerMap, curryPollFn, curryRepeaterBuilder };

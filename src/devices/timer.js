@@ -15,6 +15,7 @@ export function buildTimer() {
     devicePollFunction = pollFn;
   }
 
+  // poll() is made available to the host loop so it can provide the time.
   function poll(time) {
     try {
       return Boolean(devicePollFunction(Nat(time)));
@@ -23,8 +24,8 @@ export function buildTimer() {
     }
   }
 
-  // Functions made available to the host. Endowments are used by the Device
-  // itself, while poll() will used by the kernel.
+  // srcPath and endowments are provided to makeDeviceSlots() for use during
+  // configuration.
   return {
     srcPath,
     endowments: { registerDevicePollFunction },
