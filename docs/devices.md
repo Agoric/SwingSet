@@ -152,8 +152,11 @@ they can use to talk to the kernel, and they return a `dispatch` object
 with which the kernel can invoke them. The specific methods on `syscall`
 and `dispatch` are different for devices:
 
-* `syscall.sendOnly(targetSlot, method, argsString, argsSlots) -> undefined`
-* `dispatch.invoke(deviceID, method, argsString, slots) -> { data, slots }`
+* `syscall.sendOnly(targetSlot, method, args) -> undefined`
+* `dispatch.invoke(deviceID, method, args) -> { results }`
+
+Notice that args and results are CapData structures, which look like
+`{ body, slots }`.
 
 #### Device Construction
 
@@ -173,14 +176,15 @@ export default function setup(syscall, state, helpers, endowments) {
     });
   }
   const dispatch =
-    helpers.makeDeviceSlots(syscall, state, makeRootDevice, helpers.name);
+    helpers.makeDeviceSlots(syscall, state, makeRootDeviceNode, helpers.name);
   return dispatch;
 }
 ```
 
-This lets the build method provide the device rootNode with access to the
-syscall object, and access to state that the kernel will maintain. The dispatch
-object behaves much like `liveSlots` for regular Vat code, except:
+This lets the `makeRootDeviceNode` function provide the root device node with
+access to the endowments, and to kernel methods to manage persistent state.
+The `makeDeviceSlots` helper function behaves much like `makeLiveSlots` for
+regular Vat code, except:
 
 * It does not provide the `E()` wrapper, since devices cannot manage promises
   or eventual-sends
