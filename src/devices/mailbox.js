@@ -152,8 +152,10 @@ export function buildMailbox(state) {
     state.setAcknum(`${peer}`, Nat(msgnum));
   }
 
+  // deliverInbound is made available to the host; it is used for inbound
+  // messages and acks. The outbound direction uses the mailboxState object.
   // deliverInbound returns true if something changed, and the caller should
-  // run the kernel's event loop
+  // run the kernel's event loop.
   function deliverInbound(peer, messages, ack) {
     try {
       return Boolean(inboundCallback(peer, messages, ack));
@@ -162,8 +164,8 @@ export function buildMailbox(state) {
     }
   }
 
-  // Functions made available to the host: these are used for inbound
-  // messages and acks. The outbound direction uses the mailboxState object.
+  // srcPath and endowments are used at confg time by makeDeviceSlots.
+  // deliverInbound is called to deliver each incoming message.
   return {
     srcPath,
     endowments: { registerInboundCallback, add, remove, setAcknum },

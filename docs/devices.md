@@ -153,7 +153,7 @@ with which the kernel can invoke them. The specific methods on `syscall`
 and `dispatch` are different for devices:
 
 * `syscall.sendOnly(targetSlot, method, args) -> undefined`
-* `dispatch.invoke(deviceID, method, args) -> { results }`
+* `dispatch.invoke(deviceID, method, args) -> results`
 
 Notice that args and results are CapData structures, which look like
 `{ body, slots }`.
