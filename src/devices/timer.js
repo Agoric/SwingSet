@@ -3,9 +3,12 @@ import Nat from '@agoric/nat';
 /**
  * Endowments for a Timer device that can be made available to SwingSet vats.
  *
- * This is code that runs in outer half of the device, which is in the primal
- * realm. We provide a poll function, which calls a device level function that
- * will be provided later when the device root node is created.
+ * This is code that runs in the outer half of the device, which is in the
+ * primal realm. We provide a poll() function, which calls a device-level
+ * function that will be provided later when the device root node is created.
+ *
+ * The host loop should call poll on a regular basis, and then call
+ * controller.run() when it returns true.
  */
 export function buildTimer() {
   const srcPath = require.resolve('./timer-src');

@@ -83,19 +83,12 @@ function curryPollFn(SO, deadlines) {
     let wokeAnything = false;
     timeAndEvents.forEach(events => {
       for (const event of events) {
-        try {
-          if (event.r) {
-            SO(event.cb).wake(event.r);
-          } else {
-            SO(event.cb).wake();
-          }
-          wokeAnything = true;
-        } catch (e) {
-          if (event.r) {
-            event.r.disable();
-          }
-          // continue to wake other events.
+        if (event.r) {
+          SO(event.cb).wake(event.r);
+        } else {
+          SO(event.cb).wake();
         }
+        wokeAnything = true;
       }
     });
     return wokeAnything;
@@ -108,15 +101,15 @@ function curryPollFn(SO, deadlines) {
 function curryRepeaterBuilder(deadlines, getLastPolled) {
   // An object whose presence can be shared with Vat code to enable reliable
   // repeating schedules. There's no guarantee that the callback will happen at
-  // the precise time, but the repeated calls will reliably be triggered at
-  // consistent intervals.
+  // the precise desired time, but the repeated calls won't accumulate timing
+  // drift, so the trigger point will be reached at consistent intervals.
   //
   // The timer can also create Repeater objects that allow holders to schedule
   // events at regular intervals even though individual callbacks can be
   // arbitrarily delayed. The Repeaters have access to their startTime and
   // interval as well as the latest time we were polled. This allows them to
   // reschedule.
-  function buildRecurringTimeout(startTime, interval) {
+  function buildRepeater(startTime, interval) {
     let disabled = false;
     const r = harden({
       schedule(callback) {
@@ -136,7 +129,7 @@ function curryRepeaterBuilder(deadlines, getLastPolled) {
     return r;
   }
 
-  return buildRecurringTimeout;
+  return buildRepeater;
 }
 
 export default function setup(syscall, state, helpers, endowments) {
