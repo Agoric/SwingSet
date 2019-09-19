@@ -1,3 +1,3 @@
-import { setup } from '../../src/devices/timer-src';
+import setup from '../../src/devices/timer-src';
 
 export { setup };

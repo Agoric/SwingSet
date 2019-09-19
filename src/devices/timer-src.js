@@ -1,7 +1,19 @@
 /**
+ * A Timer device that provides a capability that can be used to schedule wake()
+ * calls at particular times. The simpler form is an object w with a wake()
+ * function can be passed to D(timer).setWakeup(300, w) to be woken after 5
+ * minutes. The other form allows one to create a repeater object with
+ * r = D(timer).createRepeater(120, 3600) which can be scheduled hourly starting
+ * in two minutes. Each time r.schedule(w) is called, w.wake(r) will be
+ * scheduled to be called after the next multiple of an hour since the initial
+ * time. This doesn't guarantee that the wake() calls will come at the right
+ * time, but repeated scheduling will not accumulate drift.
+ *
+ * The main entry point is setup. The other exports are for testing.
  * setup(...) calls makeDeviceSlots(..., makeRootDevice, ...), which calls
- * deviceSlots' build() function to create the root device. Selected vats that
- * need to schedule events can be given access to the device.
+ * deviceSlots' build() function (which invokes makeRootDevice) to create the
+ * root device. Selected vats that need to schedule events can be given access
+ * to the device.
  *
  * This code runs in the inner half of the device vat. It handles kernel objects
  * in serialized format, and uses SO() to send messages to them.
@@ -13,7 +25,7 @@ import { insist } from '../insist';
 
 /**
  * A MultiMap from times to one or more values. In addition to add() and
- * remove(), removeEventsThrough() supports removing (and returning)) all the
+ * remove(), removeEventsThrough() supports removing (and returning) all the
  * key-value pairs with keys (deadlines) less than or equal to some value. The
  * values are either a handler (stored as { handler }) or a handler and a
  * repeater (stored as { handler, repeater }).
@@ -24,6 +36,7 @@ import { insist } from '../insist';
  */
 function buildTimerMap() {
   const numberToList = new Map();
+
   function add(time, handler, repeater = undefined) {
     const handlerRecord = repeater ? { handler, repeater } : { handler };
     if (!numberToList.has(time)) {
@@ -100,15 +113,9 @@ function curryPollFn(SO, deadlines) {
 // bind the repeater builder over deadlines so it can be exported and tested.
 function curryRepeaterBuilder(deadlines, getLastPolled) {
   // An object whose presence can be shared with Vat code to enable reliable
-  // repeating schedules. There's no guarantee that the handler will happen at
-  // the precise desired time, but the repeated calls won't accumulate timing
+  // repeating schedules. There's no guarantee that the handler will be called
+  // at the precise desired time, but the repeated calls won't accumulate timing
   // drift, so the trigger point will be reached at consistent intervals.
-  //
-  // The timer can also create Repeater objects that allow holders to schedule
-  // events at regular intervals even though individual handlers can be
-  // arbitrarily delayed. The Repeaters have access to their startTime and
-  // interval as well as the latest time we were polled. This allows them to
-  // reschedule.
   function buildRepeater(startTime, interval) {
     let disabled = false;
     const repeater = harden({
@@ -136,7 +143,7 @@ export default function setup(syscall, state, helpers, endowments) {
   function makeRootDevice({ SO, getDeviceState, setDeviceState }) {
     const initialDeviceState = getDeviceState();
 
-    // A MultiMap from times to schedule objects, with repeaters when present
+    // A MultiMap from times to schedule objects, with optional repeaters
     // { time: [{handler}, {handler, repeater}, ... ], ... }
     const deadlines = initialDeviceState
       ? initialDeviceState.deadlines
