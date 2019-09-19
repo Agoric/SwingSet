@@ -10,39 +10,39 @@ export default function setup(syscall, state, helpers) {
         async bootstrap(argv, vats, devices) {
           if (argv[0] === 'timer') {
             log(`starting wake test`);
-            const callback = harden({
+            const handler = harden({
               wake() {
-                log(`callback.wake()`);
+                log(`handler.wake()`);
               },
             });
-            D(devices.timer).setWakeup(3, callback);
+            D(devices.timer).setWakeup(3, handler);
           } else if (argv[0] === 'repeater') {
             log(`starting repeater test`);
-            const callback = harden({
-              wake(cb) {
-                log(`callback.wake(${cb ? 'cb' : cb})`);
+            const handler = harden({
+              wake(h) {
+                log(`handler.wake(${h ? 'handler' : h})`);
               },
             });
             const rptr = D(devices.timer).createRepeater(3, 2);
-            D(rptr).schedule(callback);
+            D(rptr).schedule(handler);
           } else if (argv[0] === 'repeater2') {
             log(`starting repeater test`);
-            let callbackCalled = 0;
-            const callback = harden({
-              wake(cb) {
-                callbackCalled += 1;
-                if (callbackCalled < 2) {
-                  D(cb).schedule(callback);
+            let handlerCalled = 0;
+            const handler = harden({
+              wake(h) {
+                handlerCalled += 1;
+                if (handlerCalled < 2) {
+                  D(h).schedule(handler);
                 }
                 log(
-                  `callback.wake(${
-                    cb ? 'cb' : cb
-                  }) called ${callbackCalled} times.`,
+                  `handler.wake(${
+                    h ? 'handler' : h
+                  }) called ${handlerCalled} times.`,
                 );
               },
             });
             const rptr = D(devices.timer).createRepeater(3, 2);
-            D(rptr).schedule(callback);
+            D(rptr).schedule(handler);
           } else {
             throw new Error(`unknown argv mode '${argv[0]}'`);
           }

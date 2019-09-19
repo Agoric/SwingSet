@@ -15,8 +15,8 @@ import { insist } from '../insist';
  * A MultiMap from times to one or more values. In addition to add() and
  * remove(), removeEventsThrough() supports removing (and returning)) all the
  * key-value pairs with keys (deadlines) less than or equal to some value. The
- * values are either a callback (stored as { cb }) or a callback and a repeater
- * (stored as { cb, r }).
+ * values are either a handler (stored as { handler }) or a handler and a
+ * repeater (stored as { handler, repeater }).
  *
  * To support quiescent solo vats (which normally only run if there's an
  * incoming event), we'd want to tell the host loop when we should next be
@@ -24,37 +24,37 @@ import { insist } from '../insist';
  */
 function buildTimerMap() {
   const numberToList = new Map();
-  function add(time, cb, r = undefined) {
-    const cbRecord = r ? { cb, r } : { cb };
+  function add(time, handler, repeater = undefined) {
+    const handlerRecord = repeater ? { handler, repeater } : { handler };
     if (!numberToList.has(time)) {
-      numberToList.set(time, [cbRecord]);
+      numberToList.set(time, [handlerRecord]);
     } else {
-      numberToList.get(time).push(cbRecord);
+      numberToList.get(time).push(handlerRecord);
     }
   }
 
   // We don't expect this to be called often, so we don't optimize for it.
-  // There's some question as to whether it's important to invoke the callbacks
+  // There's some question as to whether it's important to invoke the handlers
   // in the order of their deadlines. If so, we should probably ensure that the
   // recorded deadlines don't have finer granularity than the turns.
-  function remove(callback) {
-    for (const [time, cbs] of numberToList) {
-      if (cbs.length === 1) {
-        if (cbs[0].cb === callback) {
+  function remove(targetHandler) {
+    for (const [time, handlers] of numberToList) {
+      if (handlers.length === 1) {
+        if (handlers[0].handler === targetHandler) {
           numberToList.delete(time);
-          return callback;
+          return targetHandler;
         }
       } else {
-        // Nothing prevents a particular callback from appearing more than once
-        for (const { cb } of cbs) {
-          if (cb === callback && cbs.indexOf(cb) !== -1) {
-            cbs.splice(cbs.indexOf(cb), 1);
+        // Nothing prevents a particular handler from appearing more than once
+        for (const { handler } of handlers) {
+          if (handler === targetHandler && handlers.indexOf(handler) !== -1) {
+            handlers.splice(handlers.indexOf(handler), 1);
           }
         }
-        if (cbs.length === 0) {
+        if (handlers.length === 0) {
           numberToList.delete(time);
         }
-        return callback;
+        return targetHandler;
       }
     }
     return null;
@@ -63,9 +63,9 @@ function buildTimerMap() {
   // Remove and return all pairs indexed by numbers up to target
   function removeEventsThrough(target) {
     const returnValues = new Map();
-    for (const [time, cbs] of numberToList) {
+    for (const [time, handlers] of numberToList) {
       if (time <= target) {
-        returnValues.set(time, cbs);
+        returnValues.set(time, handlers);
         numberToList.delete(time);
       }
     }
@@ -83,10 +83,10 @@ function curryPollFn(SO, deadlines) {
     let wokeAnything = false;
     timeAndEvents.forEach(events => {
       for (const event of events) {
-        if (event.r) {
-          SO(event.cb).wake(event.r);
+        if (event.repeater) {
+          SO(event.handler).wake(event.repeater);
         } else {
-          SO(event.cb).wake();
+          SO(event.handler).wake();
         }
         wokeAnything = true;
       }
@@ -100,19 +100,19 @@ function curryPollFn(SO, deadlines) {
 // bind the repeater builder over deadlines so it can be exported and tested.
 function curryRepeaterBuilder(deadlines, getLastPolled) {
   // An object whose presence can be shared with Vat code to enable reliable
-  // repeating schedules. There's no guarantee that the callback will happen at
+  // repeating schedules. There's no guarantee that the handler will happen at
   // the precise desired time, but the repeated calls won't accumulate timing
   // drift, so the trigger point will be reached at consistent intervals.
   //
   // The timer can also create Repeater objects that allow holders to schedule
-  // events at regular intervals even though individual callbacks can be
+  // events at regular intervals even though individual handlers can be
   // arbitrarily delayed. The Repeaters have access to their startTime and
   // interval as well as the latest time we were polled. This allows them to
   // reschedule.
   function buildRepeater(startTime, interval) {
     let disabled = false;
-    const r = harden({
-      schedule(callback) {
+    const repeater = harden({
+      schedule(handler) {
         if (disabled) {
           return;
         }
@@ -120,13 +120,13 @@ function curryRepeaterBuilder(deadlines, getLastPolled) {
         // nextTime is the smallest startTime + N * interval after lastPolled
         const nextTime =
           lastPolled + interval - ((lastPolled - startTime) % interval);
-        deadlines.add(nextTime, callback, r);
+        deadlines.add(nextTime, handler, repeater);
       },
       disable() {
         disabled = true;
       },
     });
-    return r;
+    return repeater;
   }
 
   return buildRepeater;
@@ -137,7 +137,7 @@ export default function setup(syscall, state, helpers, endowments) {
     const initialDeviceState = getDeviceState();
 
     // A MultiMap from times to schedule objects, with repeaters when present
-    // { time: [{callback}, {callback, repeater}, ... ], ... }
+    // { time: [{handler}, {handler, repeater}, ... ], ... }
     const deadlines = initialDeviceState
       ? initialDeviceState.deadlines
       : buildTimerMap();
@@ -167,12 +167,12 @@ export default function setup(syscall, state, helpers, endowments) {
 
     // The Root Device Node
     return harden({
-      setWakeup(delaySecs, callback) {
-        deadlines.add(lastPolled + Nat(delaySecs), callback);
+      setWakeup(delaySecs, handler) {
+        deadlines.add(lastPolled + Nat(delaySecs), handler);
         setDeviceState(harden({ lastPolled, deadlines }));
       },
-      removeWakeup(callback) {
-        deadlines.remove(callback);
+      removeWakeup(handler) {
+        deadlines.remove(handler);
         setDeviceState(harden({ lastPolled, deadlines }));
       },
       createRepeater(delaySecs, interval) {

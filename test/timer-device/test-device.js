@@ -16,7 +16,7 @@ async function testSimpleWake(t, withSES) {
   await c.step();
   timer.poll(5);
   await c.step();
-  t.deepEqual(c.dump().log, ['starting wake test', 'callback.wake()']);
+  t.deepEqual(c.dump().log, ['starting wake test', 'handler.wake()']);
   t.end();
 }
 
@@ -40,7 +40,10 @@ async function testRepeater(t, withSES) {
   await c.step();
   timer.poll(5);
   await c.step();
-  t.deepEqual(c.dump().log, ['starting repeater test', 'callback.wake(cb)']);
+  t.deepEqual(c.dump().log, [
+    'starting repeater test',
+    'handler.wake(handler)',
+  ]);
   t.end();
 }
 
@@ -68,8 +71,8 @@ async function testRepeater2(t, withSES) {
   await c.step();
   t.deepEqual(c.dump().log, [
     'starting repeater test',
-    'callback.wake(cb) called 1 times.',
-    'callback.wake(cb) called 2 times.',
+    'handler.wake(handler) called 1 times.',
+    'handler.wake(handler) called 2 times.',
   ]);
   t.end();
 }
