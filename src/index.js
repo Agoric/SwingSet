@@ -19,5 +19,5 @@ export function getCommsSourcePath() {
 }
 
 export function getTimerWrapperSourcePath() {
-  return require.resolve('./vat/timerWrapper');
+  return require.resolve('./vats/vat-timerWrapper');
 }
