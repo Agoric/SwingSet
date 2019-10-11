@@ -97,9 +97,10 @@ function curryPollFn(SO, deadlines) {
     timeAndEvents.forEach(events => {
       for (const event of events) {
         if (event.repeater) {
-          SO(event.handler).wake(event.repeater);
+          SO(event.handler).wake(now);
+          event.repeater.schedule(event.handler);
         } else {
-          SO(event.handler).wake();
+          SO(event.handler).wake(now);
         }
         wokeAnything = true;
       }
