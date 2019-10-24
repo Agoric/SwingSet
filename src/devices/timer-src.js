@@ -23,6 +23,26 @@ import harden from '@agoric/harden';
 import Nat from '@agoric/nat';
 import { insist } from '../insist';
 
+// Since we use harden when saving the state, we need to copy the arrays so they
+// will continue to be mutable. each record inside handlers is immutable, so we
+// can share those, but everything higher has to be copied. We copy on every
+// save and when restoring on restart.
+// If this turns out to be a problem, we could hold onto a mutable array of
+// hardened {time, handlers} records, and copy them when we make changes, which
+// would take many fewer copies than the current approach.
+function copyState(schedState) {
+  if (!schedState) {
+    return [];
+  }
+
+  const newSchedule = [];
+  for (const { time, handlers } of schedState) {
+    // we want a mutable copy of the handlers array, but not its contents.
+    newSchedule.push({ time, handlers: handlers.slice(0) });
+  }
+  return newSchedule;
+}
+
 /**
  * A MultiMap from times to one or more values. In addition to add() and
  * remove(), removeEventsThrough() supports removing (and returning) all the
@@ -39,16 +59,16 @@ function makeTimerMap(state = undefined) {
   // Multiple events can be stored with the same time
   // {time, handlers: [hander, ...]}. The array will be kept sorted in
   // increasing order by timestamp.
-  const schedule = state ? state.slice(0) : [];
+  const schedule = state ? copyState(state) : [];
 
-  function cloneState() {
-    return schedule.slice(0);
+  function cloneSchedule() {
+    return copyState(schedule);
   }
 
   function eventsFor(time) {
     for (let i = 0; i < schedule.length && schedule[i].time <= time; i += 1) {
       if (schedule[i].time === time) {
-        return schedule[i].handlers;
+        return schedule[i];
       }
     }
     const newRecord = { time, handlers: [] };
@@ -71,13 +91,14 @@ function makeTimerMap(state = undefined) {
   // Remove and return all pairs indexed by numbers up to target
   function removeEventsThrough(target) {
     const returnValues = [];
+    // remove events from last to first so as not to disturb the indexes.
     const reversedIndexesToRemove = [];
     for (let i = 0; i < schedule.length; i += 1) {
-      const { time, handlers } = schedule[i];
+      const { time } = schedule[i];
       if (time > target) {
         break;
       }
-      returnValues.push({ time, handlers });
+      returnValues.push(schedule[i]);
       reversedIndexesToRemove.unshift(i);
     }
     for (const j of reversedIndexesToRemove) {
@@ -111,12 +132,12 @@ function makeTimerMap(state = undefined) {
     }
     return droppedTimes;
   }
-  return harden({ add, remove, removeEventsThrough, cloneState });
+  return harden({ add, remove, removeEventsThrough, cloneSchedule });
 }
 
 function nextScheduleTime(index, repeaters, lastPolled) {
   const { startTime, interval } = repeaters[index];
-  // nextTime is the smallest startTime + N * interval after lastPolled
+  // return the smallest startTime + N * interval after lastPolled
   return lastPolled + interval - ((lastPolled - startTime) % interval);
 }
 
@@ -145,6 +166,7 @@ function curryPollFn(SO, repeaters, deadlines, getLastPolledFn, saveStateFn) {
     if (wokeAnything) {
       saveStateFn();
     }
+
     return wokeAnything;
   }
 
@@ -180,7 +202,7 @@ export default function setup(syscall, state, helpers, endowments) {
           nextRepeater,
           // send copies of these so we can still modify them.
           repeaters: repeaters.slice(0),
-          deadlines: deadlines.cloneState(),
+          deadlines: deadlines.cloneSchedule(),
         }),
       );
     }
