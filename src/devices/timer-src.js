@@ -1,22 +1,27 @@
 /**
  * A Timer device that provides a capability that can be used to schedule wake()
- * calls at particular times. The simpler form is an object w with a wake()
- * function can be passed to D(timer).setWakeup(300, w) to be woken after 5
- * minutes. The other form allows one to create a repeater index with
- * r = D(timer).createRepeater(120, 3600) which can be scheduled hourly starting
- * in two minutes. Each time D(timer).schedule(r, w) is called, w.wake(r) will be
- * scheduled to be called after the next multiple of an hour since the initial
- * time. This doesn't guarantee that the wake() calls will come at the right
- * time, but repeated scheduling will not accumulate drift.
+ * calls at particular times. The simpler form is a handler object with a wake()
+ * function can be passed to D(timer).setWakeup(delaySecs, handler) to be woken
+ * after delaySecs.
  *
- * The main entry point is setup. The other exports are for testing.
+ * The other form r = D(timer).createRepeater(startTime, interval) allows one to
+ * create a repeater object which can be used to scheduled regular wakeups. Each
+ * time D(timer).schedule(r, w) is called, w.wake(r) will be scheduled to be
+ * called after the next multiple of interval since startTime. This doesn't
+ * guarantee that the wake() calls will come at that exact time, but repeated
+ * scheduling will not accumulate drift.
+ *
+ * The main entry point is setup(). The other exports are for testing.
  * setup(...) calls makeDeviceSlots(..., makeRootDevice, ...), which calls
  * deviceSlots' build() function (which invokes makeRootDevice) to create the
  * root device. Selected vats that need to schedule events can be given access
  * to the device.
  *
  * This code runs in the inner half of the device vat. It handles kernel objects
- * in serialized format, and uses SO() to send messages to them.
+ * in serialized format, and uses SO() to send messages to them. The only device
+ * object exposed to vats is the scheduler itself. The repeaters are identified
+ * by sequential integers, so the vat must treat those as closely held, and
+ * expose only capabilities that don't reveal them.
  */
 
 import harden from '@agoric/harden';
@@ -110,7 +115,7 @@ function makeTimerMap(state = undefined) {
   // We don't expect this to be called often, so we don't optimize for it.
   function remove(targetHandler) {
     const droppedTimes = [];
-    for (const i of schedule.length) {
+    for (let i = 0; i < schedule.length; i += 1) {
       const { time, handlers } = schedule[i];
       if (handlers.length === 1) {
         if (handlers[0].handler === targetHandler) {
@@ -137,7 +142,7 @@ function makeTimerMap(state = undefined) {
 
 function nextScheduleTime(index, repeaters, lastPolled) {
   const { startTime, interval } = repeaters[index];
-  // return the smallest startTime + N * interval after lastPolled
+  // return the smallest value of `startTime + N * interval` after lastPolled
   return lastPolled + interval - ((lastPolled - startTime) % interval);
 }
 
