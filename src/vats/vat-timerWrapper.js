@@ -1,5 +1,5 @@
 import harden from '@agoric/harden';
-import nat from '@agoric/nat';
+import Nat from '@agoric/nat';
 import { insist } from '../insist';
 
 function build(E, D) {
@@ -10,10 +10,10 @@ function build(E, D) {
     timerNode = TimerDeviceNode;
   }
 
-  async function createTimerHandler() {
+  async function createTimerService() {
     return harden({
       getCurrentTimestamp() {
-        return nat(D(timerNode).getLastPolled());
+        return Nat(D(timerNode).getLastPolled());
       },
       setWakeup(delaySecs, handler) {
         return D(timerNode).setWakeup(delaySecs, handler);
@@ -24,7 +24,7 @@ function build(E, D) {
       },
       createRepeater(delaySecs, interval) {
         insist(
-          nat(delaySecs) && nat(interval),
+          Nat(delaySecs) && Nat(interval),
           `createRepeater takes two numbers as arguments. ${delaySecs}, ${interval}`,
         );
 
@@ -45,7 +45,7 @@ function build(E, D) {
     });
   }
 
-  return harden({ registerTimerDevice, createTimerHandler });
+  return harden({ registerTimerDevice, createTimerService });
 }
 
 export default function setup(syscall, state, helpers) {
