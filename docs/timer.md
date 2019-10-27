@@ -44,13 +44,13 @@ const timerService = vats.timerWrapper~.createTimerService();
 Then users in the REPL can use the timerService to schedule wakeups.
 
 ```
-const timestamp = timerService~.getCurrentTimestamp();
+const timestampP = timerService~.getCurrentTimestamp();
 
 const handler = harden({wake(now) { console.log(`woke up ${now}`); }});
 const willWakeAt = timerService~.setWakeup(60, handler);
 ```
 
-The handler will fire in somewhat after 60 seconds from now.
+The handler will fire somewhat after 60 seconds from now.
 
 ```
 const repeater = timerService~.createRepeater(20, 60);
