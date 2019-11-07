@@ -30,14 +30,14 @@ export default function buildCommand(broadcastCallback) {
   }
 
   function sendBroadcast(kBodyString) {
-    if (inboundCallback) {
-      throw new Error(`registerInboundCallback called more than once`);
-    }
     const obj = JSON.parse(`${kBodyString}`);
     broadcastCallback(obj);
   }
 
   function registerInboundCallback(cb) {
+    if (inboundCallback) {
+      throw new Error(`registerInboundCallback called more than once`);
+    }
     inboundCallback = cb;
   }
 
