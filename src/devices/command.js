@@ -1,7 +1,10 @@
 import Nat from '@agoric/nat';
 import makePromise from '../makePromise';
 
-export default function buildCommand() {
+export default function buildCommand(broadcastCallback) {
+  if (!broadcastCallback) {
+    throw new Error(`broadcastCallback must be provided.`);
+  }
   let inboundCallback;
   const srcPath = require.resolve('./command-src');
   let nextCount = 0;
@@ -26,14 +29,9 @@ export default function buildCommand() {
     return p;
   }
 
-  let broadcastCallback;
-  function registerBroadcastCallback(cb) {
-    broadcastCallback = cb;
-  }
-
   function sendBroadcast(kBodyString) {
-    if (!broadcastCallback) {
-      throw new Error(`sendBroadcast before registerBroadcastCallback`);
+    if (inboundCallback) {
+      throw new Error(`registerInboundCallback called more than once`);
     }
     const obj = JSON.parse(`${kBodyString}`);
     broadcastCallback(obj);
@@ -68,6 +66,5 @@ export default function buildCommand() {
     srcPath,
     endowments: { registerInboundCallback, deliverResponse, sendBroadcast },
     inboundCommand, // for external access
-    registerBroadcastCallback, // for external access
   };
 }
