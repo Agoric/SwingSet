@@ -23,9 +23,8 @@ export default function setup(syscall, state, helpers) {
               wake(h) {
                 handlerCalled += 1;
                 log(
-                  `handler.wake(${
-                    h ? h : 'handler'
-                  }) called ${handlerCalled} times.`,
+                  `handler.wake(${h ||
+                    'handler'}) called ${handlerCalled} times.`,
                 );
               },
             });
