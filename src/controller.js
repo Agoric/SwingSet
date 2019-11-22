@@ -11,7 +11,7 @@ import makeDefaultEvaluateOptions from '@agoric/default-evaluate-options';
 import bundleSource from '@agoric/bundle-source';
 
 import kernelSourceFunc from './bundles/kernel';
-import buildKernelNonSES from './kernel/index';
+import buildKernelNonSES from './kernel';
 import { insist } from './insist';
 import { insistStorageAPI } from './storageAPI';
 import { insistCapData } from './capdata';
@@ -118,7 +118,8 @@ function buildSESKernel(hostStorage) {
   const kernelSource = getKernelSource();
   // console.log('building kernel');
   const buildKernel = s.evaluate(kernelSource, { require: r })().default;
-  const kernelEndowments = { setImmediate, hostStorage };
+  const evaluate = code => s.evaluate(code, { require: r })().default;
+  const kernelEndowments = { setImmediate, hostStorage, evaluate };
   const kernel = buildKernel(kernelEndowments);
   return { kernel, s, r };
 }
@@ -127,8 +128,12 @@ function buildNonSESKernel(hostStorage) {
   // Evaluate shims to produce desired globals.
   // eslint-disable-next-line no-eval
   (evaluateOptions.shims || []).forEach(shim => (1, eval)(shim));
-
-  const kernelEndowments = { setImmediate, hostStorage };
+  // evaluateOptions lets dynamic vat code contain tildot
+  //const e = require('@agoric/evaluate').makeEvaluators(evaluateOptions);
+  // vanilla evaluate means it cannot contain tildot
+  const e = require('@agoric/evaluate');
+  const evaluate = code => e.evaluateProgram(code, { require }).default;
+  const kernelEndowments = { setImmediate, hostStorage, evaluate };
   const kernel = buildKernelNonSES(kernelEndowments);
   return { kernel };
 }

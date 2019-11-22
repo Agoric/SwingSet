@@ -24,8 +24,13 @@ function abbreviateReviver(_, arg) {
   return arg;
 }
 
+function foo(codestring) {
+  const evaluate = require('@agoric/evaluate');
+  evaluate(codestring, { require: xxx, console }
+}
+
 export default function buildKernel(kernelEndowments) {
-  const { setImmediate, hostStorage } = kernelEndowments;
+  const { setImmediate, hostStorage, evaluate } = kernelEndowments;
   insistStorageAPI(hostStorage);
   const { enhancedCrankBuffer, commitCrank } = wrapStorage(hostStorage);
   const kernelKeeper = makeKernelKeeper(enhancedCrankBuffer);
@@ -409,6 +414,17 @@ export default function buildKernel(kernelEndowments) {
     }
     genesisDevices.set(name, { setup, endowments });
   }
+
+  function addDynamicVat(code) {
+    evaluate(code);
+    ...
+  }
+  function dynamicVatDeviceSetup(syscall, endowments, helpersxx) {
+    const { addDynamicVat } = endowments;
+    return dispatch;
+  }
+  addGenesisDevice('vatCreator', dynamicVatDeviceSetup, { addDynamicVat });
+  addGenesisVat('vatCreator', xxx);
 
   function callBootstrap(bootstrapVatID, argvString) {
     // we invoke obj[0].bootstrap with an object that contains 'vats' and
